@@ -1,5 +1,6 @@
 # RandomRegression
 This software analyses a dataset of phenotyped individuals at different environments to estimate variance components and breeding values. The model that is fitted is
+
 	y{j,k} = (mu_int + mu_slo * X{k}) + (A_int{j} + A_slo{j} * X{k}) + (E_int{j,k} + E_slo{j,k} * X{k}).
 	
 In the above linear random-regression model, y_{j,k} is the phenotype of animal j and environmenatl level k. The three terms on the right-hand side of the above equation correspond to the mean (mu), genetic deviation (A) and the residual (E). Each term is decomposed into a part for intercept (int) and slope (slo). Hence, it is assumed the residual is heterogeneous. The challenge level for enviroment k is denoted by X{k}.
