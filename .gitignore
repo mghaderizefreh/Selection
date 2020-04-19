@@ -1,0 +1,15 @@
+output/
+*.obj
+*.mod
+*.o
+*.out
+*.exe
+*.txt*
+!bin/
+*junk*
+*~
+inicio.dat
+*.dat
+\#*#
+
+result/
