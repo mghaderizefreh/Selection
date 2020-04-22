@@ -11,7 +11,7 @@ This is version 1.0 of the software released on 19 April 2020.
 ## Copyright
 * A copyright message and something about SMARTER project/ Roslin Institute/ University of Ediburgh/ us in general
 
-# Instllation
+# Installation
 This software is written under FORTRAN90. A makefile is accompanied that makes it possible to compile under Intel or GFortran compiler. The software can be compiled with any other compiler with appropriate switches.
 
 ## Dependencies
@@ -50,7 +50,7 @@ The phenotype contains information about the phenotype of animals. The file must
 The matrix file is the Numerator Relationship Matrix (NMR) or the Genomic Matrix Relationship (GMR). NMR may be used for analysing the data based on pedigree and GMR can be used when individual are genotyped. These matrices should be calculated before running the program. The matrices need to be stored in the packed format because these matrices are symmetric. Hence, the matrix file cotains three columns. The first and second column are the index of row and column in matrix, respectively and the value of the matrix at that row and column is given in the third column. Since, the matrices are symmetric, for a _n x n_ matrix, there are _n(n+1)/2_ lines in the matrix file.
 
 ## Outputs
-The software creates three output files.
+The logl for each iteration is printed on the screen as the program runs. In addition, three output files are created. These files include:
 
 ### 1. `variences`
 This file contains estimated variences and the correlation (if the software has been told that there exists a correlation between intercept and slope). This file has headers, therefore, it is self-explanatory.
@@ -60,8 +60,6 @@ This file contains the estimated fixed effect values.
 
 ### 3. `randomEffects`
 This file contains the estimated random effects for genetic part of slope and the genetic part of the intercept, in that order for all individuals that their relationship is explained in the 'matrix file'. Since we assume the residual has heterogeneous form, it also estimates the breeding values for environmental variance of slope for each phenotyped individual at each environmental level. The latter is appended to the bottom of the file `randomEffect`.
-
-In addition, on the screen it shows the log-likelihood for each iteration.
 
 # Future Developments
 The software at the moment is not capable of performing ssGblup. Hence, all the individuals need to be genotyped. This is the be developed in the future releases.

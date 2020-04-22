@@ -1,6 +1,6 @@
-SHELL := /usr/bin/bash
+SHELL := /bin/bash
 # possible values for f90comp are 'ifort' or 'gfortran'
-f90comp = ifort
+f90comp = gfortran
 
 # only change to yes when developing
 debug = no
@@ -25,10 +25,12 @@ switch=$(fastgnu)
 endif
 endif
 
+target := rrreml.exe
+
 objects = getZGZMats.o dsptrf_Ldet.o countNumberLines.o askFilename.o getEffects.o reml_module.o RRReml.o
 
-rrreml: $(objects)
-	$(f90comp) $(switch) -o rrreml $(objects)
+$(target): $(objects)
+	$(f90comp) $(switch) -o $(target) $(objects)
 	@mkdir -p obj
 	@mv *.o obj/
 	@mv *.mod obj/
@@ -42,7 +44,7 @@ RRReml.o: dsptrf_Ldet.o countNumberLines.o askFilename.o reml_module.mod RRReml.
 %.o: %.f90
 	$(f90comp) -c $(switch) $<
 clean:
-	@command rm -f obj/*.o obj/*.mod rrreml testdata/*.*.*
+	@command rm -vf obj/*.o obj/*.mod $(target) testdata/*.*.*
 
 test:
-	@cd testdata; command rm -f {ranEff,var,fixEff}.*.$(f90comp) ; echo "running the case with correlation"; ../rrreml < input1 > /dev/null  && echo "test correlation successful" ; mv fixedEffects fixEff.cor.$(f90comp); mv randomEffects ranEff.cor.$(f90comp); mv variances var.cor.$(f90comp); echo "running the case without correlation" ; ../rrreml < input2 > /dev/null && echo "test zero correlation successful"; mv randomEffects ranEff.uncor.$(f90comp) ; mv fixedEffects fixEff.uncor.$(f90comp); mv variances var.uncor.$(f90comp); cd ..
+	@cd testdata; command rm -f {ranEff,var,fixEff}.*.$(f90comp) ; echo -n "running the case with correlation..."; ../$(target) < input1 > /dev/null  && echo "test correlation successful" ; mv fixedEffects fixEff.cor.$(f90comp); mv randomEffects ranEff.cor.$(f90comp); mv variances var.cor.$(f90comp); echo -n "running the case without correlation..." ; ../$(target) < input2 > /dev/null && echo "test zero correlation successful"; mv randomEffects ranEff.uncor.$(f90comp) ; mv fixedEffects fixEff.uncor.$(f90comp); mv variances var.uncor.$(f90comp); cd ..
