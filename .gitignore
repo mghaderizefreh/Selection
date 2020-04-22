@@ -5,6 +5,7 @@ output/
 *.out
 *.exe
 *.txt*
+!testdata/matrix.txt
 !bin/
 *junk*
 *~
