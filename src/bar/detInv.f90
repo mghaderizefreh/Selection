@@ -89,3 +89,32 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
 
 
 end subroutine dspdrf_Ldet
+
+
+subroutine detInv(nobs, V, detV, ipiv, work, verbose)
+  implicit none
+  logical, intent(in)                                                 :: verbose
+  integer, intent(in)                                                 :: nobs
+  integer, dimension(:), intent(in)                                   :: ipiv
+  double precision, dimension(:), intent(in)                          :: work
+  double precision, dimension(:), intent(inout)                       :: V
+  double precision, intent(out)                                       :: detV
+
+  integer                                                             :: ifail, ineg, info
+
+  if (verbose) write(6,*) "  In the subroutine detinv"
+  call dsptrf('u', nobs, V, ipiv, info)
+  if (verbose) write ( *, * ) "  info after DSPTRF", info
+  if ( info == 0 ) then
+     call dspdrf_Ldet ( 'u', nobs, V, ipiv, detV, ineg, ifail )
+     if (verbose) write(6,*) "  log detV ineg", detV, ineg
+     call dsptri('u', nobs, V, ipiv, work, info)
+     if (verbose) write(6,*) "  info after DSPTRI", info
+  else if ( info < 0 ) then
+     write(6, *) "  error with input variables (inside detinv)", info
+     stop 1
+  end if
+  if (verbose) write(6,*) "  detinv return successfully"
+end subroutine detInv
+
+

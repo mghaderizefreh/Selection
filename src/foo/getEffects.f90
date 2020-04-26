@@ -4,8 +4,8 @@
 !written by Masoud Ghaderi
 !last modified 25 March 2020
 subroutine getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, varFile, theta, AmatFile, Vhat, Py, y, X, id, verbose)
+  use constants
   implicit none
-
   logical                                                             :: verbose
   integer, intent(in)                                                 :: nobs, nfix, nvar, maxid
   character(len=*)                                                    :: fixEffFile, ranEffFile, varFile, AmatFile
@@ -18,9 +18,6 @@ subroutine getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, varFile, 
   character(len=60)                                                   :: formato
   double precision                                                    :: val1, s1, s2
   double precision, allocatable, dimension(:)                         :: fixeff
-  type doublePre_Array
-     double precision, dimension(:), pointer :: level(:)
-  end type doublePre_Array
   type (doublePre_Array), dimension(:), allocatable, target           :: theZPy, raneff
 
   ! allocation

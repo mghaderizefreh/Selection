@@ -8,7 +8,7 @@
 !   7     ZsZi+ZiZs           permanent environment effect slope-intercept covariance
 ! (last)  Identity            environmental intercept (NOT COUNTED IN theZGZ and it is always LAST one)
 program RRREML
-  use reml_module
+  use constants
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
