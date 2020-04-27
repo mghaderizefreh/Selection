@@ -8,7 +8,7 @@ In the above linear random-regression model, `y_{j,k}` is the phenotype of anima
 In the above model, it is assumed that the residual is heterogeneous. However, no correlation is assumed between the terms in the residual (`E_int{j,k}` and `E_slo_{j,k}`). The genetic terms, `A_int{j}` and `A_slo{j}`, may be correlated. The covariance structure for the genetic terms has to be specified in the inputs (See Usage). 
 
 ## version number
-This is version 1.2 of the software released on 27 April 2020.
+This is version 1.1.2 of the software released on 27 April 2020.
 
 ## Copyright
 * A copyright message and something about SMARTER project/ Roslin Institute/ University of Edinburgh/ us in general
