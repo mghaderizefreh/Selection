@@ -1,4 +1,4 @@
-# CMake project file for FOO
+# CMake project file for Random Regression
 
 ##################################################
 # Define the project and the depencies that it has
@@ -7,7 +7,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 PROJECT(RandomRegression Fortran)
 
-# Set the FOO version
+# Set the version
 SET(VERSION 1.1.2)
 
 # Add our local modlues to the module path
@@ -47,26 +47,26 @@ ENDIF(FCNAME STREQUAL "pgf90")
 ############################################################
 
 # Define the executable name
-SET(FOOEXE randreg)
+SET(EXE randreg.exe)
 
 # Define the library name
-SET(BARLIB bar)
+SET(UTILSLIB utils)
 
 # Define some directories
 SET(SRC ${CMAKE_SOURCE_DIR}/src)
 SET(LIB ${CMAKE_SOURCE_DIR}/lib)
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
-SET(SRCFOO ${SRC}/foo)
-SET(SRCBAR ${SRC}/bar)
+SET(SRCREML ${SRC}/reml)
+SET(SRCUTILS ${SRC}/utils)
 
 # Have the .mod files placed in the lib folder
 SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB})
 
-# The source for the BAR library and have it placed in the lib folder
-ADD_SUBDIRECTORY(${SRCBAR} ${LIB})
+# The source for the UTILS library and have it placed in the lib folder
+ADD_SUBDIRECTORY(${SRCUTILS} ${LIB})
 
-# The source for the FOO binary and have it placed in the bin folder
-ADD_SUBDIRECTORY(${SRCFOO} ${BIN})
+# The source for the REML binary and have it placed in the bin folder
+ADD_SUBDIRECTORY(${SRCREML} ${BIN})
 
 # Add a distclean target to the Makefile
 ADD_CUSTOM_TARGET(distclean 

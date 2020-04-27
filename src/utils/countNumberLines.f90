@@ -34,71 +34,71 @@
 !----------------------------------------------------------------------------
 
 subroutine countNumberLines(filename, skip, lines, empties, ifail)
+  use constants
+  implicit none
 
-implicit none
+  character(len=*) :: filename
+  integer          :: skip
+  integer          :: lines
+  integer          :: empties 
+  integer          :: ifail
 
- character(len=*) :: filename
- integer          :: skip
- integer          :: lines
- integer          :: empties 
- integer          :: ifail
+  character(len=1) :: aline
 
- character(len=1) :: aline
+  integer :: iun,i, nonempties
 
-integer :: iun,i, nonempties
+  open(newunit=iun, file=filename, err=100, status='old')
 
-open(newunit=iun, file=filename, err=100, status='old')
+  ifail=0
+  do i=1,skip
+     read(iun,*,end=10)
+  enddo
 
-ifail=0
-do i=1,skip
-  read(iun,*,end=10)
-enddo
-
-lines=0
-do 
-  read(iun,*,end=10)
-  lines=lines+1
-enddo
+  lines=0
+  do 
+     read(iun,*,end=10)
+     lines=lines+1
+  enddo
 10 continue
-!write(*,*)'lines= ',lines
+  !write(stdout,*)'lines= ',lines
 
-if(lines==0) then
-empties=0
-close(iun)
-return
-endif
+  if(lines==0) then
+     empties=0
+     close(iun)
+     return
+  endif
 
-!===========================================
-if(empties > 0) then
-rewind(iun)
-do i=1,skip
-  read(iun,*,end=11)
-enddo
+  !===========================================
+  if(empties > 0) then
+     rewind(iun)
+     do i=1,skip
+        read(iun,*,end=11)
+     enddo
 
-nonempties=0
-do 
-  read(iun,*,end=11)aline
-  nonempties=nonempties+1
-enddo
-11 continue
-empties=lines-nonempties
-!write(*,*)'nonempties = ',nonempties
+     nonempties=0
+     do 
+        read(iun,*,end=11)aline
+        nonempties=nonempties+1
+     enddo
+11   continue
+     empties=lines-nonempties
+     !write(stdout,*)'nonempties = ',nonempties
 
-endif
-close (iun)
+  endif
+  close (iun)
 
-return
+  return
 
 
 100 continue
-    write ( 0, * ) ' Error opening file'
-    write ( 0, * ) ' lines cannot be counted'
+  write ( stderr, * ) ' Error opening file'
+  write ( stderr, * ) ' lines cannot be counted'
 
-    ifail  = 1
-    lines  =-1
-    empties= 0
-    return
+  ifail  = 1
+  lines  =-1
+  empties= 0
+  return
 
-end subroutine
+end subroutine countNumberLines
 
 

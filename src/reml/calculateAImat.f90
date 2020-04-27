@@ -1,4 +1,5 @@
 subroutine calculateAImatrix(nobs, nvar, theZGZ, P, Py, AI, verbose)
+  use constants
   use global_module
   implicit none
   logical, intent(in)                                                 :: verbose
@@ -14,7 +15,7 @@ subroutine calculateAImatrix(nobs, nvar, theZGZ, P, Py, AI, verbose)
   type (ArrOfArr), dimension(:), allocatable, save                    :: f
   double precision, dimension(:), allocatable, save                   :: temp
 
-  if (verbose) write(6, *) "  In the subroutine calculateAImatrix"
+  if (verbose) write(stdout, *) "  In the subroutine calculateAImatrix"
   if (.not. allocated(f)) allocate(f(nvar+1))
   if (.not. allocated(f(nvar+1)%array)) allocate(f(nvar+1)%array(nobs))
   if (.not. allocated(temp))  allocate(temp(nobs))
@@ -28,20 +29,20 @@ subroutine calculateAImatrix(nobs, nvar, theZGZ, P, Py, AI, verbose)
      else
         f(i)%array(1:nobs) = theZGZ(i)%level(1:nobs) * Py(1:nobs)
      end if
-     if (verbose) write(6, '(2x,a30, i1, a1)') "DSPMV finished calculating f(", i, ")"
+     if (verbose) write(stdout, '(2x,a30, i1, a1)') "DSPMV finished calculating f(", i, ")"
   end do
 
   k = 1
   do i = 1, (nvar + 1)
      call dspmv('u', nobs, 1.d0, P, f(i)%array, 1, 0.d0, temp, 1)
 
-     if (verbose) write(6, '(2x,a32, i1, a1)') "DSPMV finished calculating P*f(", i, ")"
+     if (verbose) write(stdout, '(2x,a32, i1, a1)') "DSPMV finished calculating P*f(", i, ")"
      do j = 1, i
         AI(k) = 0.5d0 * ddot(nobs, temp, 1, f(j)%array, 1)
         k = k + 1 
      end do
   end do
 
-  if (verbose) write(6, *) "  calculateAImatrix returend successfully"
+  if (verbose) write(stdout, *) "  calculateAImatrix returend successfully"
 end subroutine calculateAImatrix
 

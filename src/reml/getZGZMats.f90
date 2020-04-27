@@ -7,6 +7,7 @@ subroutine getMatricesCorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1, Z1
   ! Z2Z2   permanent environmental effect (??? it is block diagonal with ones [not sure]) (?=Zi*Zi')
   ! Z1Z2   correlation between permanent environmental effect slope and intercept (=Z1*Z2'+Z2*Z1')
   ! Written by M. Ghaderi Zefreh
+  use constants
   implicit none
   logical                                                               :: verbose
   integer, intent(in)                                                   :: nobs
@@ -65,7 +66,7 @@ subroutine getMatricesCorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1, Z1
      end do
   end do
 
-  if (verbose) write(6, '(a)') " End of getMatrices subroutine"
+  if (verbose) write(stdout, '(a)') " End of getMatrices subroutine"
 end subroutine getMatricesCorrelated
 
 
@@ -78,6 +79,7 @@ subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
   ! Z2Z2   permanent environmental effect (??? it is block diagonal with ones [not sure]) (?=Zi*Zi')
   ! Z1Z2   correlation between permanent environmental effect slope and intercept (=Z1*Z2'+Z2*Z1')
   ! Written by M. Ghaderi Zefreh
+  use constants
   implicit none
   logical                                                               :: verbose
   integer, intent(in)                                                   :: nobs
@@ -111,12 +113,13 @@ subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
      end do
   end do
 
-  if (verbose) write(6, '(a)') " End of getMatrices subroutine"
+  if (verbose) write(stdout, '(a)') " End of getMatrices subroutine"
 end subroutine getMatricesUncorrelated
 
 !================================================================================
 
 subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
+  use constants
   implicit none
   ! written by R. Pong-Wong
   ! edited by M. Ghaderi Zefreh (minor edits for stdout/stderr output)
@@ -134,7 +137,7 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   if (ibin .eq. 1) then
      open(newunit=iun, file=matfile, status='old', form='unformatted')
      read(iun) irank
-     write(6,'(1x,a24,i8)') "rank in unformated file", irank
+     write(stdout,'(1x,a24,i8)') "rank in unformated file", irank
   else
      open (newunit=iun, file=matfile, status='old')
      do i=1,skip
@@ -150,8 +153,8 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   ipos = (irank + 1) * irank / 2
   icol = size(amat, dim = 1)
   if (icol < ipos) then
-     write(0, *) " array is not enough to hold matrix of rank"
-     write(0, *) "ipos, icol, irank", ipos, icol, irank
+     write(stderr, *) " array is not enough to hold matrix of rank"
+     write(stderr, *) "ipos, icol, irank", ipos, icol, irank
      ifail = 1
      close(iun)
      return
@@ -168,9 +171,9 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
         read(iun,*,end=100)irow,icol, val1
      end if
      if(irow > nrank .or. icol > nrank) then
-        write(0,*) "error array contains elements in row/column greater than rank"
+        write(stderr,*) "error array contains elements in row/column greater than rank"
         i=i+1
-        write(0,'(a,i11,5x,i11,i11,g25.15)') 'line element',i,irow, icol, val1
+        write(stderr,'(a,i11,5x,i11,i11,g25.15)') 'line element',i,irow, icol, val1
         ifail=1
         close(iun)
         return
@@ -180,7 +183,7 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   end do
 100 continue
   close(iun)
-  !  WRITE(*,*)' element read ', i,DBLE(i)/DBLE(ipos)
+  !  WRITE(stdout,*)' element read ', i,DBLE(i)/DBLE(ipos)
   return
 end subroutine trsmReadMat
 

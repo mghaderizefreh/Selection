@@ -1,4 +1,5 @@
 subroutine calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, work, verbose)
+  use constants
   use global_module
   implicit none
   logical, intent(in)                                                 :: verbose
@@ -10,7 +11,7 @@ subroutine calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, work, verbose)
   double precision, dimension(:), intent(inout)                       :: work
   integer                                                             :: i, k
 
-  if (verbose) write(6, *) "  In the subroutine calculateRHS"
+  if (verbose) write(stdout, *) "  In the subroutine calculateRHS"
 
   rhs(nvar + 1) = -0.5d0 *(traceA(P, nobs) - ddot(nobs, Py, 1, Py, 1)) 
   k = 3
@@ -24,6 +25,6 @@ subroutine calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, work, verbose)
      end if
   end do
 
-  if (verbose) write(6, *) "  calculateRHS returned successfully"
+  if (verbose) write(stdout, *) "  calculateRHS returned successfully"
 end subroutine calculaterhs
 

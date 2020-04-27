@@ -1,4 +1,5 @@
 module reml_module
+  use constants
   use global_module
 contains
   include "getZGZMats.f90"

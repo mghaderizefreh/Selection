@@ -1,4 +1,5 @@
 subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose) 
+  use constants
   use global_module
   implicit none
   logical, intent(in)                                                 :: verbose
@@ -11,7 +12,7 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
   integer                                                             :: i, k, ipos, irow, isize
   double precision                                                    :: Val1
 
-  if (verbose) write(6,*) "  In the subroutine CalculateV"
+  if (verbose) write(stdout,*) "  In the subroutine CalculateV"
   ifail = 1
   isize = (nobs + 1) * nobs/2
   v(1 : isize) = 0.d0
@@ -30,6 +31,6 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
   end do
 
   ifail=0
-  if (verbose) write(6,*) "  calculateV returned succesfully"
+  if (verbose) write(stdout,*) "  calculateV returned succesfully"
 end subroutine calculateV
 

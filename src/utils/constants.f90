@@ -1,4 +1,4 @@
-module global_module
+module constants
   implicit none
 
 
@@ -68,11 +68,4 @@ module global_module
   complex(KINDR), parameter :: HALF_C    = CMPLX(HALF,    ZERO, KINDR)
   complex(KINDR), parameter :: HUNDRED_C = CMPLX(HUNDRED, ZERO, KINDR)
 
-contains
-  include "askFilename.f90"
-  include "countNumberLines.f90"
-  include "detInv.f90"
-  include "dunpack.f90"
-  include "trace.f90"
-
-end module global_module
+end module constants
