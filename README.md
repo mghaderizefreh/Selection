@@ -20,20 +20,15 @@ This software is written under FORTRAN90. A cmake project is accompanied that ma
 The main file is `RRReml.f90` in `src/reml` folder. Other than the accompanied `f90` files with this release BLAS and LAPACK libraries are required for the compilation. If required, these libraries may be downloaded from [here](http://www.netlib.org/blas/blas.tgz) for BLAS and [here](http://www.netlib.org/lapack/lapack.tgz) for LAPACK and compiled based on the instructions from [here](https://gcc.gnu.org/wiki/GfortranBuild) (for Gfortran).
 
 ## CMake
-CMake version 2.8.5 and higher is required to build and compile the project. Navigate in terminal/cmd to the main folder and run the following commands (for Unix operating systems)
+CMake version 2.8.5 and higher is required to build and compile the project. Navigate to the main folder and create an empty direcetory there, say `build`. Then navigate to `build` in terminal and enter
 
 ``` shell
-mkdir build
-cd build
 cmake ..
 make
 ```
-and (for Windows operating systems)
-``` cmd
-md build
-cd build
-cmake ..
-make
+CMake picks up a compiler and builds the executable. If you have multiple compilers, for example the GNU compiler and the Intel one, and wish to compile with Intel, then use
+``` shell
+FC=ifort cmake ..
 ```
 
 The installation can be verified by running the command (CURRENTLY DOES NOT WORK)

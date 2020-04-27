@@ -1,5 +1,6 @@
 subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
   use constants
+  use global_module
   implicit none
   logical, intent(in)                                                   :: verbose
   double precision, dimension(:), intent(in)                            :: Vinv
