@@ -6,6 +6,7 @@ output/
 *.exe
 *.txt*
 !testdata/matrix.txt
+!CMakeLists.txt
 !bin/
 *junk*
 *~

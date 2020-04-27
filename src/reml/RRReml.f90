@@ -8,7 +8,10 @@
 !   7     ZsZi+ZiZs           permanent environment effect slope-intercept covariance
 ! (last)  Identity            environmental intercept (NOT COUNTED IN theZGZ and it is always LAST one)
 program RRREML
+  use constants
+  use global_module
   use reml_module
+  use iteration
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
@@ -26,7 +29,7 @@ program RRREML
   double precision                                    :: val1, val2
   double precision, dimension(:), allocatable         :: y ! phenotypes
   double precision, dimension(:,:), allocatable       :: Vhat ,x ! incidence matrix for fixed effects
-  double precision, dimension(:), allocatable         :: temAmatFirst, Py
+  double precision, dimension(:), allocatable         :: temAmat, Py
   double precision, dimension(:), allocatable         :: theta, oldtheta
 
   type (doublePre_Array), dimension(:), allocatable   :: theZGZ
@@ -40,7 +43,7 @@ program RRREML
   eStatus = "old"
   call askFileName(phenfile, " filename for phenotypes", status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(0, *) "error in openning file ", phenFile
+     write(stderr, *) "error in openning file ", phenFile
      stop 1
   end if
 
@@ -72,7 +75,7 @@ program RRREML
   eStatus = "old"
   call askFileName(AmatFile, trim(msg), status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(0, *) "error in openning file ", AmatFile
+     write(stderr, *) "error in openning file ", AmatFile
      stop 1
   end if
 
@@ -83,39 +86,39 @@ program RRREML
      if (i > maxid) maxid = i
      if (j > maxid) maxid = j
   end do
-73 write(0, *) "error in reading file ", AmatFile
+73 write(stderr, *) "error in reading file ", AmatFile
 stop 1
 74 continue
   close(AmatFileID)
 
   i = (maxid + 1) * maxid / 2 
-  allocate(temAmatFirst(i))
-  i = (nobs + 1) * nobs / 2
+  allocate(temAmat(i))
+
   j = 0 ! file is not binary
   k = 0 ! number of lines to skip
-  call trsmReadMat(AmatFile, temAmatFirst, maxid, k, ifail, j)
+  call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
 
-  if (verbose) write(6, *) " end reading files"
+  if (verbose) write(stdout, *) " end reading files"
   allocate(Py(nobs), Vhat(nfix, nobs))
   allocate(oldtheta(5))
-  write(6, '(a27)') "initial guess for variances"
-  write(6, '(3x, a23)', advance = 'no') "genetic part of slope: "
-  read(5, *) oldtheta(1)
-  write(6, '(3x, a27)', advance = 'no') "genetic part of intercept: "
-  read(5, *) oldtheta(2)
-  write(6, '(3x, a63)', advance = 'no') &
+  write(stdout, '(a27)') "initial guess for variances"
+  write(stdout, '(3x, a23)', advance = 'no') "genetic part of slope: "
+  read(stdin, *) oldtheta(1)
+  write(stdout, '(3x, a27)', advance = 'no') "genetic part of intercept: "
+  read(stdin, *) oldtheta(2)
+  write(stdout, '(3x, a63)', advance = 'no') &
        "correlation between slope and intercept (0.0 if there is not): "
-  read(5, *) val1
+  read(stdin, *) val1
   if ((val1 > 1.d0 .or. val1 < -1.d0)) then
-     write(0, *) "invalid value for correlation. The program will stop"
+     write(stderr, *) "invalid value for correlation. The program will stop"
      stop 1
   end if
   oldtheta(4) = val1
-  write(6, '(3x, a30)', advance = 'no') "environmental variance slope: "
-  read(5, *) oldtheta(3)
-  write(6, '(3x, a34)', advance = 'no') &
+  write(stdout, '(3x, a30)', advance = 'no') "environmental variance slope: "
+  read(stdin, *) oldtheta(3)
+  write(stdout, '(3x, a34)', advance = 'no') &
        "environmental variance intercept: "
-  read(5, *) oldtheta(5)
+  read(stdin, *) oldtheta(5)
   
   ! depending on the given correlation, we may need 3 or 4 ZGZ matrices. So better to check that
   ! because one matrix makes a lot of difference in using the amount of memory
@@ -126,16 +129,17 @@ stop 1
      theta(nvar + 1) = oldtheta(nvar + 2)
      deallocate(oldtheta)
      allocate(oldtheta(nvar + 1))
-     write(6, '(2x,a22)') "no correlation assumed"
+     write(stdout, '(2x,a22)') "no correlation assumed"
   else
      nvar = 4
      allocate(theta(nvar + 1))
      theta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1))
-     write(6, '(2x,a30)') "correlation taken into account"
+     write(stdout, '(2x,a30)') "correlation taken into account"
   end if
 
   ! making G* matrices
-  allocate(theZGZ(nvar)) 
+  allocate(theZGZ(nvar))
+  i = nobs * (nobs + 1) / 2
   do j = 1, nvar 
      if (j .eq. 3) then
         allocate(theZGZ(j)%level(nobs))
@@ -144,23 +148,23 @@ stop 1
      end if
   end do
   if (nvar .eq. 3) then
-     call getMatricesUncorrelated(verbose, nobs, X, temAmatFirst, id, &
+     call getMatricesUncorrelated(verbose, nobs, X, temAmat, id, &
           theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level)
   else
-     call getMatricesCorrelated(verbose, nobs, X, temAmatFirst, id, &
+     call getMatricesCorrelated(verbose, nobs, X, temAmat, id, &
           theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level, &
           theZGZ(4)%level)
   end if
-  deallocate(temAmatFirst)
+  deallocate(temAmat)
 
 69 format(a12, i3)
 70 format(1x, a9)
 71 format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
   if (verbose) then
-     write(6, *) 
-     write(6, 69) "iteration: " ,0
-     write(6, 70, advance='no') " theta_0:"
-     write(6, *) theta(1 : (nvar + 1))
+     write(stdout, *) 
+     write(stdout, 69) "iteration: " ,0
+     write(stdout, 70, advance='no') " theta_0:"
+     write(stdout, *) theta(1 : (nvar + 1))
   end if
 
 !  eStatus = "u"
@@ -185,23 +189,23 @@ stop 1
      val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
      val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
 
-     write(6, *) 
-     write(6, 69) "iteration: ",i
-     write(6, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
+     write(stdout, *) 
+     write(stdout, 69) "iteration: ",i
+     write(stdout, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
 
 !     if (verbose) then
 !        call date_and_time(values = clock_elements2)
-!        write(6, 72, advance='no') " iteration time: "
+!        write(stdout, 72, advance='no') " iteration time: "
 !        call getTimeDiff(clock_elements1,clock_elements2,diff_elements)
-!        write(6, 100, advance = 'no') diff_elements(5:8)
+!        write(stdout, 100, advance = 'no') diff_elements(5:8)
 !     end if
-     write(6, *) 
+     write(stdout, *) 
 
      if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon)) then
-        write(6, '(a10)') "converged!"
+        write(stdout, '(a10)') "converged!"
         exit
      elseif (i > maxiter) then
-        write(6, '(a16)') "did not converge"
+        write(stdout, '(a16)') "did not converge"
         stop 1
      end if
      oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))

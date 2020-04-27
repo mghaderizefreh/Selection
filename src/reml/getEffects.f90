@@ -4,8 +4,9 @@
 !written by Masoud Ghaderi
 !last modified 25 March 2020
 subroutine getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, varFile, theta, AmatFile, Vhat, Py, y, X, id, verbose)
+  use constants
+  use global_module
   implicit none
-
   logical                                                             :: verbose
   integer, intent(in)                                                 :: nobs, nfix, nvar, maxid
   character(len=*)                                                    :: fixEffFile, ranEffFile, varFile, AmatFile
@@ -18,9 +19,6 @@ subroutine getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, varFile, 
   character(len=60)                                                   :: formato
   double precision                                                    :: val1, s1, s2
   double precision, allocatable, dimension(:)                         :: fixeff
-  type doublePre_Array
-     double precision, dimension(:), pointer :: level(:)
-  end type doublePre_Array
   type (doublePre_Array), dimension(:), allocatable, target           :: theZPy, raneff
 
   ! allocation
@@ -38,7 +36,7 @@ subroutine getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, varFile, 
 
   ! fixed effects
   call dgemm('n', 'n', nfix, 1, nobs, 1.d0, Vhat, nfix, y, nobs, 0.d0, fixeff, nfix)
-  if (verbose) write(6, *) 'fixed effects: ' , fixeff(1 : nfix)
+  if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
 268 format(a2, i1, a22)
   write(formato, 268) "((", (nfix-1), "(g24.15, 1x), g24.15))"
   open(newUnit = iunfix, file = fixEffFile)
@@ -49,8 +47,8 @@ subroutine getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, varFile, 
   ! variances
 !269 format(a10, i1, a20)
 !  write(formato, 269) "(1x, a11, ", nvar, "(g24.15, 1x),g24.15)"
-!  write(6, trim(formato)) " variance: ", theta(1 : (nvar + 1))
-!  if (verbose) write(6, *) 
+!  write(stdout, trim(formato)) " variance: ", theta(1 : (nvar + 1))
+!  if (verbose) write(stdout, *) 
   open(newUnit = iunvar, file = varFile)
 270 format(a2, i1, a21)
 273 format(a1, i1, a4)
