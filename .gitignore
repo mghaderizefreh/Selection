@@ -5,7 +5,7 @@ output/
 *.out
 *.exe
 *.txt*
-!testdata/matrix.txt
+!tests/matrix.txt
 !CMakeLists.txt
 !bin/
 *junk*
