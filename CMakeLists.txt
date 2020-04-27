@@ -56,6 +56,7 @@ SET(UTILSLIB utils)
 SET(SRC ${CMAKE_SOURCE_DIR}/src)
 SET(LIB ${CMAKE_SOURCE_DIR}/lib)
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
+SET(TST ${CMAKE_SOURCE_DIR}/tests)
 SET(SRCREML ${SRC}/reml)
 SET(SRCUTILS ${SRC}/utils)
 
@@ -72,3 +73,40 @@ ADD_SUBDIRECTORY(${SRCREML} ${BIN})
 ADD_CUSTOM_TARGET(distclean 
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/distclean.cmake
 )
+
+#if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING) AND BUILD_TESTING)
+#add_subdirectory(tests)
+#endif()
+
+enable_testing()
+
+include(FindUnixCommands)
+
+set(INP1 "${CMAKE_CURRENT_SOURCE_DIR}/tests/input1")
+set(INP2 "${CMAKE_CURRENT_SOURCE_DIR}/tests/input2")
+if (BASH)
+    add_test(
+        NAME correlated
+        COMMAND ${BASH} -c "${BIN}/${EXE} < ${INP1}; mv fixedEffects fixEff.cor; mv randomEffects ranEff.cor; mv variances var.cor" WORKING_DIRECTORY ${TST}
+    )
+command rm -f {ranEff,var,fixEff}.*
+
+    add_test(
+        NAME uncorrelated
+        COMMAND ${BASH} -c "${BIN}/${EXE} < ${INP2}; mv fixedEffects fixEff.unc; mv randomEffects ranEff.unc; mv variances var.unc" WORKING_DIRECTORY ${TST}
+    )
+    
+else()
+    if (WIN32)
+        add_test(
+            NAME correlated
+            COMMAND ${CMAKE_COMMAND} -E chdir ${EXE} $ENV{ComSpec} /c "${EXE} < ${INP1} & ren randomEffects ranEff.cor & ren fixedEffects fixEff.cor & ren variances var.cor" WORKING_DIRECTORY ${TST}
+        )
+        add_test(
+            NAME uncorrelated
+            COMMAND ${CMAKE_COMMAND} -E chdir ${EXE} $ENV{ComSpec} /c "${EXE} < ${INP2} & ren randomEffects ranEff.unc & ren fixedEffects fixEff.unc & ren variances var.unc" WORKING_DIRECTORY ${TST}
+        )
+    else()
+        message(FATAL_ERROR "Unknown shell command for ${CMAKE_HOST_SYSTEM_NAME}")
+    endif()
+endif()
