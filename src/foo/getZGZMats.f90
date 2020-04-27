@@ -117,11 +117,11 @@ end subroutine getMatricesUncorrelated
 !================================================================================
 
 subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
+  implicit none
   ! written by R. Pong-Wong
   ! edited by M. Ghaderi Zefreh (minor edits for stdout/stderr output)
-  implicit none
   character(len=*)   , intent(IN) :: matfile
-  double precision   , dimension(:), intent(out) :: amat
+  double precision   , dimension(:), intent(inout) :: amat
   integer            , intent(inout) :: nrank
   integer            , intent(in) :: skip
   integer            , intent(out) :: ifail
@@ -148,9 +148,10 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
      endif
   endif
   ipos = (irank + 1) * irank / 2
-  icol = size(amat, dim=1)
+  icol = size(amat, dim = 1)
   if (icol < ipos) then
-     write(0, *) " array is not enough to hold matrix of rank", irank
+     write(0, *) " array is not enough to hold matrix of rank"
+     write(0, *) "ipos, icol, irank", ipos, icol, irank
      ifail = 1
      close(iun)
      return
@@ -197,3 +198,4 @@ function LowerPos(irow,icol) result(ipos)
   endif
   return
 end function LowerPos
+

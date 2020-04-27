@@ -3,16 +3,16 @@
 ########################################
 
 # Add the source files
-SET(FOO_src ${SRCFOO}/constants.f90
-	    ${SRCFOO}/getZGZMats.f90
+SET(FOO_src ${SRCFOO}/getZGZMats.f90
 	    ${SRCFOO}/calculateV.f90
 	    ${SRCFOO}/calculateP.f90
 	    ${SRCFOO}/calculateLogL.f90
 	    ${SRCFOO}/calculateAImat.f90
 	    ${SRCFOO}/calculaterhs.f90
 	    ${SRCFOO}/updatetheta.f90
-	    ${SRCFOO}/RRiteration.f90
 	    ${SRCFOO}/getEffects.f90
+	    ${SRCFOO}/reml_module.f90
+	    ${SRCFOO}/RRiteration.f90
 	    ${SRCFOO}/RRReml.f90
 )
 

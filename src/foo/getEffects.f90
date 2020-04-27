@@ -4,7 +4,7 @@
 !written by Masoud Ghaderi
 !last modified 25 March 2020
 subroutine getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, varFile, theta, AmatFile, Vhat, Py, y, X, id, verbose)
-  use constants
+  use global_module
   implicit none
   logical                                                             :: verbose
   integer, intent(in)                                                 :: nobs, nfix, nvar, maxid

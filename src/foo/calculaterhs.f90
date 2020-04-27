@@ -1,12 +1,12 @@
 subroutine calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, work, verbose)
-  use constants
+  use global_module
   implicit none
   logical, intent(in)                                                 :: verbose
   integer, intent(in)                                                 :: nobs, nvar
   type (doublePre_array), dimension(:), intent(in)                    :: theZGZ
   double precision, dimension(:), intent(in)                          :: P, Py
   double precision, dimension(:), intent(out)                         :: rhs
-  double precision, external                                          :: ddot , traceA, traceAxB, traceAxBdiag
+  double precision, external                                          :: ddot 
   double precision, dimension(:), intent(inout)                       :: work
   integer                                                             :: i, k
 

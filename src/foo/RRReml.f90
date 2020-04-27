@@ -8,7 +8,9 @@
 !   7     ZsZi+ZiZs           permanent environment effect slope-intercept covariance
 ! (last)  Identity            environmental intercept (NOT COUNTED IN theZGZ and it is always LAST one)
 program RRREML
-  use constants
+  use global_module
+  use reml_module
+  use iteration
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
@@ -26,7 +28,7 @@ program RRREML
   double precision                                    :: val1, val2
   double precision, dimension(:), allocatable         :: y ! phenotypes
   double precision, dimension(:,:), allocatable       :: Vhat ,x ! incidence matrix for fixed effects
-  double precision, dimension(:), allocatable         :: temAmatFirst, Py
+  double precision, dimension(:), allocatable         :: temAmat, Py
   double precision, dimension(:), allocatable         :: theta, oldtheta
 
   type (doublePre_Array), dimension(:), allocatable   :: theZGZ
@@ -89,11 +91,11 @@ stop 1
   close(AmatFileID)
 
   i = (maxid + 1) * maxid / 2 
-  allocate(temAmatFirst(i))
-  i = (nobs + 1) * nobs / 2
+  allocate(temAmat(i))
+
   j = 0 ! file is not binary
   k = 0 ! number of lines to skip
-  call trsmReadMat(AmatFile, temAmatFirst, maxid, k, ifail, j)
+  call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
 
   if (verbose) write(6, *) " end reading files"
   allocate(Py(nobs), Vhat(nfix, nobs))
@@ -135,7 +137,8 @@ stop 1
   end if
 
   ! making G* matrices
-  allocate(theZGZ(nvar)) 
+  allocate(theZGZ(nvar))
+  i = nobs * (nobs + 1) / 2
   do j = 1, nvar 
      if (j .eq. 3) then
         allocate(theZGZ(j)%level(nobs))
@@ -144,14 +147,14 @@ stop 1
      end if
   end do
   if (nvar .eq. 3) then
-     call getMatricesUncorrelated(verbose, nobs, X, temAmatFirst, id, &
+     call getMatricesUncorrelated(verbose, nobs, X, temAmat, id, &
           theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level)
   else
-     call getMatricesCorrelated(verbose, nobs, X, temAmatFirst, id, &
+     call getMatricesCorrelated(verbose, nobs, X, temAmat, id, &
           theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level, &
           theZGZ(4)%level)
   end if
-  deallocate(temAmatFirst)
+  deallocate(temAmat)
 
 69 format(a12, i3)
 70 format(1x, a9)

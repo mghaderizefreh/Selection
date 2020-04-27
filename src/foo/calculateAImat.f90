@@ -1,5 +1,5 @@
 subroutine calculateAImatrix(nobs, nvar, theZGZ, P, Py, AI, verbose)
-  use constants
+  use global_module
   implicit none
   logical, intent(in)                                                 :: verbose
   integer, intent(in)                                                 :: nobs, nvar

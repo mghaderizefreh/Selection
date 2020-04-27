@@ -1,5 +1,5 @@
 subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose) 
-  use constants
+  use global_module
   implicit none
   logical, intent(in)                                                 :: verbose
   integer, intent(in)                                                 :: nobs, nvar
