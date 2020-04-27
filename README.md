@@ -31,7 +31,7 @@ CMake picks up a compiler and builds the executable. If you have multiple compil
 FC=ifort cmake ..
 ```
 
-The installation can be verified by running the command (CURRENTLY DOES NOT WORK)
+The installation can be verified by running the command
 ``` shell
 make test
 ```
