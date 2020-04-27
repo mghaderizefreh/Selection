@@ -5,38 +5,50 @@ This software analyses a dataset of phenotyped individuals at different environm
 	
 In the above linear random-regression model, `y_{j,k}` is the phenotype of animal `j` and environmental level `k`. The challenge level for environment `k` is denoted by the covariate `X{k}`. The three terms on the right-hand side of the above equation correspond to the mean (`mu`), genetic deviation (`A`) and the residual (`E`). Each term is decomposed into a part for intercept (`int`) and slope (`slo`). Hence, the two fixed effects are the mean intercept and the mean slope. The random effects are genetic and environmental deviation bor both intercept and slope.
 
-In the above model, it is assumed that the residual is heterogeneous. However, no correlation is assumed between the terms in the residual (`E_int{j,k}` and `E_slo_{j,k}`). The genetic terms, `A_int{j}` and `A_slo{j}`, may be correlated which has to be specified in the inputs (See Usage). 
+In the above model, it is assumed that the residual is heterogeneous. However, no correlation is assumed between the terms in the residual (`E_int{j,k}` and `E_slo_{j,k}`). The genetic terms, `A_int{j}` and `A_slo{j}`, may be correlated. The covariance structure for the genetic terms has to be specified in the inputs (See Usage). 
 
 ## version number
-This is version 1.0 of the software released on 19 April 2020.
+This is version 1.2 of the software released on 27 April 2020.
 
 ## Copyright
 * A copyright message and something about SMARTER project/ Roslin Institute/ University of Edinburgh/ us in general
 
 # Installation
-This software is written under FORTRAN90. A makefile is accompanied that makes it possible to compile under Intel or GFortran compiler. The software can be compiled with any other compiler with appropriate switches.
+This software is written under FORTRAN90. A cmake project is accompanied that makes it possible to build and compile in any operating system with cmake, makefile and a Fortran compiler.
 
 ## Dependencies
-The main file is `RRReml.f90`. Other than the accompanied `f90` files with this release BLAS and LAPACK libraries are required for the compilation. If required, these libraries may be downloaded from [here](http://www.netlib.org/blas/blas.tgz) for BLAS and [here](http://www.netlib.org/lapack/lapack.tgz) for LAPACK and compiled based on the instructions from [here](https://gcc.gnu.org/wiki/GfortranBuild) (for Gfortran).
+The main file is `RRReml.f90` in `src/reml` folder. Other than the accompanied `f90` files with this release BLAS and LAPACK libraries are required for the compilation. If required, these libraries may be downloaded from [here](http://www.netlib.org/blas/blas.tgz) for BLAS and [here](http://www.netlib.org/lapack/lapack.tgz) for LAPACK and compiled based on the instructions from [here](https://gcc.gnu.org/wiki/GfortranBuild) (for Gfortran).
 
-## Makefile
-A minimal Makefile is provided that may be used to compile the software. The type of compiler has to be specified on line 3 of `Makefile` file (currently only support `ifort` and `gfortran`). After that, in terminal type
+## CMake
+CMake version 2.8.5 and higher is required to build and compile the project. Navigate in terminal/cmd to the main folder and run the following commands (for Unix operating systems)
 
 ``` shell
+mkdir build
+cd build
+cmake ..
 make
 ```
-The installation can be verified by running the command
+and (for Windows operating systems)
+``` cmd
+md build
+cd build
+cmake ..
+make
+```
 
+The installation can be verified by running the command (CURRENTLY DOES NOT WORK)
 ``` shell
 make test
 ```
 A successful compilation should output two separate messages for correlated and uncorrelated data. Failing to output the two messages indicate the installation is unsuccessful.
 
+The executable `randreg.exe` will be placed in the `bin` folder.
+
 # Usage
-The program can be executed by simply running the name of the program `rrreml` on the terminal/command line. The program is interactive and requires each input to be given separately. It is also possible to store the inputs in a separate file (e.g. `inputs.txt`) and use the input redirection operator `<`. Hence,
+The program can be executed by simply running the name of the program `randreg.exe` on the terminal/command line. The program is interactive and requires each input to be given separately. It is also possible to store the inputs in a separate file (e.g. `inputs.txt`) and use the input redirection operator `<`. Hence,
 
 ``` shell
-rrreml < inputs.txt
+./randreg.exe < inputs.txt
 ```
 runs the program with the inputs from `inputs.txt` file. Each input in the `input.txt` must be on a separate line. The input file does not accept any comments.
 
