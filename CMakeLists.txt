@@ -89,7 +89,6 @@ if (BASH)
         NAME correlated
         COMMAND ${BASH} -c "${BIN}/${EXE} < ${INP1}; mv fixedEffects fixEff.cor; mv randomEffects ranEff.cor; mv variances var.cor" WORKING_DIRECTORY ${TST}
     )
-command rm -f {ranEff,var,fixEff}.*
 
     add_test(
         NAME uncorrelated
