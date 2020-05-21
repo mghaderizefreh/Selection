@@ -167,13 +167,13 @@ stop 1
      write(stdout, *) theta(1 : (nvar + 1))
   end if
 
-!  eStatus = "u"
-!  call askFileName(fixEfffile, " filename for fixed effects", status, eStatus)
-!  call askFileName(ranEfffile, " filename for random effects", status, eStatus)
-!  call askFileName(varFile, " filename for variances", status, eStatus)
-  fixEffFile = "fixedEffects"
-  ranEffFile = "randomEffects"
-  varFile = "variances"
+  eStatus = "u"
+  call askFileName(fixEfffile, " filename for fixed effects", status, eStatus)
+  call askFileName(ranEfffile, " filename for random effects", status, eStatus)
+  call askFileName(varFile, " filename for variances", status, eStatus)
+!  fixEffFile = "fixedEffects"
+!  ranEffFile = "randomEffects"
+!  varFile = "variances"
 
   oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
   i = 0
