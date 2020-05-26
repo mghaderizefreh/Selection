@@ -3,6 +3,7 @@ contains
   subroutine iterate(nobs, nvar, nfix, theZGZ, y, x, logl, theta, Py, Vhat, verbose)
     use constants
     use global_module
+    use blup_module
     use reml_module
     implicit none
     logical, intent(in)                                                 :: verbose

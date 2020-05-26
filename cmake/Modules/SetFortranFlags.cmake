@@ -105,6 +105,11 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                          "-fbounds-check" # GNU (Old style)
                          "-Mbounds"       # Portland Group
                 )
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
+                 Fortran "-mkl"  # Intel
+                         "/mkl" # Intel Windows
+                         "-lblas -llapack"        # GNU
+                )
 
 #####################
 ### TESTING FLAGS ###

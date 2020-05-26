@@ -1,47 +1,35 @@
-! order of matrices, and therefore variances shall be 
-!   1     ZsGZs               genetic slope
-!   2     ZiGZi               genetic intercept
-!   3     ZsZs                environmental slope (stored as diagonal)
-!   4     ZiGZs+ZsGZi         genetic slope-intercept covariance
-!   5     ZsZs                permanent environment effect slope (SAME AS NUMBER 3: but counted)
-!   6     ZiZi                permanent environment effect intercept
-!   7     ZsZi+ZiZs           permanent environment effect slope-intercept covariance
-! (last)  Identity            environmental intercept (NOT COUNTED IN theZGZ and it is always LAST one)
-program RRREML
+program blup
   use constants
   use global_module
+  use blup_module
   use reml_module
-  use iteration
   implicit none
-  !! ================ variable definitions  ================ !!
-  character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
-  character(len=20)                                   :: status, eStatus
-  logical                                             :: isorted, verbose = .false.
-  integer                                             :: ifail, maxiter = 20
-  integer                                             :: i, j, k, maxid, nvar, nobs, nfix
-  integer                                             :: phenFileID, AmatFileID
-  integer                                             :: lines, empties
-!  integer, dimension(8)                               :: clock_beginning, clock_elements1, clock_elements2,&
-!                                                                         diff_elements   ! array must be length 8
-  integer, dimension(:), allocatable                  :: id ! real id of animals
 
-  double precision                                    :: logl, epsilon = 1.d-6
-  double precision                                    :: val1, val2
-  double precision, dimension(:), allocatable         :: y ! phenotypes
-  double precision, dimension(:,:), allocatable       :: Vhat ,x ! incidence matrix for fixed effects
-  double precision, dimension(:), allocatable         :: temAmat, Py
-  double precision, dimension(:), allocatable         :: theta, oldtheta
 
-  type (doublePre_Array), dimension(:), allocatable   :: theZGZ
+  character(LEN=256)                                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
+  character(len=20)                                                   :: status, eStatus
+  logical                                                             :: verbose = .false.
+  integer                                                             :: i, j, k, maxid, nvar, nobs, nfix, ifail
+  integer                                                             :: phenFileID, AmatFileID
+  integer                                                             :: lines, empties
+!  integer, dimension(8)                                               :: clock_beginning, clock_elements1, clock_elements2, diff_elements   ! array must be length 8
+  integer, dimension(:), allocatable                                  :: id ! real id of animals
+  double precision                                                    :: val1, val2
+  double precision, dimension(:), allocatable                         :: y ! phenotypes
+  double precision, dimension(:,:), allocatable                       :: Vhat, x ! incidence matrix for fixed effects
+  double precision, dimension(:), allocatable                         :: temAmat, Py
+  double precision, dimension(:), allocatable                         :: theta, oldtheta
 
-  double precision, external                          :: dnrm2, ddot, dasum
-  !! ================ No defintion after this line ================ !!
+  type (doublePre_Array), dimension(:), allocatable                   :: theZGZ
+  integer, dimension(:), allocatable, save                            :: ipiv
+  double precision, dimension(:), allocatable, save                   :: V, P, work
+  double precision, external                                          :: dnrm2, ddot, dasum
 
   nfix = 2 ! this is because I look for the mean intercept and the mean slope
 
   ! getting phenotype file name and reading it
   eStatus = "old"
-  call askFileName(phenfile, " filename for phenotypes", status, eStatus)
+  call askFileName(phenfile, " phenotypic filename", status, eStatus)
   if (status(1:1) .eq. "x") then
      write(stderr, *) "error in openning file ", phenFile
      stop 1
@@ -53,20 +41,16 @@ program RRREML
   call countNumberLines(phenFile, j, lines, empties, ifail)
   if (ifail .ne. 0) stop 1
   nobs=lines-empties
-
+  write(6, *) nobs
   ! allocating y (phenotypes) and id (real id of animals) and incidience matrix
   allocate(y(nobs), id(nobs), X(nobs,nfix))
 
   ! reading the data
   open(newUnit = phenFileID, file = phenFile, status = 'old')
-  isorted = .true.
   maxid = 0
   do i = 1, nobs
      read(phenFileID,*) id(i), X(i,1), y(i)
      X(i,2) = 1.d0
-     if (id(i) .ne. i) then
-        isorted = .false.  !i.e., the phenotypes are not sorted
-     end if
      if (maxid < id(i)) maxid = id(i)
   end do
   close(phenFileID)
@@ -87,7 +71,7 @@ program RRREML
      if (j > maxid) maxid = j
   end do
 73 write(stderr, *) "error in reading file ", AmatFile
-stop 1
+  stop 1
 74 continue
   close(AmatFileID)
 
@@ -98,7 +82,7 @@ stop 1
   k = 0 ! number of lines to skip
   call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
 
-  if (verbose) write(stdout, *) " end reading files"
+  if (verbose) write(6, *) " end reading files"
   allocate(Py(nobs), Vhat(nfix, nobs))
   allocate(oldtheta(5))
   write(stdout, '(a27)') "initial guess for variances"
@@ -113,13 +97,15 @@ stop 1
      write(stderr, *) "invalid value for correlation. The program will stop"
      stop 1
   end if
-  oldtheta(4) = val1
+  ! theta contains variances and covaraince only; 
+  ! hence the correlation must be converted to covariance
+  oldtheta(4) = val1 * sqrt(oldtheta(1) * oldtheta(2))
   write(stdout, '(3x, a30)', advance = 'no') "environmental variance slope: "
   read(stdin, *) oldtheta(3)
   write(stdout, '(3x, a34)', advance = 'no') &
        "environmental variance intercept: "
   read(stdin, *) oldtheta(5)
-  
+
   ! depending on the given correlation, we may need 3 or 4 ZGZ matrices. So better to check that
   ! because one matrix makes a lot of difference in using the amount of memory
   if (oldtheta(4) == 0.d0) then 
@@ -171,46 +157,26 @@ stop 1
   call askFileName(fixEfffile, " filename for fixed effects", status, eStatus)
   call askFileName(ranEfffile, " filename for random effects", status, eStatus)
   call askFileName(varFile, " filename for variances", status, eStatus)
-!  fixEffFile = "fixedEffects"
-!  ranEffFile = "randomEffects"
-!  varFile = "variances"
+  !  fixEffFile = "fixedEffects"
+  !  ranEffFile = "randomEffects"
+  !  varFile = "variances"
 
-  oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
-  i = 0
-  do 
-!     if (verbose) call date_and_time(values = clock_elements1)
+  I = nobs * (nobs + 1) / 2
+  allocate(P(I),V(I))
+  I = nobs * nobs
+  allocate(work(I),ipiv(nobs))
 
-     i = i + 1
+  call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
+  if (verbose) write(6, *) " V is calculated"
 
-     call iterate(nobs, nvar, nfix, theZGZ, y, x, logl , theta, Py, Vhat, verbose)
+  call detInv(nobs, V, val1, ipiv, work, verbose)
+  if (verbose) write(6, *) " V is replaced by its inverse"
 
-     val1 = dnrm2(nvar + 1, oldtheta, 1)
-     oldtheta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1)) - theta(1 : (nvar + 1))
-     val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
-     val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
+  call calculateP(nobs, nfix, V, X, P, val2, Vhat, verbose)
+  if (verbose) write(6, *) " P is calcuated"
 
-     write(stdout, *) 
-     write(stdout, 69) "iteration: ",i
-     write(stdout, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
-
-!     if (verbose) then
-!        call date_and_time(values = clock_elements2)
-!        write(stdout, 72, advance='no') " iteration time: "
-!        call getTimeDiff(clock_elements1,clock_elements2,diff_elements)
-!        write(stdout, 100, advance = 'no') diff_elements(5:8)
-!     end if
-     write(stdout, *) 
-
-     if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon)) then
-        write(stdout, '(a10)') "converged!"
-        exit
-     elseif (i > maxiter) then
-        write(stdout, '(a16)') "did not converge"
-        stop 1
-     end if
-     oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
-  end do
-!100 format (i2,":",i2.2,":",i2.2,".",i3.3)
+  call dspmv('u', nobs, 1.d0, P, y, 1, 0.d0, Py, 1)
+  if (verbose) write(6, *) "  DSPMV finished calculating Py (=P * y)"
 
   do i = 1, nvar
      deallocate(theZGZ(i)%level)
@@ -220,8 +186,4 @@ stop 1
   call getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, &
        varFile, theta, AmatFile, Vhat, Py, y, X, id, verbose)
 
-  !  if (verbose) then
-!  call printingDateTime(6,1,clock_elements1)
-!  call printingElapseTime( 6, clock_beginning, clock_elements1)
-  ! end if
-end program RRREML
+end program blup
