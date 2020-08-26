@@ -99,17 +99,17 @@ set(INP3 "${TEST}/input3")
 if (BASH)
     add_test(
         NAME correlated
-        COMMAND ${BASH} -c "${BIN}/${RR} < ${INP1}; mv fixedEffects fixEff.cor; mv randomEffects ranEff.cor; mv variances var.cor" WORKING_DIRECTORY ${TEST}
+        COMMAND ${BASH} -c "${BIN}/${RR} < ${INP1};" WORKING_DIRECTORY ${TEST}
     )
 
     add_test(
         NAME uncorrelated
-        COMMAND ${BASH} -c "${BIN}/${RR} < ${INP2}; mv fixedEffects fixEff.unc; mv randomEffects ranEff.unc; mv variances var.unc" WORKING_DIRECTORY ${TEST}
+        COMMAND ${BASH} -c "${BIN}/${RR} < ${INP2};" WORKING_DIRECTORY ${TEST}
     )
 
     add_test(
         NAME single
-	COMMAND ${BASH} -c "${BIN}/${ST} < ${INP3}" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${ST} < ${INP3};" WORKING_DIRECTORY ${TEST}
     )
 
 else()

@@ -63,16 +63,18 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
               if ( AP( ipos ) < 0 ) k = k + 1
               logDet = logDet + log( abs( AP( ipos ) ) )
            end if
-        else if ( i > 0 .AND. ipiv ( i ) < 0 .AND. ipiv ( i - 1 ) .EQ. ipiv ( i ) ) then
-           val1 = AP( ipos1 ) * AP( ipos ) - AP( ipos - 1 ) * AP( ipos - 1 )
-           if ( val1 == 0.D0 ) then
-              info = i
-              logDet = 0.D0
-              signDet = - 1
-              return
-           else
-              if ( val1 < 0 ) k = k + 1
-              logDet = logDet + log( abs( val1 ) )
+        else if ( i > 1 ) then
+           if (ipiv ( i ) < 0 .AND. ipiv ( i - 1 ) .EQ. ipiv ( i ) ) then
+              val1 = AP( ipos1 ) * AP( ipos ) - AP( ipos - 1 ) * AP( ipos - 1 )
+              if ( val1 == 0.D0 ) then
+                 info = i
+                 logDet = 0.D0
+                 signDet = - 1
+                 return
+              else
+                 if ( val1 < 0 ) k = k + 1
+                 logDet = logDet + log( abs( val1 ) )
+              end if
            end if
         end if
         ipos1 = ipos

@@ -21,7 +21,7 @@ program RRREML
   integer                                             :: ifail, maxiter = 20
   integer                                             :: i, j, k, maxid, nvar, nobs, nfix
   integer                                             :: phenFileID, AmatFileID
-  integer                                             :: lines, empties
+  integer                                             :: lines, empties, emiteration
 !  integer, dimension(8)                               :: clock_beginning, clock_elements1, clock_elements2,&
 !                                                                         diff_elements   ! array must be length 8
   integer, dimension(:), allocatable                  :: id ! real id of animals
@@ -32,7 +32,6 @@ program RRREML
   double precision, dimension(:,:), allocatable       :: Vhat ,x ! incidence matrix for fixed effects
   double precision, dimension(:), allocatable         :: temAmat, Py
   double precision, dimension(:), allocatable         :: theta, oldtheta
-
   type (doublePre_Array), dimension(:), allocatable   :: theZGZ
 
   double precision, external                          :: dnrm2, ddot, dasum
@@ -159,12 +158,18 @@ stop 1
 69 format(a12, i3)
 70 format(1x, a9)
 71 format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
-  if (verbose) then
-     write(stdout, *) 
-     write(stdout, 69) "iteration: " ,0
-     write(stdout, 70, advance='no') " theta_0:"
-     write(stdout, *) theta(1 : (nvar + 1))
-  end if
+
+  
+  write(stdout, 69) "iteration: " ,0
+  write(stdout, 70) " theta_0:"
+  write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
+  if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
+  write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
+  write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
+  if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
+  write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+
+  
 
   eStatus = "u"
   call askFileName(fixEfffile, " filename for fixed effects", status, eStatus)
@@ -173,23 +178,24 @@ stop 1
 !  fixEffFile = "fixedEffects"
 !  ranEffFile = "randomEffects"
 !  varFile = "variances"
+  call askInteger(emiteration, "number of EM iterations: ")
 
   oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
+
   i = 0
   do 
 !     if (verbose) call date_and_time(values = clock_elements1)
 
      i = i + 1
-
-     call iterate(nobs, nvar, nfix, theZGZ, y, x, logl , theta, Py, Vhat, verbose)
+     write(stdout, *) 
+     write(stdout, 69) "iteration: ",i
+     call iterate(nobs, nvar, nfix, theZGZ, y, x, logl , theta, Py, Vhat, i, emiteration, verbose)
 
      val1 = dnrm2(nvar + 1, oldtheta, 1)
      oldtheta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1)) - theta(1 : (nvar + 1))
      val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
      val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
-
-     write(stdout, *) 
-     write(stdout, 69) "iteration: ",i
+     write(stdout, *) "Errors (iter): ",i
      write(stdout, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
 
 !     if (verbose) then
