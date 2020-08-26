@@ -1,10 +1,12 @@
 module constants
   implicit none
 
-
   type doublePre_Array
      double precision, dimension(:), pointer :: level(:)
   end type doublePre_Array
+  type ArrOfArr
+     double precision, dimension(:), allocatable :: array
+  end type ArrOfArr
 
   !   Handles
   integer, parameter :: stdin  = 5

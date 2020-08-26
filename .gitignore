@@ -14,5 +14,8 @@ inicio.dat
 *.dat
 \#*#
 
-tests/*.cor
-tests/*.unc
+tests/
+!test/matrix.txt
+!test/input*
+!test/phen
+!test/pedigree.txt

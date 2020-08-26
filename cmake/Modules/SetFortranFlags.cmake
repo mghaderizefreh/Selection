@@ -62,12 +62,12 @@ ELSE()
     SET(GNUNATIVE "-march=native")
 ENDIF()
 # Optimize for the host's architecture
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-xHost"        # Intel
-                         "/QxHost"       # Intel Windows
-                         ${GNUNATIVE}    # GNU
-                         "-ta=host"      # Portland Group
-                )
+#SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+#                 Fortran "-xHost"        # Intel
+#                         "/QxHost"       # Intel Windows
+#                         ${GNUNATIVE}    # GNU
+#                         "-ta=host"      # Portland Group
+#                )
 
 ###################
 ### DEBUG FLAGS ###
@@ -104,6 +104,11 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                          "-fcheck=bounds" # GNU (New style)
                          "-fbounds-check" # GNU (Old style)
                          "-Mbounds"       # Portland Group
+                )
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
+                 Fortran "-mkl"  # Intel
+                         "/mkl" # Intel Windows
+                         "-lblas -llapack"        # GNU
                 )
 
 #####################
@@ -154,7 +159,20 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
 
 # Vectorize code
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
-                 Fortran "-vec-report0"  # Intel
+                 Fortran "-qopt-report -qopt-report-phase=vec" #previously -vec-report0  # Intel
                          "/Qvec-report0" # Intel Windows
                          "-Mvect"        # Portland Group
                 )
+
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
+                 Fortran "-static"  # Intel
+                         "/static" # Intel Windows
+                         "-static"        # Portland Group
+                )
+
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
+                 Fortran "-mkl"  # Intel
+                         "/mkl" # Intel Windows
+                         "-lblas -llapack"        # GNU
+                )
+

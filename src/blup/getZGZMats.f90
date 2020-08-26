@@ -117,7 +117,37 @@ subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
 end subroutine getMatricesUncorrelated
 
 !================================================================================
+subroutine createZgZt(verbose, nobs, X, G, id, ZGZ)
+  implicit none
+  logical                         , intent(in)  :: verbose
+  integer         , dimension(:)  , intent(in)  :: id
+  integer                         , intent(in)  :: nobs
+  double precision, dimension(:)  , intent(in)  :: G
+  double precision, dimension(:,:), intent(in)  :: X
+  double precision, dimension(:)  , intent(out) :: ZGZ
+  integer, external                             :: lowerpos
+  integer :: i, j, nrank, id1, ipos, ipos1
+  double precision :: val1
 
+  !ZGZt will be size nobs X nobs
+  ! so the array to store half diag is: ( nobs+1) *nobs/2
+  !
+  i = (nobs + 1) * nobs / 2
+  ZGZ(1:i) = 0.d0      !initialising to be zero
+
+  ! calculating ZGZt
+  ipos=0
+  do i = 1, nobs
+     id1 = id(i)
+     do j = 1, i
+        ipos  = ipos+1
+        ipos1 = lowerPos(id1, id(j))
+        ZGZ(ipos) = G(ipos1)
+     end do
+  end do
+end subroutine createZgZt
+
+!================================================================================
 subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   use constants
   implicit none

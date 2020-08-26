@@ -10,17 +10,18 @@
 program RRREML
   use constants
   use global_module
+  use blup_module
   use reml_module
   use iteration
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
   character(len=20)                                   :: status, eStatus
-  logical                                             :: isorted, verbose = .false.
+  logical                                             :: verbose = .false.
   integer                                             :: ifail, maxiter = 20
   integer                                             :: i, j, k, maxid, nvar, nobs, nfix
   integer                                             :: phenFileID, AmatFileID
-  integer                                             :: lines, empties
+  integer                                             :: lines, empties, emiteration
 !  integer, dimension(8)                               :: clock_beginning, clock_elements1, clock_elements2,&
 !                                                                         diff_elements   ! array must be length 8
   integer, dimension(:), allocatable                  :: id ! real id of animals
@@ -31,7 +32,6 @@ program RRREML
   double precision, dimension(:,:), allocatable       :: Vhat ,x ! incidence matrix for fixed effects
   double precision, dimension(:), allocatable         :: temAmat, Py
   double precision, dimension(:), allocatable         :: theta, oldtheta
-
   type (doublePre_Array), dimension(:), allocatable   :: theZGZ
 
   double precision, external                          :: dnrm2, ddot, dasum
@@ -59,14 +59,10 @@ program RRREML
 
   ! reading the data
   open(newUnit = phenFileID, file = phenFile, status = 'old')
-  isorted = .true.
   maxid = 0
   do i = 1, nobs
      read(phenFileID,*) id(i), X(i,1), y(i)
      X(i,2) = 1.d0
-     if (id(i) .ne. i) then
-        isorted = .false.  !i.e., the phenotypes are not sorted
-     end if
      if (maxid < id(i)) maxid = id(i)
   end do
   close(phenFileID)
@@ -113,7 +109,9 @@ stop 1
      write(stderr, *) "invalid value for correlation. The program will stop"
      stop 1
   end if
-  oldtheta(4) = val1
+  ! theta contains variances and covaraince only; 
+  ! hence the correlation must be converted to covariance
+  oldtheta(4) = val1 * sqrt(oldtheta(1) * oldtheta(2))
   write(stdout, '(3x, a30)', advance = 'no') "environmental variance slope: "
   read(stdin, *) oldtheta(3)
   write(stdout, '(3x, a34)', advance = 'no') &
@@ -160,37 +158,44 @@ stop 1
 69 format(a12, i3)
 70 format(1x, a9)
 71 format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
-  if (verbose) then
-     write(stdout, *) 
-     write(stdout, 69) "iteration: " ,0
-     write(stdout, 70, advance='no') " theta_0:"
-     write(stdout, *) theta(1 : (nvar + 1))
-  end if
 
-!  eStatus = "u"
-!  call askFileName(fixEfffile, " filename for fixed effects", status, eStatus)
-!  call askFileName(ranEfffile, " filename for random effects", status, eStatus)
-!  call askFileName(varFile, " filename for variances", status, eStatus)
-  fixEffFile = "fixedEffects"
-  ranEffFile = "randomEffects"
-  varFile = "variances"
+  
+  write(stdout, 69) "iteration: " ,0
+  write(stdout, 70) " theta_0:"
+  write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
+  if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
+  write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
+  write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
+  if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
+  write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+
+  
+
+  eStatus = "u"
+  call askFileName(fixEfffile, " filename for fixed effects", status, eStatus)
+  call askFileName(ranEfffile, " filename for random effects", status, eStatus)
+  call askFileName(varFile, " filename for variances", status, eStatus)
+!  fixEffFile = "fixedEffects"
+!  ranEffFile = "randomEffects"
+!  varFile = "variances"
+  call askInteger(emiteration, "number of EM iterations: ")
 
   oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
+
   i = 0
   do 
 !     if (verbose) call date_and_time(values = clock_elements1)
 
      i = i + 1
-
-     call iterate(nobs, nvar, nfix, theZGZ, y, x, logl , theta, Py, Vhat, verbose)
+     write(stdout, *) 
+     write(stdout, 69) "iteration: ",i
+     call iterate(nobs, nvar, nfix, theZGZ, y, x, logl , theta, Py, Vhat, i, emiteration, verbose)
 
      val1 = dnrm2(nvar + 1, oldtheta, 1)
      oldtheta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1)) - theta(1 : (nvar + 1))
      val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
      val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
-
-     write(stdout, *) 
-     write(stdout, 69) "iteration: ",i
+     write(stdout, *) "Errors (iter): ",i
      write(stdout, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
 
 !     if (verbose) then
