@@ -50,12 +50,14 @@ ENDIF(FCNAME STREQUAL "pgf90")
 SET(RR randreg.exe)
 SET(ST single.exe)
 SET(BL blup.exe)
+SET(SA sample.exe)
 
 # Define the library name
 SET(UTILLIB util)
 SET(BLUPLIB blup)
 SET(REMLLIB reml)
 SET(SORTLIB sort)
+SET(RNGLIB rng)
 
 # Define some directories
 SET(SRC ${CMAKE_SOURCE_DIR}/src)
@@ -63,22 +65,25 @@ SET(LIB1 ${CMAKE_SOURCE_DIR}/lib/util)
 SET(LIB2 ${CMAKE_SOURCE_DIR}/lib/sort)
 SET(LIB3 ${CMAKE_SOURCE_DIR}/lib/blup)
 SET(LIB4 ${CMAKE_SOURCE_DIR}/lib/reml)
+SET(LIB5 ${CMAKE_SOURCE_DIR}/lib/rng)
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
 SET(TEST ${CMAKE_SOURCE_DIR}/tests)
 SET(SRCUTIL ${SRC}/utils)
 SET(SRCSORT ${SRC}/quickSort)
 SET(SRCBLUP ${SRC}/blup)
 SET(SRCREML ${SRC}/reml)
+SET(SRCRNG ${SRC}/rng)
 SET(MAIN ${SRC}/main)
 
 # Have the .mod files placed in the lib folder
-SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB1} ${LIB2} ${LIB3} ${LIB4})
+SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB1} ${LIB2} ${LIB3} ${LIB4} ${LIB5})
 
 # The source for the UTILS library and have it placed in the lib folder
 ADD_SUBDIRECTORY(${SRCUTIL} ${LIB1})
 ADD_SUBDIRECTORY(${SRCSORT} ${LIB2})
 ADD_SUBDIRECTORY(${SRCBLUP} ${LIB3})
 ADD_SUBDIRECTORY(${SRCREML} ${LIB4})
+ADD_SUBDIRECTORY(${SRCREML} ${LIB5})
 
 # The source for the REML binary and have it placed in the bin folder
 ADD_SUBDIRECTORY(${MAIN} ${BIN})
