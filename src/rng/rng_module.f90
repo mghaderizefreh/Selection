@@ -2,7 +2,7 @@
 
 !include 'mkl_vsl.f90'
 module rng_module
-  use constants
+  !use constants
 contains
   include "seeding.f90"
   include "choice.f90"

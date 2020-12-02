@@ -14,6 +14,9 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
   !
   ! written by Masoud Ghaderi Zefreh
   ! first revision : 1 December 2020
+  
+  use constants
+
   implicit none
   integer, intent(in) :: dim, N
   real, dimension(1:dim), intent(in) :: mean
@@ -54,7 +57,7 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
      end do
      do j = 2, dim, 2
         i = j - 1
-        output(:,j) = sqrt(-2*log(uniform(:,i))) * sin(2 * PI * uniform(:,j))
+        output(:,j) = sqrt(-2 * log(uniform(:,i))) * sin(2 * PI * uniform(:,j))
      end do
 
      if (dim .ne. dim2)then

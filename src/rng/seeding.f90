@@ -1,6 +1,7 @@
 subroutine istart(seed, startfile, returnVal)
   !subroutine to read seed from startfile, if it doesnot exist, 
   ! be created and written on.
+  use constants
   implicit none
   integer, intent(inout), dimension(:), allocatable :: seed
   character(len = 11), intent(in) :: startfile
@@ -20,9 +21,9 @@ subroutine istart(seed, startfile, returnVal)
         seed(1:N) = initial(1:N)
      end do
 53   continue
-     write(stdout, '(a)')"file found"
-     write(stdout, '(a)', advance = 'no')"initial value = "
-     write(stdout, fmt = fmto) seed(1:N)
+     write(STDOUT, '(a)')"file found"
+     write(STDOUT, '(a)', advance = 'no')"initial value = "
+     write(STDOUT, fmt = fmto) seed(1:N)
      close(iun)
      call random_seed(put = seed)
      returnval = 0
@@ -39,8 +40,8 @@ subroutine istart(seed, startfile, returnVal)
      returnval = 0
      return
   endif
-52 write(stderr,*) " Error when reading initializing file ",startfile
-  write(stderr,*) " File may be for different purpose"
+52 write(STDERR,*) " Error when reading initializing file ",startfile
+  write(STDERR,*) " File may be for different purpose"
   returnval = 2
   return
 end subroutine istart
@@ -49,6 +50,7 @@ end subroutine istart
 
 subroutine ifinal(seed,startfile)
   !	storing new initializing value in file
+  use constants
   implicit none
   integer, dimension(:), intent(inout) :: seed
   character(len = 11), intent(in) :: startfile
@@ -64,8 +66,8 @@ subroutine ifinal(seed,startfile)
   forall (i = 1:n)
      seed(i) = int( (2*values(i) - 1) * HUGEN)
   end forall
-  write(stdout, '(a)', advance = 'no') "next initial value = "
-  write(stdout, fmt = fmto) seed
+  write(STDOUT, '(a)', advance = 'no') "next initial value = "
+  write(STDOUT, fmt = fmto) seed
 
   inquire (file=startfile,exist=iex)
   if (iex) then

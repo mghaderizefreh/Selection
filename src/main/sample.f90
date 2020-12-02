@@ -42,12 +42,10 @@ program makeListExt
   real :: rand, freq
 
   write(startfile,'(a)') "inicio.dat"
-  call random_seed(size = i)
-  allocate(seed(i))
   call istart(seed, startfile, i)
   if (i /= 0) then
      write(STDERR, '(a)') "reading/setting seed faild"
-     stop(2)
+     stop 2
   end if
   call random_seed(put = seed)
 
@@ -55,7 +53,7 @@ program makeListExt
   call askInteger ( nChr, "number of chromosome genotype to be read (one file per chromosome)" )
   if(nChr <=0) then
      write(STDERR,'(a)') "Numbero of chromosomes was invalid"
-     stop(2)
+     stop 2
   end if
 
   write (STDOUT, '(a)' ) " input genotype base file without numbers"
@@ -66,7 +64,7 @@ program makeListExt
      if (.not. l_exists) then
         write(STDERR,'(a4,1x,a,i3.3,1x,a)') "File", trim(baseNameGenotype),ichr,"does not exist"
         write(STDERR, '(a)') "exiting..."
-        stop(2)
+        stop 2
      else
         write(STDOUT,'(a4,1x,a,i3.3,1x,a6)') "File", trim(baseNameGenotype),ichr, "exists."
         continue
@@ -95,7 +93,7 @@ program makeListExt
         write(STDERR,'(a,i3,i6)') " nQTL, nLoci", nQTL, nLoci(iChr)
         write(STDERR, '(a)') "exiting..."
         close(iun)
-        stop(2)
+        stop 2
      end if
      close(iun)
   end do
@@ -138,7 +136,6 @@ program makeListExt
 
      allocate(MAFArray(nChr))
 
-
      write ( STDOUT, '(a)' ) ' input frequency base file without numbers'
      read (STDIN,'(a20)') baseNameFreq
      do ichr = 1, nchr
@@ -153,7 +150,6 @@ program makeListExt
            continue
         end if
      end do
-
 
      write(STDOUT,'(a)') " Minimum frequency to filter for:"
      read(STDIN,*) maf
@@ -259,7 +255,6 @@ program makeListExt
      close(iun )
      close(iun2)
   end if
-
 
   call ifinal(seed, startfile)
 

@@ -9,6 +9,9 @@ subroutine dunpack(uplo, n, ap, a, lda, info)
   integer, intent(out)                                                :: info
   integer                                                             :: i, j, k
 
+  if (uplo == 'L')then
+  end if
+
   if (n .ne. lda) then
      info = 2
      return
