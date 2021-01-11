@@ -1,4 +1,4 @@
-# utils library
+# rng library
 
 SET(RNG_src ${SRCRNG}/seeding.f90
 	     ${SRCRNG}/choice.f90

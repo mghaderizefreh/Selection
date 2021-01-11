@@ -34,7 +34,7 @@ INCLUDE(${CMAKE_MODULE_PATH}/SetParallelizationLibrary.cmake)
 # Setup the LAPACK libraries.  This also takes care of peculiarities, such as
 # the fact the searching for MKL requires a C compiler, and that the results
 # are not stored in the cache. 
-#INCLUDE(${CMAKE_MODULE_PATH}/SetUpLAPACK.cmake)
+INCLUDE(${CMAKE_MODULE_PATH}/SetUpLAPACK.cmake)
 
 # There is an error in CMAKE with this flag for pgf90.  Unset it
 GET_FILENAME_COMPONENT(FCNAME ${CMAKE_Fortran_COMPILER} NAME)
@@ -100,7 +100,7 @@ include(FindUnixCommands)
 set(INP1 "${TEST}/input1")
 set(INP2 "${TEST}/input2")
 set(INP3 "${TEST}/input3")
-
+set(INP4 "${TEST}/input4")
 if (BASH)
     add_test(
         NAME correlated
@@ -115,6 +115,11 @@ if (BASH)
     add_test(
         NAME single
 	COMMAND ${BASH} -c "${BIN}/${ST} < ${INP3};" WORKING_DIRECTORY ${TEST}
+    )
+
+    add_test(
+	NAME sample_uncomplete
+	COMMAND ${BASH} -c "${BIN}/${SA} < ${INP4};" WORKING_DIRECTORY ${TEST}
     )
 
 else()
