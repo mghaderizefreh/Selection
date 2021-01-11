@@ -118,6 +118,7 @@ end subroutine getMatricesUncorrelated
 
 !================================================================================
 subroutine createZgZt(verbose, nobs, X, G, id, ZGZ)
+  use constants
   implicit none
   logical                         , intent(in)  :: verbose
   integer         , dimension(:)  , intent(in)  :: id
@@ -126,12 +127,15 @@ subroutine createZgZt(verbose, nobs, X, G, id, ZGZ)
   double precision, dimension(:,:), intent(in)  :: X
   double precision, dimension(:)  , intent(out) :: ZGZ
   integer, external                             :: lowerpos
-  integer :: i, j, nrank, id1, ipos, ipos1
-  double precision :: val1
+  integer :: i, j, id1, ipos, ipos1 !, nrank
+  !  double precision :: val1
 
   !ZGZt will be size nobs X nobs
   ! so the array to store half diag is: ( nobs+1) *nobs/2
   !
+  if (X(1,1) == 0) then
+  end if
+
   i = (nobs + 1) * nobs / 2
   ZGZ(1:i) = 0.d0      !initialising to be zero
 
@@ -145,6 +149,7 @@ subroutine createZgZt(verbose, nobs, X, G, id, ZGZ)
         ZGZ(ipos) = G(ipos1)
      end do
   end do
+  if (verbose) write(stdout, '(a)') " End of createZgZt subroutine"
 end subroutine createZgZt
 
 !================================================================================

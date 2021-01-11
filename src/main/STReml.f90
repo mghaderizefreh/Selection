@@ -40,13 +40,12 @@ program AIREML
   ! getting phenotype file name and reading it
   eStatus = "old"
   call askFileName(phenfile, " filename for phenotypes", status, eStatus)
-  open(newUnit = phenFileID, file = phenfile, status = eStatus)
-  call askInteger(skip, " Number of lines to skip: ")
   if (status(1:1) .eq. "x") then
      write(stderr, *) "error in openning file ", phenFile
      stop 1
   end if
 
+  call askInteger(skip, " Number of lines to skip: ")
   ! counting number of lines
   j = 0 ! number of skipped lines
   empties=1
@@ -56,6 +55,8 @@ program AIREML
 
   ! allocating y (phenotypes) and id (real id of animals)
   allocate(y(nobs), id(nobs), env(nobs), tempInd(nobs), temp(nobs))
+
+  open(newUnit = phenFileID, file = phenFile)
 
   ! reading the data and calculating variance
   val1 = 0.d0
