@@ -3,28 +3,25 @@ program blup
   use global_module
   use blup_module
   use reml_module
+  use RR_blup
   implicit none
-
-
-  character(LEN=256)                                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
-  character(len=20)                                                   :: status, eStatus
-  logical                                                             :: verbose = .false.
-  integer                                                             :: i, j, k, maxid, nvar, nobs, nfix, ifail
-  integer                                                             :: phenFileID, AmatFileID
-  integer                                                             :: lines, empties
-!  integer, dimension(8)                                               :: clock_beginning, clock_elements1, clock_elements2, diff_elements   ! array must be length 8
-  integer, dimension(:), allocatable                                  :: id ! real id of animals
-  double precision                                                    :: val1, val2
-  double precision, dimension(:), allocatable                         :: y ! phenotypes
-  double precision, dimension(:,:), allocatable                       :: Vhat, x ! incidence matrix for fixed effects
-  double precision, dimension(:), allocatable                         :: temAmat, Py
-  double precision, dimension(:), allocatable                         :: theta, oldtheta
-
-  type (doublePre_Array), dimension(:), allocatable                   :: theZGZ
-  integer, dimension(:), allocatable, save                            :: ipiv
-  double precision, dimension(:), allocatable, save                   :: V, P, work
-  double precision, external                                          :: dnrm2, ddot, dasum
-
+  !! ================ variable definitions  ================ !!
+  character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
+  character(len=30)                                   :: status, eStatus, formato
+  logical                                             :: verbose = .false.
+  integer                                             :: i, j, k, maxid, nvar, nobs, nfix, ifail
+  integer                                             :: phenFileID, AmatFileID
+  integer                                             :: lines, empties
+  integer                                             :: iunfix, iunvar, iunran
+  integer, dimension(:), allocatable                  :: id ! real id of animals
+  double precision                                    :: val1
+  double precision, dimension(:), allocatable         :: y ! phenotypes
+  double precision, dimension(:,:), allocatable       :: x ! incidence matrix for fixed effects
+  double precision, dimension(:), allocatable         :: temAmat
+  double precision, dimension(:), allocatable         :: theta, oldtheta
+  double precision, allocatable, dimension(:)         :: fixEff
+  type (doublePre_array), dimension(:), allocatable   :: raneff
+  !! ================ No defintion after this line ================ !!
   nfix = 2 ! this is because I look for the mean intercept and the mean slope
 
   ! getting phenotype file name and reading it
@@ -41,7 +38,6 @@ program blup
   call countNumberLines(phenFile, j, lines, empties, ifail)
   if (ifail .ne. 0) stop 1
   nobs=lines-empties
-  write(6, *) nobs
   ! allocating y (phenotypes) and id (real id of animals) and incidience matrix
   allocate(y(nobs), id(nobs), X(nobs,nfix))
 
@@ -83,7 +79,7 @@ program blup
   call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
 
   if (verbose) write(6, *) " end reading files"
-  allocate(Py(nobs), Vhat(nfix, nobs))
+
   allocate(oldtheta(5))
   write(stdout, '(a27)') "initial guess for variances"
   write(stdout, '(3x, a23)', advance = 'no') "genetic part of slope: "
@@ -123,36 +119,6 @@ program blup
      write(stdout, '(2x,a30)') "correlation taken into account"
   end if
 
-  ! making G* matrices
-  allocate(theZGZ(nvar))
-  i = nobs * (nobs + 1) / 2
-  do j = 1, nvar 
-     if (j .eq. 3) then
-        allocate(theZGZ(j)%level(nobs))
-     else        
-        allocate(theZGZ(j)%level(i))
-     end if
-  end do
-  if (nvar .eq. 3) then
-     call getMatricesUncorrelated(verbose, nobs, X, temAmat, id, &
-          theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level)
-  else
-     call getMatricesCorrelated(verbose, nobs, X, temAmat, id, &
-          theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level, &
-          theZGZ(4)%level)
-  end if
-  deallocate(temAmat)
-
-69 format(a12, i3)
-70 format(1x, a9)
-71 format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
-  if (verbose) then
-     write(stdout, *) 
-     write(stdout, 69) "iteration: " ,0
-     write(stdout, 70, advance='no') " theta_0:"
-     write(stdout, *) theta(1 : (nvar + 1))
-  end if
-
   eStatus = "u"
   call askFileName(fixEfffile, " filename for fixed effects", status, eStatus)
   call askFileName(ranEfffile, " filename for random effects", status, eStatus)
@@ -161,29 +127,52 @@ program blup
   !  ranEffFile = "randomEffects"
   !  varFile = "variances"
 
-  I = nobs * (nobs + 1) / 2
-  allocate(P(I),V(I))
-  I = nobs * nobs
-  allocate(work(I),ipiv(nobs))
+  allocate(fixEff(2), raneff(3))
+  allocate(raneff(1)%level(maxid)) ! slope effect (genetic)
+  allocate(raneff(2)%level(maxid)) ! intercept effect (genetic)
+  allocate(raneff(3)%level(nobs))   ! environment slope effect (diagonal)
 
-  call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
-  if (verbose) write(6, *) " V is calculated"
+  call RRBlup(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
+       fixEff, ranEff, verbose)
 
-  call detInv(nobs, V, val1, ipiv, work, verbose)
-  if (verbose) write(6, *) " V is replaced by its inverse"
+  if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
+268 format(a2, i1, a22)
+  write(formato, 268) "((", (nfix-1), "(g24.15, 1x), g24.15))"
+  open(newUnit = iunfix, file = fixEffFile)
+  write(iunfix, '(2a24)') "slope", "intercept"
+  write(iunfix, trim(formato)) fixeff(1 : nfix)
+  close(iunfix)
 
-  call calculateP(nobs, nfix, V, X, P, val2, Vhat, verbose)
-  if (verbose) write(6, *) " P is calcuated"
+  open(newUnit = iunvar, file = varFile)
+270 format(a2, i1, a21)
+271 format(a1, i1, a4)
+  write(formato, 271) "(", (nvar+1), "a24)"
+  if (nvar .eq. 4) then
+     write(iunvar, formato) "var_A_slope","var_A_intercept", &
+          "corr(A_int,A_slope)", "var_E_slope", "var_E_intercept"
+     write(formato, 270) "(", nvar, "(f24.15, 1x), f24.15)"
+     write(iunvar, formato)  theta(1:2), theta(4) / sqrt(theta(1) &
+          * theta(2)) , theta(3), theta(5)
+  elseif (nvar .eq. 3) then
+     write(iunvar, formato) "var_A_slope","var_A_intercept", &
+          "var_E_slope", "var_E_intercept"
+     write(formato, 270) "(", nvar, "(f24.15, 1x), f24.15)"
+     write(iunvar, formato)  theta(1:4)
+  end if
+  close(iunvar)
 
-  call dspmv('u', nobs, 1.d0, P, y, 1, 0.d0, Py, 1)
-  if (verbose) write(6, *) "  DSPMV finished calculating Py (=P * y)"
+272 format(i12, 1x, g24.15)
 
-  do i = 1, nvar
-     deallocate(theZGZ(i)%level)
+  open(newUnit = iunran, file = raneffFile)
+  do i = 1, maxid
+     write(iunran, 272) i, raneff(1)%level(i)
   end do
-  deallocate(theZGZ)
-
-  call getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, &
-       varFile, theta, AmatFile, Vhat, Py, y, X, id, verbose)
+  do i = 1, maxid
+     write(iunran, 272) i, raneff(2)%level(i)
+  end do
+  do i = 1, nobs
+     write(iunran, 272) i, raneff(3)%level(i)
+  end do
+  close(iunran)
 
 end program blup

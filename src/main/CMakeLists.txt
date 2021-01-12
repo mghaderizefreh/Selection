@@ -3,14 +3,15 @@
 ########################################
 
 # Add the source files
-SET(RR_src ${MAIN}/RRiteration.f90
-	   ${MAIN}/RRReml.f90
+SET(RR_src ${MAIN}/RRReml.f90
+	   ${MAIN}/doRRReml.f90
 )
 
 SET(ST_src ${MAIN}/STReml.f90
 )
 
-SET(BL_src ${MAIN}/blup.f90
+SET(BL_src ${MAIN}/RRBlup.f90
+	   ${MAIN}/doRRBlup.f90
 )
 
 SET(SA_src ${MAIN}/sample.f90

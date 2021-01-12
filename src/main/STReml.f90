@@ -30,7 +30,7 @@ program AIREML
 
   !  double precision                                          :: determinantV, logl
   !  integer                                                   :: ineg, info
-  integer, dimension(:), allocatable                        :: env, temp, ipiv
+  integer, dimension(:), allocatable                        :: env, temp!, ipiv
   !  double precision, dimension(:,:), allocatable             :: temp1, temp2
   !  integer, dimension(:), allocatable                        :: temp1shape, temp2shape
   !  integer                                                   :: temp1dim, temp2dim

@@ -101,25 +101,37 @@ set(INP1 "${TEST}/input1")
 set(INP2 "${TEST}/input2")
 set(INP3 "${TEST}/input3")
 set(INP4 "${TEST}/input4")
+set(INP5 "${TEST}/input5")
+set(INP6 "${TEST}/input6")
 if (BASH)
     add_test(
-        NAME correlated
+        NAME correlated_RR_Reml
         COMMAND ${BASH} -c "${BIN}/${RR} < ${INP1};" WORKING_DIRECTORY ${TEST}
     )
 
     add_test(
-        NAME uncorrelated
+        NAME uncorrelated_RR_Reml
         COMMAND ${BASH} -c "${BIN}/${RR} < ${INP2};" WORKING_DIRECTORY ${TEST}
     )
 
     add_test(
+        NAME correlated_RR_Blup
+	COMMAND ${BASH} -c "${BIN}/${BL} < ${INP3};" WORKING_DIRECTORY ${TEST}
+    )
+
+    add_test(
+        NAME uncorrelated_RR_Blup
+	COMMAND ${BASH} -c "${BIN}/${BL} < ${INP4};" WORKING_DIRECTORY ${TEST}
+    )
+
+    add_test(
         NAME single
-	COMMAND ${BASH} -c "${BIN}/${ST} < ${INP3};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${ST} < ${INP5};" WORKING_DIRECTORY ${TEST}
     )
 
     add_test(
 	NAME sample_uncomplete
-	COMMAND ${BASH} -c "${BIN}/${SA} < ${INP4};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${SA} < ${INP6};" WORKING_DIRECTORY ${TEST}
     )
 
 else()

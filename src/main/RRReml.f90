@@ -7,226 +7,183 @@
 !   6     ZiZi                permanent environment effect intercept
 !   7     ZsZi+ZiZs           permanent environment effect slope-intercept covariance
 ! (last)  Identity            environmental intercept (NOT COUNTED IN theZGZ and it is always LAST one)
-program RRREML
-  use constants
-  use global_module
-  use blup_module
-  use reml_module
-  use iteration
-  implicit none
-  !! ================ variable definitions  ================ !!
-  character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
-  character(len=20)                                   :: status, eStatus
-  logical                                             :: verbose = .false.
-  integer                                             :: ifail, maxiter = 20
-  integer                                             :: i, j, k, maxid, nvar, nobs, nfix
-  integer                                             :: phenFileID, AmatFileID
-  integer                                             :: lines, empties, emiteration
-!  integer, dimension(8)                               :: clock_beginning, clock_elements1, clock_elements2,&
-!                                                                         diff_elements   ! array must be length 8
-  integer, dimension(:), allocatable                  :: id ! real id of animals
+module RR_reml
+contains
+  subroutine RRReml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
+       fixEffects, ranEffects, verbose, EmIterations, maxIters)
 
-  double precision                                    :: logl, epsilon = 1.d-6
-  double precision                                    :: val1, val2
-  double precision, dimension(:), allocatable         :: y ! phenotypes
-  double precision, dimension(:,:), allocatable       :: Vhat ,x ! incidence matrix for fixed effects
-  double precision, dimension(:), allocatable         :: temAmat, Py
-  double precision, dimension(:), allocatable         :: theta, oldtheta
-  type (doublePre_Array), dimension(:), allocatable   :: theZGZ
+    use constants
+    use global_module
+    use blup_module
+    use reml_module
+    implicit none
 
-  double precision, external                          :: dnrm2, ddot, dasum
-  !! ================ No defintion after this line ================ !!
+    logical, intent(in)                            :: verbose
+    integer, intent(in)                            :: nobs, nvar, nfix, maxid
+    integer, dimension(:), intent(in)              :: id ! real id of animals
+    double precision, dimension(:), intent(in)     :: y ! phenotypes
+    double precision, dimension(:,:), intent(in)   :: x ! incid. mat fixed effects
+    double precision, dimension(:),intent(inout)   :: theta
+    double precision, dimension(:), intent(in)     :: Gmatrix
+    integer, intent(in), optional                  :: EmIterations, maxIters
 
-  nfix = 2 ! this is because I look for the mean intercept and the mean slope
+    double precision, dimension(:), intent(out)    :: fixEffects
+    type(doublePre_Array), dimension(:), intent(out) :: ranEffects
 
-  ! getting phenotype file name and reading it
-  eStatus = "old"
-  call askFileName(phenfile, " filename for phenotypes", status, eStatus)
-  if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", phenFile
-     stop 1
-  end if
+    type (doublePre_Array), dimension(:), allocatable :: theZGZ
+    type (ArrOfArr), dimension(:), allocatable     :: f
+    double precision, dimension(:), allocatable    :: oldtheta, Py, P, V, AI, rhs, work
+    double precision                               :: logl, epsilon = 1.d-6
+    double precision                               :: val1, val2
+    double precision                               :: detV, det_xt_vinv_x, yPy
+    integer, dimension(:), allocatable             :: ipiv
+    double precision, dimension(:,:), allocatable  :: Vhat
+    integer                                        :: i, j, emIteration
+    integer                                        :: ifail, iter, maxIter
+    double precision, external                     :: dnrm2, ddot, dasum
+    !! ================ No defintion after this line ================ !!
 
-  ! counting number of lines
-  j = 0 ! number of skipped lines
-  empties=1
-  call countNumberLines(phenFile, j, lines, empties, ifail)
-  if (ifail .ne. 0) stop 1
-  nobs=lines-empties
+    allocate(Py(nobs), Vhat(nfix, nobs))
+    allocate(oldtheta(nvar+1))
+    I = nobs * (nobs + 1) / 2
+    allocate(P(I),V(I))
+    I = (nvar + 1) * (nvar + 2) / 2
+    allocate(AI(I), rhs(nvar + 1))
+    I = nobs * nobs
+    allocate(work(I),ipiv(nobs))
+    ! f is going to contain P*ZGZ_i
+    allocate(f(nvar+1))
+    do i = 1, nvar + 1
+       allocate(f(i)%array(nobs))
+    end do
 
-  ! allocating y (phenotypes) and id (real id of animals) and incidience matrix
-  allocate(y(nobs), id(nobs), X(nobs,nfix))
+    if (.not.present(EmIterations)) then
+       EmIteration = 3
+    else
+       emIteration = emIterations
+    end if
+    if (.not.present(maxIters)) then
+       maxIter = emIteration + 8
+    else
+       maxIter = maxIters
+    end if
 
-  ! reading the data
-  open(newUnit = phenFileID, file = phenFile, status = 'old')
-  maxid = 0
-  do i = 1, nobs
-     read(phenFileID,*) id(i), X(i,1), y(i)
-     X(i,2) = 1.d0
-     if (maxid < id(i)) maxid = id(i)
-  end do
-  close(phenFileID)
+    ! order of variances: (As, Ai, Es, Cov, Ei) 
+    oldtheta(1:(nvar + 1)) = theta(1:(nvar + 1))
 
-  write(msg, '(a28)') "file for relationship matrix"
-  eStatus = "old"
-  call askFileName(AmatFile, trim(msg), status, eStatus)
-  if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", AmatFile
-     stop 1
-  end if
+    ! depending on the given correlation, we may need 3 or 4 ZGZ matrices.
+    ! So better to check that because one matrix makes a lot of difference
+    ! in using the amount of memory
+    if (nvar == 3) then
+       if (any ( X < 0 )) then
+          write(stderr, *) "n_var and initial guess not consistent"
+          stop 2
+       end if
+       write(stdout, '(2x,a22)') "no correlation assumed"
+    else
+       write(stdout, '(2x,a30)') "correlation taken into account"
+    end if
 
-  ! counting number of lines
-  open(newunit=AmatFileID, file=AmatFile, err=73, status='old')
-  do 
-     read(AmatFileID,*,end=74) i, j, val1
-     if (i > maxid) maxid = i
-     if (j > maxid) maxid = j
-  end do
-73 write(stderr, *) "error in reading file ", AmatFile
-stop 1
-74 continue
-  close(AmatFileID)
+    ! making G* matrices
+    allocate(theZGZ(nvar))
+    i = nobs * (nobs + 1) / 2
+    do j = 1, nvar 
+       if (j .eq. 3) then
+          allocate(theZGZ(j)%level(nobs))
+       else        
+          allocate(theZGZ(j)%level(i))
+       end if
+    end do
+    if (nvar .eq. 3) then
+       call getMatricesUncorrelated(verbose, nobs, X, Gmatrix, id, &
+            theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level)
+    else
+       call getMatricesCorrelated(verbose, nobs, X, Gmatrix, id, &
+            theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level, &
+            theZGZ(4)%level)
+    end if
 
-  i = (maxid + 1) * maxid / 2 
-  allocate(temAmat(i))
+69  format(a12, i3)
+70  format(1x, a9)
+71  format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
 
-  j = 0 ! file is not binary
-  k = 0 ! number of lines to skip
-  call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
+    write(stdout, 69) "iteration: " ,0
+    write(stdout, 70) " theta_0:"
+    write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
+    if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
+    write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
+    write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
+    if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
+    write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
 
-  if (verbose) write(stdout, *) " end reading files"
-  allocate(Py(nobs), Vhat(nfix, nobs))
-  allocate(oldtheta(5))
-  write(stdout, '(a27)') "initial guess for variances"
-  write(stdout, '(3x, a23)', advance = 'no') "genetic part of slope: "
-  read(stdin, *) oldtheta(1)
-  write(stdout, '(3x, a27)', advance = 'no') "genetic part of intercept: "
-  read(stdin, *) oldtheta(2)
-  write(stdout, '(3x, a63)', advance = 'no') &
-       "correlation between slope and intercept (0.0 if there is not): "
-  read(stdin, *) val1
-  if ((val1 > 1.d0 .or. val1 < -1.d0)) then
-     write(stderr, *) "invalid value for correlation. The program will stop"
-     stop 1
-  end if
-  ! theta contains variances and covaraince only; 
-  ! hence the correlation must be converted to covariance
-  oldtheta(4) = val1 * sqrt(oldtheta(1) * oldtheta(2))
-  write(stdout, '(3x, a30)', advance = 'no') "environmental variance slope: "
-  read(stdin, *) oldtheta(3)
-  write(stdout, '(3x, a34)', advance = 'no') &
-       "environmental variance intercept: "
-  read(stdin, *) oldtheta(5)
-  
-  ! depending on the given correlation, we may need 3 or 4 ZGZ matrices. So better to check that
-  ! because one matrix makes a lot of difference in using the amount of memory
-  if (oldtheta(4) == 0.d0) then 
-     nvar = 3
-     allocate(theta(nvar + 1))
-     theta(1 : nvar) = oldtheta(1 : nvar)
-     theta(nvar + 1) = oldtheta(nvar + 2)
-     deallocate(oldtheta)
-     allocate(oldtheta(nvar + 1))
-     write(stdout, '(2x,a22)') "no correlation assumed"
-  else
-     nvar = 4
-     allocate(theta(nvar + 1))
-     theta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1))
-     write(stdout, '(2x,a30)') "correlation taken into account"
-  end if
+    iter = 0
+    do 
+       iter = iter + 1
+       write(stdout, *) 
+       write(stdout, 69) "iteration: ", iter
+       !       call iterate(nobs, nvar, nfix, theZGZ, y, x, logl , theta, &
+       !            Py, Vhat, i, emiteration, verbose)
+       call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
+       if (verbose) write(stdout, *) " V is calculated"
 
-  ! making G* matrices
-  allocate(theZGZ(nvar))
-  i = nobs * (nobs + 1) / 2
-  do j = 1, nvar 
-     if (j .eq. 3) then
-        allocate(theZGZ(j)%level(nobs))
-     else        
-        allocate(theZGZ(j)%level(i))
-     end if
-  end do
-  if (nvar .eq. 3) then
-     call getMatricesUncorrelated(verbose, nobs, X, temAmat, id, &
-          theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level)
-  else
-     call getMatricesCorrelated(verbose, nobs, X, temAmat, id, &
-          theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level, &
-          theZGZ(4)%level)
-  end if
-  deallocate(temAmat)
+       call detInv(nobs, V, detV, ipiv, work, verbose)
+       if (verbose) write(stdout, *) " V is replaced by its inverse"
 
-69 format(a12, i3)
-70 format(1x, a9)
-71 format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
+       call calculateP(nobs, nfix, V, X, P, det_xt_vinv_x, Vhat, verbose)
+       if (verbose) write(stdout, *) " P is calcuated"
 
-  
-  write(stdout, 69) "iteration: " ,0
-  write(stdout, 70) " theta_0:"
-  write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
-  if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
-  write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
-  write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
-  if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
-  write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+       call calculateLogL(nobs, detV,det_xt_vinv_x,P, y, LogL,Py, yPy, verbose)
+       if (verbose) write(stdout, *) " LogL is calculated"
+       write(stdout, '(1x,a8,g25.16)') " LogL = ", logl
 
-  
+       call calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, f, verbose)
+       if (verbose) write(stdout, *) " Right hand side is calculated"
 
-  eStatus = "u"
-  call askFileName(fixEfffile, " filename for fixed effects", status, eStatus)
-  call askFileName(ranEfffile, " filename for random effects", status, eStatus)
-  call askFileName(varFile, " filename for variances", status, eStatus)
-!  fixEffFile = "fixedEffects"
-!  ranEffFile = "randomEffects"
-!  varFile = "variances"
-  call askInteger(emiteration, "number of EM iterations: ")
+       if (iter  <= emiteration) then
+          if (verbose) write(stdout, *) 'em  iteration'
+          do i = 1, nvar + 1
+             theta(i) = theta(i) + 2 * (theta(i)**2) * rhs(i)  / dble(nobs)
+          end do
+       else
+          if (verbose) write(stdout, *) 'ai iteration'
+          call calculateAImatrix(nobs, nvar, P, AI, f, verbose)
+          if (verbose) write(stdout, *) " AI matrix is calcuated"
 
-  oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
+          call updatetheta(nvar, AI, rhs, theta, verbose)
+          if (verbose) write(stdout, *) " theta is updated"
+       end if
 
-  i = 0
-  do 
-!     if (verbose) call date_and_time(values = clock_elements1)
+       write(stdout, *) " variance vector:"
+       write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
+       if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
+       write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
+       write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
+       if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
+       write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
 
-     i = i + 1
-     write(stdout, *) 
-     write(stdout, 69) "iteration: ",i
-     call iterate(nobs, nvar, nfix, theZGZ, y, x, logl , theta, Py, Vhat, i, emiteration, verbose)
+       !!!! Iteration completed !!!!
 
-     val1 = dnrm2(nvar + 1, oldtheta, 1)
-     oldtheta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1)) - theta(1 : (nvar + 1))
-     val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
-     val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
-     write(stdout, *) "Errors (iter): ",i
-     write(stdout, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
+       val1 = dnrm2(nvar + 1, oldtheta, 1)
+       oldtheta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1)) - theta(1 : (nvar + 1))
+       val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
+       val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
+       write(stdout, *) "Errors (iter): ",iter
+       write(stdout, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
 
-!     if (verbose) then
-!        call date_and_time(values = clock_elements2)
-!        write(stdout, 72, advance='no') " iteration time: "
-!        call getTimeDiff(clock_elements1,clock_elements2,diff_elements)
-!        write(stdout, 100, advance = 'no') diff_elements(5:8)
-!     end if
-     write(stdout, *) 
+       write(stdout, *) 
 
-     if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon)) then
-        write(stdout, '(a10)') "converged!"
-        exit
-     elseif (i > maxiter) then
-        write(stdout, '(a16)') "did not converge"
-        stop 1
-     end if
-     oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
-  end do
-!100 format (i2,":",i2.2,":",i2.2,".",i3.3)
+       if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon)) then
+          write(stdout, '(a10)') "converged!"
+          exit
+       elseif (iter > maxiter) then
+          write(stdout, '(a16)') "did not converge"
+          stop 1
+       end if
+       oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
+    end do
 
-  do i = 1, nvar
-     deallocate(theZGZ(i)%level)
-  end do
-  deallocate(theZGZ)
+    call getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
+         id, fixEffects, ranEffects, verbose)
 
-  call getEffects(nobs, maxid, nfix, nvar, fixeffFile, raneffFile, &
-       varFile, theta, AmatFile, Vhat, Py, y, X, id, verbose)
-
-  !  if (verbose) then
-!  call printingDateTime(6,1,clock_elements1)
-!  call printingElapseTime( 6, clock_beginning, clock_elements1)
-  ! end if
-end program RRREML
+  end subroutine RRReml
+end module RR_reml
