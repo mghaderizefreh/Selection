@@ -117,7 +117,7 @@ subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
 end subroutine getMatricesUncorrelated
 
 !================================================================================
-subroutine createZgZt(verbose, nobs, X, G, id, ZGZ)
+subroutine getMatrices(verbose, nobs, X, G, id, ZGZ)
   use constants
   implicit none
   logical                         , intent(in)  :: verbose
@@ -149,8 +149,8 @@ subroutine createZgZt(verbose, nobs, X, G, id, ZGZ)
         ZGZ(ipos) = G(ipos1)
      end do
   end do
-  if (verbose) write(stdout, '(a)') " End of createZgZt subroutine"
-end subroutine createZgZt
+  if (verbose) write(stdout, '(a)') " End of getMatrices subroutine"
+end subroutine getMatrices
 
 !================================================================================
 subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)

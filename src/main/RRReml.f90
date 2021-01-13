@@ -17,7 +17,7 @@ contains
     use blup_module
     use reml_module
     implicit none
-
+    !! ================ variable definitions  ================ !!
     logical, intent(in)                            :: verbose
     integer, intent(in)                            :: nobs, nvar, nfix, maxid
     integer, dimension(:), intent(in)              :: id ! real id of animals
@@ -121,8 +121,7 @@ contains
        iter = iter + 1
        write(stdout, *) 
        write(stdout, 69) "iteration: ", iter
-       !       call iterate(nobs, nvar, nfix, theZGZ, y, x, logl , theta, &
-       !            Py, Vhat, i, emiteration, verbose)
+
        call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
        if (verbose) write(stdout, *) " V is calculated"
 

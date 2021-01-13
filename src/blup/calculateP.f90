@@ -29,7 +29,7 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
   if (verbose) write(stdout, *) "  info after DUNPACK", info
   if (info .ne. 0) then
      write(stderr,*) "  error. DUNPACK failed for some reason. Error inside calculateP"
-     stop 1
+     stop 2
   else
      if (verbose) write(stdout, *) "  DUNPACK finished unpacking vinv to Vinvfull"
   end if
@@ -44,7 +44,7 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
   if (verbose) write(stdout, *) "  info after DTRTTP", info
   if (info .ne. 0) then
      write(stderr, *) "  error. DTRTTP failed to pack mat for some reason. Error inside calculateP"
-     stop 1
+     stop 2
   else
      if (verbose) write(stdout, *) "  DTRTTP finished packing mat to vec"
   end if
@@ -55,7 +55,7 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
   call dunpack('u', nfix, vec, mat, nfix, info)
   if (info .ne. 0) then
      write(stdout, *) "  error. DUNPACK failed to unpack vec for some reasons. Error inside calculateP"
-     stop 1
+     stop 2
   else
      if (verbose) write(stdout, *) "  DUNPACK finished unpacking vec to mat"
   end if
@@ -70,7 +70,7 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
   if (verbose) write(stdout, *) "  info after DTRTTP", info
   if (info .ne. 0) then
      write(stderr, *) "  error. DTRTTP failed to pack Vinvfull to P for some reason. Error inside calculateP"
-     stop 1
+     stop 2
   else
      if (verbose) write(stdout, *) "  Vinvfull packed to P"
   end if
