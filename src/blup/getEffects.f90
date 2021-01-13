@@ -8,19 +8,49 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
   use constants
   use global_module
   implicit none
-  logical                                                             :: verbose
-  integer, intent(in)                                                 :: nobs, nfix, nvar, maxid
-  double precision, dimension(:), intent(in)                          :: Gmatrix
-  integer, dimension(:), intent(in)                                   :: id
-  double precision, dimension(:), intent(in)                          :: theta, Py, y
-  double precision, dimension(:,:), intent(in)                        :: Vhat, X
-  double precision, dimension(:), intent(out)                         :: fixeff
-  type (doublePre_Array), dimension(:), intent(out)                   :: raneff
+  logical                                             :: verbose
+  integer, intent(in)                                 :: nobs, nfix, nvar, maxid
+  double precision, dimension(:), intent(in)          :: Gmatrix
+  integer, dimension(:), intent(in)                   :: id
+  double precision, dimension(:), intent(in)          :: theta, Py, y
+  double precision, dimension(:,:), intent(in)        :: Vhat, X
+  double precision, dimension(:), intent(out)         :: fixeff
+  type (doublePre_Array), dimension(:), intent(out)   :: raneff
 
-  double precision, dimension(:), allocatable                         :: temp
-  integer                                                             :: i, j
-    double precision                                                    :: val1, s1, s2
-  type (doublePre_Array), dimension(:), allocatable, target           :: theZPy
+  double precision, dimension(:), allocatable         :: temp
+  integer                                             :: i, j
+  double precision                                    :: val1, s1, s2
+  type (doublePre_Array), dimension(:), allocatable, target   :: theZPy
+
+  ! fixed effects
+  call dgemm('n', 'n', nfix, 1, nobs, 1.d0, Vhat, nfix, y, nobs, 0.d0, fixeff, i)
+
+  ! if nvar = 1, the procedure is different 
+  ! TODO : generalise this
+
+  if (nvar == 1) then
+     allocate(theZPy(1))
+     allocate(theZPy(1)%level(maxid))
+     theZPy(1)%level(1:maxid) = 0.d0
+     do i = 1, nobs
+        j = id(i)
+        theZPy(1)%level(j) = theZPy(1)%level(j) + Py(i)
+     end do
+     theZPy(1)%level(1:maxid) = theZPy(1)%level(1:maxid) * theta(1)
+     do i = 1, maxid
+        do j = 1, i
+           val1 = Gmatrix((i * (i - 1)) / 2 + j)
+           raneff(1)%level(i) = raneff(1)%level(i) + theZPy(1)%level(j) * val1
+           if (i .ne. j) then
+              raneff(1)%level(j) = raneff(1)%level(j) + theZPy(1)%level(i) * val1
+           end if
+        end do
+     end do
+     return
+     write(6, *) 'final line in geteffects'
+  end if
+  write(6, *) 'first line in rr analysis of geteffects'
+
   ! allocation
   allocate(theZPy(3))
   allocate(theZPy(1)%level(maxid)) ! slope effect (genetic)
@@ -35,9 +65,6 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
 
   if (verbose) write(stdout, *) "inside getEffects; initialisation done"
   allocate(temp(maxid))
-
-  ! fixed effects
-  call dgemm('n', 'n', nfix, 1, nobs, 1.d0, Vhat, nfix, y, nobs, 0.d0, fixeff, i)
 
   ! random effects
   do i = 1, nobs

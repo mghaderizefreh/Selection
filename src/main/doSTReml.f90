@@ -107,51 +107,33 @@ program doSTReml
   !  varFile = "variances"
   call askInteger(emiteration, "number of EM iterations: ")
 
-  allocate(fixEff(nfix), raneff(2))
+  allocate(fixEff(nfix), raneff(1))
   allocate(raneff(1)%level(maxid)) ! genetic 
-  allocate(raneff(2)%level(nobs))  ! residual
 
   call STReml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
        fixEff, ranEff, verbose, emIterations = emIteration, maxIters = emIteration + 7)
 
-!  if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
-!268 format(a2, i1, a22)
-!  write(formato, 268) "((", (nfix-1), "(g24.15, 1x), g24.15))"
-!  open(newUnit = iunfix, file = fixEffFile)
-!  write(iunfix, '(2a24)') "slope", "intercept"
-!  write(iunfix, trim(formato)) fixeff(1 : nfix)
-!  close(iunfix)
-!
-!  open(newUnit = iunvar, file = varFile)
-!270 format(a2, i1, a21)
-!271 format(a1, i1, a4)
-!  write(formato, 271) "(", (nvar+1), "a24)"
-!  if (nvar .eq. 4) then
-!     write(iunvar, formato) "var_A_slope","var_A_intercept", &
-!          "corr(A_int,A_slope)", "var_E_slope", "var_E_intercept"
-!     write(formato, 270) "(", nvar, "(f24.15, 1x), f24.15)"
-!     write(iunvar, formato)  theta(1:2), theta(4) / sqrt(theta(1) &
-!          * theta(2)) , theta(3), theta(5)
-!  elseif (nvar .eq. 3) then
-!     write(iunvar, formato) "var_A_slope","var_A_intercept", &
-!          "var_E_slope", "var_E_intercept"
-!     write(formato, 270) "(", nvar, "(f24.15, 1x), f24.15)"
-!     write(iunvar, formato)  theta(1:4)
-!  end if
-!  close(iunvar)
-!
+  if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
+  open(newUnit = iunfix, file = fixEffFile)
+  write(iunfix, '(a24)') "population average"
+  write(iunfix, *) fixeff(1 : nfix)
+  close(iunfix)
+
+  open(newUnit = iunvar, file = varFile)
+270 format(a2, i1, a21)
+271 format(a1, i1, a4)
+  write(formato, 271) "(", (nvar+1), "a24)"
+  write(iunvar, formato) "genetic","residual"
+  write(formato, 270) "(", nvar, "(g24.15, 1x), g24.15)"
+  write(iunvar, formato)  theta(1:2)
+  close(iunvar)
+
 !272 format(i12, 1x, g24.15)
-!
-!  open(newUnit = iunran, file = raneffFile)
-!  do i = 1, maxid
-!     write(iunran, 272) i, raneff(1)%level(i)
-!  end do
-!  do i = 1, maxid
-!     write(iunran, 272) i, raneff(2)%level(i)
-!  end do
-!  do i = 1, nobs
-!     write(iunran, 272) i, raneff(3)%level(i)
-!  end do
-!  close(iunran)
-!
+
+  open(newUnit = iunran, file = raneffFile)
+  do i = 1, maxid
+     write(iunran, *) i, raneff(1)%level(i)
+  end do
+  close(iunran)
+
 end program doSTReml

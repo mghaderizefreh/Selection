@@ -141,6 +141,10 @@ contains
        oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
     end do
 
+    call getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
+     id, fixeffects, raneffects, verbose)
+
+
   end subroutine STReml
 end module ST_Reml
 
