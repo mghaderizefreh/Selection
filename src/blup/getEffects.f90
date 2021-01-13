@@ -23,8 +23,7 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
   type (doublePre_Array), dimension(:), allocatable, target   :: theZPy
 
   ! fixed effects
-  call dgemm('n', 'n', nfix, 1, nobs, 1.d0, Vhat, nfix, y, nobs, 0.d0, fixeff, i)
-
+  call dgemm('n', 'n', nfix, 1, nobs, 1.d0, Vhat, nfix, y, nobs, 0.d0, fixeff, nfix)
   ! if nvar = 1, the procedure is different 
   ! TODO : generalise this
 
@@ -47,9 +46,7 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
         end do
      end do
      return
-     write(6, *) 'final line in geteffects'
   end if
-  write(6, *) 'first line in rr analysis of geteffects'
 
   ! allocation
   allocate(theZPy(3))

@@ -39,7 +39,7 @@ contains
     if (present(maxIters)) I = maxIters
 
     if (nvar == 3) then
-       if (any ( X < 0 )) then
+       if (any ( theta < 0 )) then
           write(stderr, *) "n_var and initial guess not consistent"
           stop 2
        end if

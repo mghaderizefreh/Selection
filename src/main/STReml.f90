@@ -29,7 +29,7 @@ contains
     double precision                               :: detV, det_xt_vinv_x, yPy
     integer, dimension(:), allocatable             :: ipiv
     double precision, dimension(:,:), allocatable  :: Vhat
-    integer                                        :: i, k, j, emIteration
+    integer                                        :: i, j, emIteration
     integer                                        :: ifail, iter, maxIter
     double precision, external                     :: dnrm2, ddot, dasum
     !! ================ No defintion after this line ================ !!

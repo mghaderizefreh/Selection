@@ -50,6 +50,7 @@ ENDIF(FCNAME STREQUAL "pgf90")
 SET(RRR randregReml.exe)
 SET(STR singleReml.exe)
 SET(RRB randregBlup.exe)
+SET(STB singleBlup.exe)
 SET(SA sample.exe)
 SET(FE fixeff.exe)
 
@@ -105,6 +106,7 @@ set(INP4 "${TEST}/input4")
 set(INP5 "${TEST}/input5")
 set(INP6 "${TEST}/input6")
 set(INP7 "${TEST}/input7")
+set(INP8 "${TEST}/input8")
 if (BASH)
     add_test(
         NAME correlated_RR_Reml
@@ -127,12 +129,16 @@ if (BASH)
 	COMMAND ${BASH} -c "${BIN}/${STR} < ${INP5};" WORKING_DIRECTORY ${TEST}
     )
     add_test(
+        NAME single_Blup
+	COMMAND ${BASH} -c "${BIN}/${STB} < ${INP6};" WORKING_DIRECTORY ${TEST}
+    )
+    add_test(
         NAME fixedEff_uncomplete
-	COMMAND ${BASH} -c "${BIN}/${FE} < ${INP6};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${FE} < ${INP7};" WORKING_DIRECTORY ${TEST}
     )
     add_test(
 	NAME sample_uncomplete
-	COMMAND ${BASH} -c "${BIN}/${SA} < ${INP7};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${SA} < ${INP8};" WORKING_DIRECTORY ${TEST}
     )
 else()
     if (WIN32)
