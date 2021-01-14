@@ -1,6 +1,15 @@
-module ST_Reml
+! order of matrices, and therefore variances shall be 
+!   1     ZsGZs       genetic slope
+!   2     ZiGZi       genetic intercept
+!   3     ZsZs        environmental slope (stored as diagonal)
+!   4     ZiGZs+ZsGZi genetic slope-intercept covariance
+!   5     ZsZs        perm. env. effect slope (SAME AS NUMBER 3: but counted)
+!   6     ZiZi        perm. env. effect intercept
+!   7     ZsZi+ZiZs   perm. env. effect slope-intercept covariance
+! (last)  Identity    env. intercept (NOT COUNTED IN theZGZ and it is LAST one)
+module reml_m2
 contains
-  subroutine STReml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
+  subroutine Reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
        fixEffects, ranEffects, verbose, EmIterations, maxIters)
 
     use constants
@@ -11,9 +20,9 @@ contains
     !! ================ variable definitions  ================ !!
     logical, intent(in)                            :: verbose
     integer, intent(in)                            :: nobs, nvar, nfix, maxid
-    integer, dimension(:), intent(in)              :: id
-    double precision, dimension(:), intent(in)     :: y
-    double precision, dimension(:,:), intent(in)   :: x
+    integer, dimension(:), intent(in)              :: id ! real id of animals
+    double precision, dimension(:), intent(in)     :: y ! phenotypes
+    double precision, dimension(:,:), intent(in)   :: x ! incid. mat fixed effects
     double precision, dimension(:), intent(inout)  :: theta
     double precision, dimension(:), intent(in)     :: Gmatrix
     integer, intent(in), optional                  :: EmIterations, maxIters
@@ -34,14 +43,15 @@ contains
     double precision, external                     :: dnrm2, ddot, dasum
     !! ================ No defintion after this line ================ !!
 
-    allocate(oldtheta(nvar + 1))
-    allocate(Vhat(nfix,nobs), Py(nobs)) 
+    allocate(Py(nobs), Vhat(nfix, nobs))
+    allocate(oldtheta(nvar+1))
     I = nobs * (nobs + 1) / 2
     allocate(P(I),V(I))
     I = (nvar + 1) * (nvar + 2) / 2
     allocate(AI(I), rhs(nvar + 1))
     I = nobs * nobs
     allocate(work(I),ipiv(nobs))
+    ! f is going to contain P*ZGZ_i
     allocate(f(nvar+1))
     do i = 1, nvar + 1
        allocate(f(i)%array(nobs))
@@ -58,16 +68,42 @@ contains
        maxIter = maxIters
     end if
 
-    oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
+    ! order of variances: (As, Ai, Es, Cov, Ei) 
+    oldtheta(1:(nvar + 1)) = theta(1:(nvar + 1))
 
+    ! depending on the given correlation, we may need 3 or 4 ZGZ matrices.
+    ! So better to check that because one matrix makes a lot of difference
+    ! in using the amount of memory
+    if (nvar == 3) then
+       if (any ( theta < 0 )) then
+          write(stderr, *) "n_var and initial guess not consistent"
+          stop 2
+       end if
+       write(stdout, '(2x,a22)') "no correlation assumed"
+    elseif (nvar > 3) then
+       write(stdout, '(2x,a30)') "correlation taken into account"
+    end if
 
+    ! making G* matrices
     allocate(theZGZ(nvar))
     i = nobs * (nobs + 1) / 2
-    do j = 1, nvar
-       allocate(theZGZ(j)%level(i))
+    do j = 1, nvar 
+       if (j .eq. 3) then
+          allocate(theZGZ(j)%level(nobs))
+       else        
+          allocate(theZGZ(j)%level(i))
+       end if
     end do
-
-    call getMatrices(verbose, nobs, X, Gmatrix, id, theZGZ(1)%level)
+    if (nvar .eq. 3) then
+       call getMatricesUncorrelated(verbose, nobs, X, Gmatrix, id, &
+            theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level)
+    elseif (nvar .eq. 4) then
+       call getMatricesCorrelated(verbose, nobs, X, Gmatrix, id, &
+            theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level, &
+            theZGZ(4)%level)
+    else
+       call getMatrices(verbose, nobs, X, Gmatrix, id, theZGZ(1)%level)
+    end if
 
 69  format(a12, i3)
 70  format(1x, a9)
@@ -75,16 +111,23 @@ contains
 
     write(stdout, 69) "iteration: " ,0
     write(stdout, 70) " theta_0:"
-    write(stdout, '(a11,2x,a11)') "A", "E"
-    write(stdout, *) theta(1:2)
+    if (nvar .eq. 1) then
+       write(stdout, '(a11,2x,a11)') "A", "E"
+       write(stdout, *) theta(1:2)
+    else
+       write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
+       if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
+       write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
+       write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
+       if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
+       write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+    end if
 
     iter = 0
     do 
        iter = iter + 1
        write(stdout, *)
        write(stdout, 69) "iteration: ", iter
-       theta(:) = oldtheta(:)
-       write(6, *) 'Theta::: ', theta
        
        call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
        if (verbose) write(stdout, *) " V is calculated"
@@ -117,13 +160,22 @@ contains
        end if
 
        write(stdout, *) " variance vector:"
-       write(stdout, '(a11,2x,a11)') "A", "E"
-       write(stdout, *) theta(1:2)
+       if (nvar .eq. 1) then
+          write(stdout, '(a11,2x,a11)') "A", "E"
+          write(stdout, *) theta(1:2)
+       else
+          write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
+          if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
+          write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
+          write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
+          if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
+          write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+       end if
 
        !!!! Iteration completed !!!!
 
        val1 = dnrm2(nvar + 1, oldtheta, 1)
-       oldtheta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1)) - theta(1 : (nvar + 1))
+       oldtheta(1:(nvar + 1)) = oldtheta(1:(nvar + 1)) - theta(1:(nvar + 1))
        val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
        val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
        write(stdout, *) "Errors (iter): ",iter
@@ -142,9 +194,7 @@ contains
     end do
 
     call getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
-     id, fixeffects, raneffects, verbose)
+         id, fixEffects, ranEffects, verbose)
 
-
-  end subroutine STReml
-end module ST_Reml
-
+  end subroutine Reml
+end module reml_m2

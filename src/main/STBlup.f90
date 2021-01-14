@@ -58,6 +58,9 @@ contains
     call dspmv('u', nobs, 1.d0, P, y, 1, 0.d0, Py, 1)
     if (verbose) write(6, *) "  DSPMV finished calculating Py (=P * y)"
 
+    do i = 1, size(ranEffects)
+       ranEffects(i)%level(:) = 0.d0
+    end do
     call getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
          id, fixeffects, raneffects, verbose)
 

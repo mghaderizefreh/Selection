@@ -3,7 +3,7 @@ program doSTReml
   use global_module
   use blup_module
   use reml_module
-  use ST_reml
+  use reml_m2
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
@@ -109,8 +109,9 @@ program doSTReml
 
   allocate(fixEff(nfix), raneff(1))
   allocate(raneff(1)%level(maxid)) ! genetic 
+  raneff(1)%level(1:maxid) = 0.d0
 
-  call STReml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
+  call Reml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
        fixEff, ranEff, verbose, emIterations = emIteration, maxIters = emIteration + 7)
 
   if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)

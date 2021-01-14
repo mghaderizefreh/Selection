@@ -12,7 +12,7 @@ program doRRReml
   use global_module
   use blup_module
   use reml_module
-  use RR_reml
+  use reml_m2
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
@@ -145,7 +145,7 @@ program doRRReml
   allocate(raneff(2)%level(maxid)) ! intercept effect (genetic)
   allocate(raneff(3)%level(nobs))   ! environment slope effect (diagonal)
 
-  call RRReml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
+  call Reml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
        fixEff, ranEff, verbose, emIterations = emIteration)
 
   if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
