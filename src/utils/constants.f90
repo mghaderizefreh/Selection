@@ -4,9 +4,20 @@ module constants
   type doublePre_Array
      double precision, dimension(:), pointer :: level(:)
   end type doublePre_Array
+
   type ArrOfArr
      double precision, dimension(:), allocatable :: array
   end type ArrOfArr
+
+  type chromosome
+    integer :: nloci, nblock
+    double precision  :: chrL
+    integer, dimension(:,:,:), pointer :: genotypes
+    real , dimension(:), pointer :: positions ! if the loci are not equidistance,
+    ! then the position (it does not matter if Morgan or cM).
+  end type chromosome
+
+  
 
   !   Handles
   integer, parameter :: stdin  = 5
