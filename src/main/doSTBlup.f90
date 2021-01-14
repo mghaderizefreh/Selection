@@ -2,8 +2,8 @@ program doSTReml
   use constants
   use global_module
   use blup_module
-  use reml_module
-  use ST_Blup
+!  use reml_module
+!  use ST_Blup
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
@@ -105,7 +105,7 @@ program doSTReml
   allocate(fixEff(nfix), raneff(1))
   allocate(raneff(1)%level(maxid)) ! genetic 
 
-  call STBlup(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
+  call blup(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
        fixEff, ranEff, verbose)
 
   if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)

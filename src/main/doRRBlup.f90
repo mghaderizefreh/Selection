@@ -1,9 +1,9 @@
-program blup
+program doRRBlup
   use constants
   use global_module
   use blup_module
-  use reml_module
-  use RR_blup
+  !  use reml_module
+  !  use RR_blup
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg
@@ -132,7 +132,7 @@ program blup
   allocate(raneff(2)%level(maxid)) ! intercept effect (genetic)
   allocate(raneff(3)%level(nobs))   ! environment slope effect (diagonal)
 
-  call RRBlup(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
+  call blup(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
        fixEff, ranEff, verbose)
 
   if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
@@ -175,4 +175,4 @@ program blup
   end do
   close(iunran)
 
-end program blup
+end program doRRBlup

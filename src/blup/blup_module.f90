@@ -6,4 +6,5 @@ contains
   include "calculateV.f90"
   include "calculateP.f90"
   include "getEffects.f90"
+  include "blup.f90"
 end module blup_module

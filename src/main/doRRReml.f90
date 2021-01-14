@@ -12,7 +12,6 @@ program doRRReml
   use global_module
   use blup_module
   use reml_module
-  use reml_m2
   implicit none
   !! ================ variable definitions  ================ !!
   character(LEN=256)                                  :: phenFile, AmatFile, fixEffFile, ranEffFile, varFile, msg

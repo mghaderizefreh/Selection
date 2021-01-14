@@ -3,20 +3,16 @@
 ########################################
 
 # Add the source files
-SET(RRR_src ${MAIN}/Reml.f90
-	    ${MAIN}/doRRReml.f90
+SET(RRR_src ${MAIN}/doRRReml.f90
 )
 
-SET(RRB_src ${MAIN}/RRBlup.f90
-	    ${MAIN}/doRRBlup.f90
+SET(RRB_src ${MAIN}/doRRBlup.f90
 )
 
-SET(STR_src ${MAIN}/Reml.f90
-	    ${MAIN}/doSTReml.f90
+SET(STR_src ${MAIN}/doSTReml.f90
 )
 
-SET(STB_src ${MAIN}/STBlup.f90
-	    ${MAIN}/doSTBlup.f90
+SET(STB_src ${MAIN}/doSTBlup.f90
 )
 
 SET(FE_src ${MAIN}/fixedEff.f90
