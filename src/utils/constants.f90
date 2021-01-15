@@ -10,14 +10,19 @@ module constants
   end type ArrOfArr
 
   type chromosome
-    integer :: nloci, nblock
-    double precision  :: chrL
-    integer, dimension(:,:,:), pointer :: genotypes
-    real , dimension(:), pointer :: positions ! if the loci are not equidistance,
-    ! then the position (it does not matter if Morgan or cM).
+     integer :: nloci, nblock
+     double precision  :: chrL
+     integer, dimension(:,:,:), pointer :: genotypes
+     real , dimension(:), pointer :: positions ! if the loci are not equidistance,
+     ! then the position (it does not matter if Morgan or cM).
   end type chromosome
 
-  
+  type QTL_Array
+     integer :: nQTL ! number of QTL (on one chromosome)
+     integer :: nComp ! number of traits being affected
+     integer, dimension(:), pointer :: indices
+     double precision, dimension(:,:), pointer :: values
+  end type QTL_Array
 
   !   Handles
   integer, parameter :: stdin  = 5

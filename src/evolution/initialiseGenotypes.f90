@@ -9,27 +9,21 @@
 !if option 1 and 2 are used, all chromosomes have similar 
 !
 
-subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, genome, nseed,&
+subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, genome,&
      maxloci, maxblock, ifail, prefixfilename)
-
+  use constants
   implicit none
 
-  integer, intent(in) :: genstart
-  integer, dimension(:), intent(in) :: nseed
-  integer :: nanim, nchr, nloci, istore
-  integer :: nblock
-
-  type(chromosome), DIMENSION(:)   :: genome
-  integer :: ifail
-  character(len=*), optional :: prefixfilename
+  integer, intent(in) :: genstart, nanim, nchr, istore
+  character(len=*), optional, intent(in) :: prefixfilename
+  integer, intent(inout) :: nloci
+  type(chromosome), DIMENSION(:), intent(out) :: genome
+  integer, intent(out) :: ifail, nblock
 
   integer, dimension(:,:,:), pointer :: genotypes
-
   integer :: iun, i, k, id, j, ichr, igam, a1, iblock
   real :: rand
-
   integer :: maxblock, maxloci
-
   character(len=256) :: filename
 
   !nloci is input if genstart is 1 or 2
@@ -140,7 +134,7 @@ subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, gen
         open(newunit = iun, file=filename, status = 'old')
         read(iun,*) i, nloci, nblock, k
 
-        write(*,'(a,8i)') 'ich i nloci nbloc k nanim', ichr, i,&
+        write(*,'(a,8i6)') 'ich i nloci nbloc k nanim', ichr, i,&
              nloci, nblock, k, nanim
 
         if (i .lt. nanim) then
