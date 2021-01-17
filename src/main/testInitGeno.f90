@@ -15,7 +15,7 @@ program testInitGeno
   startfile = "inicio.dat"
   call istart(seed, startfile, ifail)
   if (ifail /= 0) then
-     write(stderr, '(a)') "reading/setting seed faild"
+     write(STDERR, '(a)') "reading/setting seed faild"
      stop 2
   end if
 

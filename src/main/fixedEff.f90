@@ -41,7 +41,7 @@ program AIREML
   eStatus = "old"
   call askFileName(phenfile, " filename for phenotypes", status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", phenFile
+     write(STDERR, *) "error in openning file ", phenFile
      stop 1
   end if
 
@@ -85,7 +85,7 @@ program AIREML
   end do
   nfix = j
 
-  write(stdout, *) "number of fixed effects are ", nfix
+  write(STDOUT, *) "number of fixed effects are ", nfix
 
   allocate(X(nobs, nfix))
   X(1 : nobs, 1 : nfix) = 0
@@ -111,7 +111,7 @@ program AIREML
   call trsmReadMat(AmatFile, temAmat, maxid, skip, ifail, j)
   allocate(Amatrix(i))
   call getMatrices(verbose, nobs, X, temAmat, id, Amatrix)
-  write(stdout, *) " end reading files"
+  write(STDOUT, *) " end reading files"
   
   ! allocating some variables based on the nvar
 

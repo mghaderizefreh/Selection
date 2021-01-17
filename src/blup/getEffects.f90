@@ -22,6 +22,8 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
   double precision                                    :: val1, s1, s2
   type (doublePre_Array), dimension(:), allocatable, target   :: theZPy
 
+  external                                            :: dgemm
+
   ! fixed effects
   call dgemm('n', 'n', nfix, 1, nobs, 1.d0, Vhat, nfix, y, nobs, 0.d0, fixeff, nfix)
   ! if nvar = 1, the procedure is different 
@@ -60,7 +62,7 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
      raneff(i)%level(:) = 0.d0
   end do
 
-  if (verbose) write(stdout, *) "inside getEffects; initialisation done"
+  if (verbose) write(STDOUT, *) "inside getEffects; initialisation done"
   allocate(temp(maxid))
 
   ! random effects

@@ -66,7 +66,7 @@ subroutine getMatricesCorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1, Z1
      end do
   end do
 
-  if (verbose) write(stdout, '(a)') " End of getMatrices subroutine"
+  if (verbose) write(STDOUT, '(a)') " End of getMatrices subroutine"
 end subroutine getMatricesCorrelated
 
 
@@ -113,7 +113,7 @@ subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
      end do
   end do
 
-  if (verbose) write(stdout, '(a)') " End of getMatrices subroutine"
+  if (verbose) write(STDOUT, '(a)') " End of getMatrices subroutine"
 end subroutine getMatricesUncorrelated
 
 !================================================================================
@@ -149,7 +149,7 @@ subroutine getMatrices(verbose, nobs, X, G, id, ZGZ)
         ZGZ(ipos) = G(ipos1)
      end do
   end do
-  if (verbose) write(stdout, '(a)') " End of getMatrices subroutine"
+  if (verbose) write(STDOUT, '(a)') " End of getMatrices subroutine"
 end subroutine getMatrices
 
 !================================================================================
@@ -157,7 +157,7 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   use constants
   implicit none
   ! written by R. Pong-Wong
-  ! edited by M. Ghaderi Zefreh (minor edits for stdout/stderr output)
+  ! edited by M. Ghaderi Zefreh (minor edits for STDOUT/STDERR output)
   character(len=*)   , intent(IN) :: matfile
   double precision   , dimension(:), intent(inout) :: amat
   integer            , intent(inout) :: nrank
@@ -172,7 +172,7 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   if (ibin .eq. 1) then
      open(newunit=iun, file=matfile, status='old', form='unformatted')
      read(iun) irank
-     write(stdout,'(1x,a24,i8)') "rank in unformated file", irank
+     write(STDOUT,'(1x,a24,i8)') "rank in unformated file", irank
   else
      open (newunit=iun, file=matfile, status='old')
      do i=1,skip
@@ -188,8 +188,8 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   ipos = (irank + 1) * irank / 2
   icol = size(amat, dim = 1)
   if (icol < ipos) then
-     write(stderr, *) " array is not enough to hold matrix of rank"
-     write(stderr, *) "ipos, icol, irank", ipos, icol, irank
+     write(STDERR, *) " array is not enough to hold matrix of rank"
+     write(STDERR, *) "ipos, icol, irank", ipos, icol, irank
      ifail = 1
      close(iun)
      return
@@ -206,9 +206,9 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
         read(iun,*,end=100)irow,icol, val1
      end if
      if(irow > nrank .or. icol > nrank) then
-        write(stderr,*) "error array contains elements in row/column greater than rank"
+        write(STDERR,*) "error array contains elements in row/column greater than rank"
         i=i+1
-        write(stderr,'(a,i11,5x,i11,i11,g25.15)') 'line element',i,irow, icol, val1
+        write(STDERR,'(a,i11,5x,i11,i11,g25.15)') 'line element',i,irow, icol, val1
         ifail=1
         close(iun)
         return
@@ -218,7 +218,7 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   end do
 100 continue
   close(iun)
-  !  WRITE(stdout,*)' element read ', i,DBLE(i)/DBLE(ipos)
+  !  WRITE(STDOUT,*)' element read ', i,DBLE(i)/DBLE(ipos)
   return
 end subroutine trsmReadMat
 

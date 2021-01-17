@@ -22,9 +22,10 @@ program select
   double precision :: chrL, mutationRate
 
   !ncomp is the number of traits by a QTL (slope, intercept --> 2, otherwise 1)
-  integer, parameter :: nSNP = 1000, nQTL = 500, nComp = 1 
+  integer, parameter :: nSNP = 1000, nQTL = 500, nComp = 5
   integer, dimension(:,:), allocatable :: SNPlist
-  type(QTL_Array), dimension(nChr) :: QTLlist
+  type(QTL_Array) :: QTLlist
+  real, dimension(:,:), allocatable :: covMat
   
   real :: rand
   integer :: i, j, k, ichr, iun, iun2
@@ -32,7 +33,7 @@ program select
   startfile = "inicio.dat"
   call istart(seed, startfile, ifail)
   if (ifail /= 0) then
-     write(stderr, '(a)') "reading/setting seed faild"
+     write(STDERR, '(a)') "reading/setting seed faild"
      stop 2
   end if
   call random_seed(put = seed)
@@ -58,30 +59,19 @@ program select
   call initialiseGenotypes(nchr, nanim, genestart, nloci, nblock, istore, genome1,&
        maxloci, maxblock, ifail, filename1)
 
-  ! TODO : make list creator a subroutine returing QTL and SNP list
-  ! inputs: nChr, nQTL, nComp, randomOrNot
-  allocate(SNPList(nChr, nSNP))
-  ! otherwise, name of files (QTLlist and SNPlist and nComp)
-  open(newUnit = iun, file = "QTLlist.txt")
-  open(newUnit = iun2, file = "SNPlist.txt")
-  
-  write(formato, '(a,i1,a)') "(i3,3x,i6,3x,",nComp,"f15.7)"
-  do iChr = 1, nChr
-     QTLlist(iChr)%nQTL = nQTL
-     QTLlist(iChr)%nComp = 1
-     allocate(QTLlist(iChr)%indices(QTLlist(iChr)%nQTL), &
-          QTLlist(iChr)%values(QTLlist(iChr)%nQTL,QTLlist(iChr)%nComp))
-     do i = 1, QTLlist(iChr)%nQTL
-        read(iun, formato) k, QTLlist(iChr)%indices(i), &
-             (QTLlist(iChr)%values(i,j), j = 1, ncomp)
-     end do
-     do i = 1, nSNP
-        read(iun2, '(i3,3x,i6)') k, SNPlist(ichr, i)
-     end do
-  end do
+  allocate(covMat(ncomp,ncomp))
+  covMat(1,:) = (/ 1.0, 0.3,-0.4, 0.0, 0.1/)
+  covMat(2,:) = (/ 0.3, 1.0, 0.3, 0.1,-0.2/)
+  covMat(3,:) = (/-0.4, 0.3, 1.0, 0.5, 0.3/)
+  covMat(4,:) = (/ 0.0, 0.1, 0.5, 1.0, 0.4/)
+  covMat(5,:) = (/ 0.1,-0.2, 0.3, 0.4, 1.0/)
+  j = 500
+  k = 1000
+  call getQTLandSNP(nChr, j, k, ncomp, .true., genome1, QTLlist, &
+     SNPlist, covMat)
 
   allocate(frequency(maxloci,2))
-  write(stdout, '(a)') " reading positions"
+  write(STDOUT, '(a)') " reading positions"
   do ichr=1,nchr
      genome1(ichr)%chrL = chrL
      allocate(genome1(ichr)%positions(genome1(ichr)%nloci))
@@ -91,8 +81,8 @@ program select
      do i = 1, genome1(ichr)%nloci
         read(iun, *) k, rand
         if (rand < 0.d0 .or. rand > genome1(ichr)%chrL) then
-           write(stderr, *) " error, wrong position", rand
-           write(stderr, *) " should be between 0 and ", genome1(ichr)%chrL
+           write(STDERR, *) " error, wrong position", rand
+           write(STDERR, *) " should be between 0 and ", genome1(ichr)%chrL
            stop 2
         end if
         genome1(ichr)%positions(i) = rand

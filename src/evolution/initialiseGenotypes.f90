@@ -20,14 +20,13 @@ subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, gen
   type(chromosome), DIMENSION(:), intent(out) :: genome
   integer, intent(out) :: ifail, nblock
 
-  integer, dimension(:,:,:), pointer :: genotypes
   integer :: iun, i, k, id, j, ichr, igam, a1, iblock
   real :: rand
   integer :: maxblock, maxloci
   character(len=256) :: filename
 
   !nloci is input if genstart is 1 or 2
-  write(stdout, '(a24, i1)') " initialising genotypes",genstart
+  write(STDOUT, '(a24, i1)') " initialising genotypes",genstart
   !=====================================================
   ! IF GENSTART=1 or 2
   ! all chrmosmoe have the same number of SNP
@@ -130,7 +129,7 @@ subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, gen
      do ichr = 1, nChr
         write(filename,'(a,i3.3)') trim(prefixfilename), ichr
 
-        write(stdout,*)' reading ', trim(filename)
+        write(STDOUT,*)' reading ', trim(filename)
         open(newunit = iun, file=filename, status = 'old')
         read(iun,*) i, nloci, nblock, k
 
@@ -139,10 +138,10 @@ subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, gen
 
         if (i .lt. nanim) then
            ifail = 1
-           write(stderr,*) &
+           write(STDERR,*) &
                 ' Error. Genotype file does not have enough individuals',&
                 trim(filename)
-           write(stderr,*) 'i nanim', i, nanim
+           write(STDERR,*) 'i nanim', i, nanim
            stop 2
         end if
         if (nloci > maxloci) maxloci = nloci
@@ -167,7 +166,7 @@ subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, gen
      end do
   end if
 
-  write(stdout,'(a)')' end initialising genotypes'
+  write(STDOUT,'(a)')' end initialising genotypes'
 
 end subroutine initialiseGenotypes
 

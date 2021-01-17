@@ -52,6 +52,7 @@ SET(STR singleReml.exe)
 SET(RRB randregBlup.exe)
 SET(STB singleBlup.exe)
 SET(SA sample.exe)
+SET(SA2 sample2.exe)
 SET(FE fixeff.exe)
 SET(SEL select.exe)
 

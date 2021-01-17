@@ -36,7 +36,7 @@ program doRRReml
   eStatus = "old"
   call askFileName(phenfile, " filename for phenotypes", status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", phenFile
+     write(STDERR, *) "error in openning file ", phenFile
      stop 1
   end if
 
@@ -66,7 +66,7 @@ program doRRReml
   eStatus = "old"
   call askFileName(AmatFile, trim(msg), status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", AmatFile
+     write(STDERR, *) "error in openning file ", AmatFile
      stop 1
   end if
 
@@ -77,7 +77,7 @@ program doRRReml
      if (i > maxid) maxid = i
      if (j > maxid) maxid = j
   end do
-73 write(stderr, *) "error in reading file ", AmatFile
+73 write(STDERR, *) "error in reading file ", AmatFile
   stop 1
 74 continue
   close(AmatFileID)
@@ -89,27 +89,27 @@ program doRRReml
   k = 0 ! number of lines to skip
   call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
 
-  if (verbose) write(stdout, *) " end reading files"
+  if (verbose) write(STDOUT, *) " end reading files"
 
   allocate(oldtheta(5))
-  write(stdout, '(a27)') "initial guess for variances"
-  write(stdout, '(3x, a23)', advance = 'no') "genetic part of slope: "
+  write(STDOUT, '(a27)') "initial guess for variances"
+  write(STDOUT, '(3x, a23)', advance = 'no') "genetic part of slope: "
   read(stdin, *) oldtheta(1)
-  write(stdout, '(3x, a27)', advance = 'no') "genetic part of intercept: "
+  write(STDOUT, '(3x, a27)', advance = 'no') "genetic part of intercept: "
   read(stdin, *) oldtheta(2)
-  write(stdout, '(3x, a63)', advance = 'no') &
+  write(STDOUT, '(3x, a63)', advance = 'no') &
        "correlation between slope and intercept (0.0 if there is not): "
   read(stdin, *) val1
   if ((val1 > 1.d0 .or. val1 < -1.d0)) then
-     write(stderr, *) "invalid value for correlation. The program will stop"
+     write(STDERR, *) "invalid value for correlation. The program will stop"
      stop 1
   end if
   ! theta contains variances and covaraince only; 
   ! hence the correlation must be converted to covariance
   oldtheta(4) = val1 * sqrt(oldtheta(1) * oldtheta(2))
-  write(stdout, '(3x, a30)', advance = 'no') "environmental variance slope: "
+  write(STDOUT, '(3x, a30)', advance = 'no') "environmental variance slope: "
   read(stdin, *) oldtheta(3)
-  write(stdout, '(3x, a34)', advance = 'no') &
+  write(STDOUT, '(3x, a34)', advance = 'no') &
        "environmental variance intercept: "
   read(stdin, *) oldtheta(5)
 
@@ -122,12 +122,12 @@ program doRRReml
      theta(nvar + 1) = oldtheta(nvar + 2)
      deallocate(oldtheta)
      allocate(oldtheta(nvar + 1))
-     write(stdout, '(2x,a22)') "no correlation assumed"
+     write(STDOUT, '(2x,a22)') "no correlation assumed"
   else
      nvar = 4
      allocate(theta(nvar + 1))
      theta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1))
-     write(stdout, '(2x,a30)') "correlation taken into account"
+     write(STDOUT, '(2x,a30)') "correlation taken into account"
   end if
 
   estatus = 'unknown'
@@ -147,7 +147,7 @@ program doRRReml
   call Reml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
        fixEff, ranEff, verbose, emIterations = emIteration)
 
-  if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
+  if (verbose) write(STDOUT, *) 'fixed effects: ' , fixeff(1 : nfix)
 268 format(a2, i1, a22)
   write(formato, 268) "((", (nfix-1), "(g24.15, 1x), g24.15))"
   open(newUnit = iunfix, file = fixEffFile)

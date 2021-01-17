@@ -27,7 +27,7 @@ program doSTReml
   eStatus = "old"
   call askFileName(phenfile, " filename for phenotypes", status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", phenFile
+     write(STDERR, *) "error in openning file ", phenFile
      stop 1
   end if
 
@@ -57,7 +57,7 @@ program doSTReml
   eStatus = "old"
   call askFileName(AmatFile, trim(msg), status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", AmatFile
+     write(STDERR, *) "error in openning file ", AmatFile
      stop 1
   end if
 
@@ -68,7 +68,7 @@ program doSTReml
      if (i > maxid) maxid = i
      if (j > maxid) maxid = j
   end do
-73 write(stderr, *) "error in reading file ", AmatFile
+73 write(STDERR, *) "error in reading file ", AmatFile
   stop 1
 74 continue
   close(AmatFileID)
@@ -80,17 +80,17 @@ program doSTReml
   k = 0 ! number of lines to skip
   call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
 
-  if (verbose) write(stdout, *) " end reading files"
+  if (verbose) write(STDOUT, *) " end reading files"
 
   allocate(oldtheta(2), theta(2))
   val1 = sum(y) / size(y)
   val2 = sum((y - val1) ** 2) / (size(y) - 1)
   oldtheta(1:2) = val2 / 2
-  write(stdout, '(a27)') "initial guess for variances"
-  write(stdout, '(3x, a20)', advance = 'no') "genetic variance: "
-  write(stdout, *) oldtheta(1)
-  write(stdout, '(3x, a20)', advance = 'no') "residual variance: "
-  write(stdout, *) oldtheta(2)
+  write(STDOUT, '(a27)') "initial guess for variances"
+  write(STDOUT, '(3x, a20)', advance = 'no') "genetic variance: "
+  write(STDOUT, *) oldtheta(1)
+  write(STDOUT, '(3x, a20)', advance = 'no') "residual variance: "
+  write(STDOUT, *) oldtheta(2)
 
   ! theta contains variances and covaraince only; 
   ! hence the correlation must be converted to covariance
@@ -113,7 +113,7 @@ program doSTReml
   call Reml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
        fixEff, ranEff, verbose, emIterations = emIteration, maxIters = emIteration + 7)
 
-  if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
+  if (verbose) write(STDOUT, *) 'fixed effects: ' , fixeff(1 : nfix)
   open(newUnit = iunfix, file = fixEffFile)
   write(iunfix, '(a24)') "population average"
   write(iunfix, *) fixeff(1 : nfix)

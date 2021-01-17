@@ -13,7 +13,7 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
   integer                                          :: i, ipos, irow, isize
   double precision                                 :: Val1
 
-  if (verbose) write(stdout,*) "  In the subroutine CalculateV"
+  if (verbose) write(STDOUT,*) "  In the subroutine CalculateV"
   ifail = 1
   isize = (nobs + 1) * nobs/2
   v(1 : isize) = 0.d0
@@ -40,6 +40,6 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
   end do
 
   ifail=0
-  if (verbose) write(stdout,*) "  calculateV returned succesfully"
+  if (verbose) write(STDOUT,*) "  calculateV returned succesfully"
 end subroutine calculateV
 

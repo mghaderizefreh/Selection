@@ -23,7 +23,7 @@ subroutine blup(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   double precision                               :: val1, val2
   double precision, dimension(:,:), allocatable  :: Vhat
   integer, dimension(:), allocatable             :: ipiv
-  double precision, external                     :: dnrm2, ddot, dasum
+  external                            :: dspmv
   !! ================ No defintion after this line ================ !!
   allocate(Py(nobs), Vhat(nfix, nobs))
   I = nobs * (nobs + 1) / 2
@@ -36,12 +36,12 @@ subroutine blup(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
 
   if (nvar == 3) then
      if (any ( theta < 0 )) then
-        write(stderr, *) "n_var and initial guess not consistent"
+        write(STDERR, *) "n_var and initial guess not consistent"
         stop 2
      end if
-     write(stdout, '(2x,a22)') "no correlation assumed"
+     write(STDOUT, '(2x,a22)') "no correlation assumed"
   elseif (nvar > 3) then
-     write(stdout, '(2x,a30)') "correlation taken into account"
+     write(STDOUT, '(2x,a30)') "correlation taken into account"
   end if
 
   allocate(theZGZ(nvar))
@@ -66,16 +66,16 @@ subroutine blup(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   end if
 
   call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
-  if (verbose) write(stdout, *) " V is calculated"
+  if (verbose) write(STDOUT, *) " V is calculated"
 
   call detInv(nobs, V, val1, ipiv, work, verbose)
-  if (verbose) write(stdout, *) " V is replaced by its inverse"
+  if (verbose) write(STDOUT, *) " V is replaced by its inverse"
 
   call calculateP(nobs, nfix, V, X, P, val2, Vhat, verbose)
-  if (verbose) write(stdout, *) " P is calcuated"
+  if (verbose) write(STDOUT, *) " P is calcuated"
 
   call dspmv('u', nobs, 1.d0, P, y, 1, 0.d0, Py, 1)
-  if (verbose) write(stdout, *) "  DSPMV finished calculating Py (=P * y)"
+  if (verbose) write(STDOUT, *) "  DSPMV finished calculating Py (=P * y)"
 
   do i = 1, size(ranEffects)
      ranEffects(i)%level(:) = 0.d0

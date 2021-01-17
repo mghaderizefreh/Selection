@@ -28,7 +28,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   type(doublePre_Array),dimension(:),intent(out) :: ranEffects
 
   type(doublePre_Array),dimension(:),allocatable :: theZGZ
-  type(ArrOfArr), dimension(:), allocatable      :: f
+  type(JArrD), dimension(:), allocatable      :: f
   double precision, dimension(:), allocatable    :: oldtheta, Py, P, V, AI, rhs, work
   double precision                               :: logl, epsilon = 1.d-6
   double precision                               :: val1, val2
@@ -73,12 +73,12 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   ! in using the amount of memory
   if (nvar == 3) then
      if (any ( theta < 0 )) then
-        write(stderr, *) "n_var and initial guess not consistent"
+        write(STDERR, *) "n_var and initial guess not consistent"
         stop 2
      end if
-     write(stdout, '(2x,a22)') "no correlation assumed"
+     write(STDOUT, '(2x,a22)') "no correlation assumed"
   elseif (nvar > 3) then
-     write(stdout, '(2x,a30)') "correlation taken into account"
+     write(STDOUT, '(2x,a30)') "correlation taken into account"
   end if
 
   ! making G* matrices
@@ -106,67 +106,67 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
 70 format(1x, a9)
 71 format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
 
-  write(stdout, 69) "iteration: " ,0
-  write(stdout, 70) " theta_0:"
+  write(STDOUT, 69) "iteration: " ,0
+  write(STDOUT, 70) " theta_0:"
   if (nvar .eq. 1) then
-     write(stdout, '(a11,2x,a11)') "A", "E"
-     write(stdout, *) theta(1:2)
+     write(STDOUT, '(a11,2x,a11)') "A", "E"
+     write(STDOUT, *) theta(1:2)
   else
-     write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
-     if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
-     write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
-     write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
-     if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
-     write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+     write(STDOUT, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
+     if (nvar == 4) write(STDOUT, '(2x,a11)', advance = 'no') "covariance"
+     write(STDOUT, '(2(2x,a11))') "E_slope", "E_intercept"
+     write(STDOUT, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
+     if (nvar == 4) write(STDOUT, '(2x,f11.7)', advance = 'no') theta(4)
+     write(STDOUT, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
   end if
 
   iter = 0
   do 
      iter = iter + 1
-     write(stdout, *)
-     write(stdout, 69) "iteration: ", iter
+     write(STDOUT, *)
+     write(STDOUT, 69) "iteration: ", iter
 
      call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
-     if (verbose) write(stdout, *) " V is calculated"
+     if (verbose) write(STDOUT, *) " V is calculated"
 
      call detInv(nobs, V, detV, ipiv, work, verbose)
-     if (verbose) write(stdout, *) " V is replaced by its inverse"
+     if (verbose) write(STDOUT, *) " V is replaced by its inverse"
 
      call calculateP(nobs, nfix, V, X, P, det_xt_vinv_x, Vhat, verbose)
-     if (verbose) write(stdout, *) " P is calcuated"
+     if (verbose) write(STDOUT, *) " P is calcuated"
 
      call calculateLogL(nobs, detV,det_xt_vinv_x,P, y, LogL,Py, yPy, verbose)
-     if (verbose) write(stdout, *) " LogL is calculated"
-     write(stdout, '(1x,a8,g25.16)') " LogL = ", logl
+     if (verbose) write(STDOUT, *) " LogL is calculated"
+     write(STDOUT, '(1x,a8,g25.16)') " LogL = ", logl
 
      call calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, f, verbose)
-     if (verbose) write(stdout, *) " Right hand side is calculated"
+     if (verbose) write(STDOUT, *) " Right hand side is calculated"
 
      if (iter  <= emiteration) then
-        if (verbose) write(stdout, *) 'em  iteration'
+        if (verbose) write(STDOUT, *) 'em  iteration'
         do i = 1, nvar + 1
            theta(i) = theta(i) + 2 * (theta(i)**2) * rhs(i)  / dble(nobs)
         end do
      else
-        if (verbose) write(stdout, *) 'ai iteration'
+        if (verbose) write(STDOUT, *) 'ai iteration'
         call calculateAImatrix(nobs, nvar, P, AI, f, verbose)
-        if (verbose) write(stdout, *) " AI matrix is calcuated"
+        if (verbose) write(STDOUT, *) " AI matrix is calcuated"
 
         call updatetheta(nvar, AI, rhs, theta, verbose)
-        if (verbose) write(stdout, *) " theta is updated"
+        if (verbose) write(STDOUT, *) " theta is updated"
      end if
 
-     write(stdout, *) " variance vector:"
+     write(STDOUT, *) " variance vector:"
      if (nvar .eq. 1) then
-        write(stdout, '(a11,2x,a11)') "A", "E"
-        write(stdout, *) theta(1:2)
+        write(STDOUT, '(a11,2x,a11)') "A", "E"
+        write(STDOUT, *) theta(1:2)
      else
-        write(stdout, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
-        if (nvar == 4) write(stdout, '(2x,a11)', advance = 'no') "covariance"
-        write(stdout, '(2(2x,a11))') "E_slope", "E_intercept"
-        write(stdout, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
-        if (nvar == 4) write(stdout, '(2x,f11.7)', advance = 'no') theta(4)
-        write(stdout, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+        write(STDOUT, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
+        if (nvar == 4) write(STDOUT, '(2x,a11)', advance = 'no') "covariance"
+        write(STDOUT, '(2(2x,a11))') "E_slope", "E_intercept"
+        write(STDOUT, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
+        if (nvar == 4) write(STDOUT, '(2x,f11.7)', advance = 'no') theta(4)
+        write(STDOUT, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
      end if
 
 !!!! Iteration completed !!!!
@@ -175,16 +175,16 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
      oldtheta(1:(nvar + 1)) = oldtheta(1:(nvar + 1)) - theta(1:(nvar + 1))
      val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
      val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
-     write(stdout, *) "Errors (iter): ",iter
-     write(stdout, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
+     write(STDOUT, *) "Errors (iter): ",iter
+     write(STDOUT, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
 
-     write(stdout, *) 
+     write(STDOUT, *) 
 
      if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon)) then
-        write(stdout, '(a10)') "converged!"
+        write(STDOUT, '(a10)') "converged!"
         exit
      elseif (iter > maxiter) then
-        write(stdout, '(a16)') "did not converge"
+        write(STDOUT, '(a16)') "did not converge"
         stop 1
      end if
      oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))

@@ -28,7 +28,7 @@ program doSTReml
   eStatus = "old"
   call askFileName(phenfile, " filename for phenotypes", status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", phenFile
+     write(STDERR, *) "error in openning file ", phenFile
      stop 1
   end if
 
@@ -58,7 +58,7 @@ program doSTReml
   eStatus = "old"
   call askFileName(AmatFile, trim(msg), status, eStatus)
   if (status(1:1) .eq. "x") then
-     write(stderr, *) "error in openning file ", AmatFile
+     write(STDERR, *) "error in openning file ", AmatFile
      stop 1
   end if
 
@@ -69,7 +69,7 @@ program doSTReml
      if (i > maxid) maxid = i
      if (j > maxid) maxid = j
   end do
-73 write(stderr, *) "error in reading file ", AmatFile
+73 write(STDERR, *) "error in reading file ", AmatFile
   stop 1
 74 continue
   close(AmatFileID)
@@ -81,13 +81,13 @@ program doSTReml
   k = 0 ! number of lines to skip
   call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
 
-  if (verbose) write(stdout, *) " end reading files"
+  if (verbose) write(STDOUT, *) " end reading files"
 
   allocate(theta(2))
-  write(stdout, '(a27)') "initial guess for variances"
-  write(stdout, '(3x, a20)', advance = 'no') "genetic variance: "
+  write(STDOUT, '(a27)') "initial guess for variances"
+  write(STDOUT, '(3x, a20)', advance = 'no') "genetic variance: "
   read(stdin, *) theta(1)
-  write(stdout, '(3x, a20)', advance = 'no') "residual variance: "
+  write(STDOUT, '(3x, a20)', advance = 'no') "residual variance: "
   read(stdin, *) theta(2)
 
   ! theta contains variances and covaraince only; 
@@ -108,7 +108,7 @@ program doSTReml
   call blup(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
        fixEff, ranEff, verbose)
 
-  if (verbose) write(stdout, *) 'fixed effects: ' , fixeff(1 : nfix)
+  if (verbose) write(STDOUT, *) 'fixed effects: ' , fixeff(1 : nfix)
   open(newUnit = iunfix, file = fixEffFile)
   write(iunfix, '(a24)') "population average"
   write(iunfix, *) fixeff(1 : nfix)

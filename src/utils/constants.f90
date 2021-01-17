@@ -5,9 +5,13 @@ module constants
      double precision, dimension(:), pointer :: level(:)
   end type doublePre_Array
 
-  type ArrOfArr
+  type JArrD
      double precision, dimension(:), allocatable :: array
-  end type ArrOfArr
+  end type JArrD
+
+  type JArrR
+     real, dimension(:), allocatable :: array
+  end type JArrR
 
   type chromosome
      integer :: nloci, nblock
@@ -20,8 +24,8 @@ module constants
   type QTL_Array
      integer :: nQTL ! number of QTL (on one chromosome)
      integer :: nComp ! number of traits being affected
-     integer, dimension(:), pointer :: indices
-     double precision, dimension(:,:), pointer :: values
+     integer, dimension(:,:), allocatable :: indices ! nchar x nQTL
+     double precision, dimension(:,:,:), allocatable :: values ! nChr x nQTL x nComp
   end type QTL_Array
 
   !   Handles
