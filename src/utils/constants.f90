@@ -16,10 +16,16 @@ module constants
   type chromosome
      integer :: nloci, nblock
      double precision  :: chrL
-     integer, dimension(:,:,:), pointer :: genotypes
-     real , dimension(:), pointer :: positions ! if the loci are not equidistance,
-     ! then the position (it does not matter if Morgan or cM).
+     integer, dimension(:,:,:), pointer :: genotypes ! nanim x 2 x nblock
+     ! if the loci are not equidist., then the position (no matter if Morgan or cM).
+     real , dimension(:), pointer :: positions ! nloci
   end type chromosome
+
+  type variance
+     double precision, allocatable, dimension(:) :: A ! genetic part
+     double precision, allocatable, dimension(:) :: E ! environemntal part
+     double precision, allocatable, dimension(:) :: PE ! permanent environment
+  end type variance
 
   type QTL_Array
      integer :: nQTL ! number of QTL (on one chromosome)

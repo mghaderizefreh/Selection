@@ -29,6 +29,8 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
   real, dimension(dim, dim) :: covcopy
   real, dimension(:,:), allocatable :: uniform
 
+  external :: spotrf, sgemm, normdev
+
   covcopy = cov
   if (present(seed)) then
      call random_seed(put = seed)
