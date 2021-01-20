@@ -47,10 +47,7 @@ ENDIF(FCNAME STREQUAL "pgf90")
 ############################################################
 
 # Define the executable name
-SET(RRR randregReml.exe)
-SET(STR singleReml.exe)
-SET(RRB randregBlup.exe)
-SET(STB singleBlup.exe)
+SET(analysis analysis.exe)
 SET(SA sample.exe)
 SET(SA2 sample2.exe)
 SET(FE fixeff.exe)
@@ -116,27 +113,27 @@ set(INP8 "${TEST}/input8")
 if (BASH)
     add_test(
         NAME correlated_RR_Reml
-        COMMAND ${BASH} -c "${BIN}/${RRR} < ${INP1};" WORKING_DIRECTORY ${TEST}
+        COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP1};" WORKING_DIRECTORY ${TEST}
     )
     add_test(
         NAME uncorrelated_RR_Reml
-        COMMAND ${BASH} -c "${BIN}/${RRR} < ${INP2};" WORKING_DIRECTORY ${TEST}
+        COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP2};" WORKING_DIRECTORY ${TEST}
     )
     add_test(
         NAME correlated_RR_Blup
-	COMMAND ${BASH} -c "${BIN}/${RRB} < ${INP3};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP3};" WORKING_DIRECTORY ${TEST}
     )
     add_test(
         NAME uncorrelated_RR_Blup
-	COMMAND ${BASH} -c "${BIN}/${RRB} < ${INP4};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP4};" WORKING_DIRECTORY ${TEST}
     )
     add_test(
         NAME single_Reml
-	COMMAND ${BASH} -c "${BIN}/${STR} < ${INP5};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP5};" WORKING_DIRECTORY ${TEST}
     )
     add_test(
         NAME single_Blup
-	COMMAND ${BASH} -c "${BIN}/${STB} < ${INP6};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP6};" WORKING_DIRECTORY ${TEST}
     )
     add_test(
         NAME fixedEff_uncomplete
