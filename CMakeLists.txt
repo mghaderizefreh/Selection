@@ -47,10 +47,11 @@ ENDIF(FCNAME STREQUAL "pgf90")
 ############################################################
 
 # Define the executable name
-SET(RR randreg.exe)
-SET(ST single.exe)
-SET(BL blup.exe)
+SET(analysis analysis.exe)
 SET(SA sample.exe)
+SET(SA2 sample2.exe)
+SET(FE fixeff.exe)
+SET(SEL select.exe)
 
 # Define the library name
 SET(UTILLIB util)
@@ -58,6 +59,7 @@ SET(BLUPLIB blup)
 SET(REMLLIB reml)
 SET(SORTLIB sort)
 SET(RNGLIB rng)
+SET(EVOLLIB evolution)
 
 # Define some directories
 SET(SRC ${CMAKE_SOURCE_DIR}/src)
@@ -66,6 +68,7 @@ SET(LIB2 ${CMAKE_SOURCE_DIR}/lib/sort)
 SET(LIB3 ${CMAKE_SOURCE_DIR}/lib/blup)
 SET(LIB4 ${CMAKE_SOURCE_DIR}/lib/reml)
 SET(LIB5 ${CMAKE_SOURCE_DIR}/lib/rng)
+SET(LIB6 ${CMAKE_SOURCE_DIR}/lib/evolution)
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
 SET(TEST ${CMAKE_SOURCE_DIR}/tests)
 SET(SRCUTIL ${SRC}/utils)
@@ -73,10 +76,11 @@ SET(SRCSORT ${SRC}/quickSort)
 SET(SRCBLUP ${SRC}/blup)
 SET(SRCREML ${SRC}/reml)
 SET(SRCRNG ${SRC}/rng)
+SET(SRCEVOL ${SRC}/evolution)
 SET(MAIN ${SRC}/main)
 
 # Have the .mod files placed in the lib folder
-SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB1} ${LIB2} ${LIB3} ${LIB4} ${LIB5})
+SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB1} ${LIB2} ${LIB3} ${LIB4} ${LIB5} ${LIB6})
 
 # The source for the UTILS library and have it placed in the lib folder
 ADD_SUBDIRECTORY(${SRCUTIL} ${LIB1})
@@ -84,6 +88,7 @@ ADD_SUBDIRECTORY(${SRCSORT} ${LIB2})
 ADD_SUBDIRECTORY(${SRCBLUP} ${LIB3})
 ADD_SUBDIRECTORY(${SRCREML} ${LIB4})
 ADD_SUBDIRECTORY(${SRCRNG} ${LIB5})
+ADD_SUBDIRECTORY(${SRCEVOL} ${LIB6})
 
 # The source for the REML binary and have it placed in the bin folder
 ADD_SUBDIRECTORY(${MAIN} ${BIN})
@@ -101,27 +106,43 @@ set(INP1 "${TEST}/input1")
 set(INP2 "${TEST}/input2")
 set(INP3 "${TEST}/input3")
 set(INP4 "${TEST}/input4")
+set(INP5 "${TEST}/input5")
+set(INP6 "${TEST}/input6")
+set(INP7 "${TEST}/input7")
+set(INP8 "${TEST}/input8")
 if (BASH)
     add_test(
-        NAME correlated
-        COMMAND ${BASH} -c "${BIN}/${RR} < ${INP1};" WORKING_DIRECTORY ${TEST}
+        NAME correlated_RR_Reml
+        COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP1};" WORKING_DIRECTORY ${TEST}
     )
-
     add_test(
-        NAME uncorrelated
-        COMMAND ${BASH} -c "${BIN}/${RR} < ${INP2};" WORKING_DIRECTORY ${TEST}
+        NAME uncorrelated_RR_Reml
+        COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP2};" WORKING_DIRECTORY ${TEST}
     )
-
     add_test(
-        NAME single
-	COMMAND ${BASH} -c "${BIN}/${ST} < ${INP3};" WORKING_DIRECTORY ${TEST}
+        NAME correlated_RR_Blup
+	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP3};" WORKING_DIRECTORY ${TEST}
     )
-
+    add_test(
+        NAME uncorrelated_RR_Blup
+	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP4};" WORKING_DIRECTORY ${TEST}
+    )
+    add_test(
+        NAME single_Reml
+	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP5};" WORKING_DIRECTORY ${TEST}
+    )
+    add_test(
+        NAME single_Blup
+	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP6};" WORKING_DIRECTORY ${TEST}
+    )
+    add_test(
+        NAME fixedEff_uncomplete
+	COMMAND ${BASH} -c "${BIN}/${FE} < ${INP7};" WORKING_DIRECTORY ${TEST}
+    )
     add_test(
 	NAME sample_uncomplete
-	COMMAND ${BASH} -c "${BIN}/${SA} < ${INP4};" WORKING_DIRECTORY ${TEST}
+	COMMAND ${BASH} -c "${BIN}/${SA} < ${INP8};" WORKING_DIRECTORY ${TEST}
     )
-
 else()
     if (WIN32)
         add_test(

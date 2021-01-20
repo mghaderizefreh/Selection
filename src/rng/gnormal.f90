@@ -29,6 +29,8 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
   real, dimension(dim, dim) :: covcopy
   real, dimension(:,:), allocatable :: uniform
 
+  external :: spotrf, sgemm, normdev
+
   covcopy = cov
   if (present(seed)) then
      call random_seed(put = seed)
@@ -69,13 +71,13 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
      ! cholesky factorisation
      call spotrf('L',dim,covcopy,dim,i)
      if (i.gt.0) then
-        write(*,*) ' Cholesky factorisation failed!'
-        write(*,*) ' Covariance matrix is not positive definite'
-        write(*,*) ' Exiting...'
-        stop
+        write(STDERR, *) ' Cholesky factorisation failed!'
+        write(STDERR, *) ' Covariance matrix is not positive definite'
+        write(STDERR, *) ' Exiting...'
+        stop 2
      elseif (i.lt.0) then
-        write(*, *) "some other shit happened"
-        stop
+        write(STDERR, *) "some other shit happened"
+        stop 2
      end if
      do i = 1, dim - 1
         do j = i + 1, dim

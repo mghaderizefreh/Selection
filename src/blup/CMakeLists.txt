@@ -5,6 +5,8 @@ SET(BLUP_src ${SRCBLUP}/getZGZMats.f90
 	     ${SRCBLUP}/calculateP.f90
 	     ${SRCBLUP}/getEffects.f90
 	     ${SRCBLUP}/blup_module.f90
+    	     ${SRCBLUP}/calcIbsMat.f90
+    	     ${SRCBLUP}/BSRibsCalc.f90
 )
 ADD_LIBRARY(${BLUPLIB} STATIC ${BLUP_src})
 
