@@ -68,6 +68,10 @@ ENDIF()
 #                         ${GNUNATIVE}    # GNU
 #                         "-ta=host"      # Portland Group
 #                )
+# this flag is for automatic arrays
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+                 Fortran "-fdec-static"        # GNU
+                )
 
 ###################
 ### DEBUG FLAGS ###

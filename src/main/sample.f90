@@ -49,7 +49,6 @@ program makeListExt
   end if
   call random_seed(put = seed)
 
-
   call askInteger ( nChr, "number of chromosome genotype to be read (one file per chromosome)" )
   if(nChr <=0) then
      write(STDERR,'(a)') "Numbero of chromosomes was invalid"
@@ -71,7 +70,6 @@ program makeListExt
      end if
 
   end do
-
 
   allocate(nloci(nChr))
   allocate(nblocks(nChr))
@@ -134,92 +132,92 @@ program makeListExt
   if (randomSelection .ne. 0) randomSelection = 1
   if (randomSelection .eq. 0) then
 
-     allocate(MAFArray(nChr))
+!     allocate(MAFArray(nChr))
+!
+!     write ( STDOUT, '(a)' ) ' input frequency base file without numbers'
+!     read (STDIN,'(a20)') baseNameFreq
+!     do ichr = 1, nchr
+!        write(filename, '(a,i3.3)') trim(baseNameFreq), ichr
+!        inquire (file=filename, exist=l_exists)
+!        if (.not. l_exists) then
+!           write(STDOUT,'(a4,1x,a,i3.3,1x,a)') "File", trim(baseNameFreq),ichr,"does not exist"
+!           write(STDOUT, '(a)') "exiting..."
+!           stop 2
+!        else
+!           write(6,'(a4,1x,a,i3.3,1x,a6)') "File", trim(baseNameFreq),ichr, "exists."
+!           continue
+!        end if
+!     end do
+!
+!     write(STDOUT,'(a)') " Minimum frequency to filter for:"
+!     read(STDIN,*) maf
+!     if (maf > .5) then
+!        write(STDERR, '(a)') " miniminm allele frequency cannot be more than 0.5"
+!        write(STDERR, '(a)') " exiting..."
+!        stop 2
+!     end if
 
-     write ( STDOUT, '(a)' ) ' input frequency base file without numbers'
-     read (STDIN,'(a20)') baseNameFreq
-     do ichr = 1, nchr
-        write(filename, '(a,i3.3)') trim(baseNameFreq), ichr
-        inquire (file=filename, exist=l_exists)
-        if (.not. l_exists) then
-           write(STDOUT,'(a4,1x,a,i3.3,1x,a)') "File", trim(baseNameFreq),ichr,"does not exist"
-           write(STDOUT, '(a)') "exiting..."
-           stop(2)
-        else
-           write(6,'(a4,1x,a,i3.3,1x,a6)') "File", trim(baseNameFreq),ichr, "exists."
-           continue
-        end if
-     end do
-
-     write(STDOUT,'(a)') " Minimum frequency to filter for:"
-     read(STDIN,*) maf
-     if (maf > .5) then
-        write(STDERR, '(a)') " miniminm allele frequency cannot be more than 0.5"
-        write(STDERR, '(a)') " exiting..."
-        stop(2)
-     end if
-
-     do iChr = 1, nChr
-        write(fileName,'(a,i3.3)') trim(baseNameFreq), ichr
-        open(newUnit = iun, file = fileName, status = 'old')
-        allocate(MAFArray(iChr)%ROW(nloci(iChr)))
-        do i = 1, nloci(iChr)
-           read(iun, *, iostat=iostat) iid, rand, iid, freq
-           MAFArray(iChr)%ROW(i) = min(freq, 1- freq)
-        end do
-        close(iun)
-
-        allocate(temp(nloci(iChr)))
-        call sortrx(nloci(ichr), MAFArray(ichr)%ROW,temp)
-
-        i = 0
-        do while(i < nLoci(iChr))
-           i = i + 1
-           if (MAFarray(ichr)%ROW(temp(i)) .gt. maf) then
-              i = i - 1
-              exit
-           end if
-        end do
-        deallocate(temp)
-
-        nAvail = nLoci(iChr) - i
-        if (nAvail < nReq) then
-681        format(" Number of QTL is less than nLoci for Chromosome ", i2," for MAF > ", f10.8)
-682        format(" iChr, NReq, Nloci, available, < maf", i2, 4x, i4, 3x, i4, 2x, i4, 2x, i4)
-           write(STDERR, 681) iChr, maf
-           write(STDERR, 682) iChr, NReq, nLoci(iChr), nAvail , i
-           write(STDERR, '(a)') "exiting..."
-           stop(2)
-        end if
-
-        allocate(temp(nAvail))
-        do i = 1, nAvail
-           temp(i) = i
-        end do
-        call choice(temp, nAvail, nReq, iReq)
-        iQTL = iReq(1:nQTL)
-        iSNP = iReq(nQTL+1:nReq)
-        QTLlist(ichr,:) = iQTL
-        SNPlist(ichr,:) = iSNP
-        deallocate(temp)
-     end do
-
-     open(newUnit = iun , file = QTLfile, status = 'unknown')
-     open(newUnit = iun2, file = SNPfile, status = 'unknown')
-     do iChr = 1, nChr
-        do i = 1, nQTL
-           call normdev(rand)
-           values(ichr, i,1) = rand
-           call normdev(freq)
-           values(ichr, i,2) = freq
-           write(iun,'(i3,3x,i6,3x,f15.7,3x,f15.7)') iChr, QTLlist(ichr, i), rand, freq
-        end do
-        do i = 1, nSNP
-           WRITE(iun2, '(i3,3x,i6)') iChr, SNPlist(ichr, i)
-        end do
-     end do
-     close(iun )
-     close(iun2)
+!     do iChr = 1, nChr
+!        write(fileName,'(a,i3.3)') trim(baseNameFreq), ichr
+!        open(newUnit = iun, file = fileName, status = 'old')
+!        allocate(MAFArray(iChr)%ROW(nloci(iChr)))
+!        do i = 1, nloci(iChr)
+!           read(iun, *, iostat=iostat) iid, rand, iid, freq
+!           MAFArray(iChr)%ROW(i) = min(freq, 1- freq)
+!        end do
+!        close(iun)
+!
+!        allocate(temp(nloci(iChr)))
+!        call sortrx(nloci(ichr), MAFArray(ichr)%ROW,temp)
+!
+!        i = 0
+!        do while(i < nLoci(iChr))
+!           i = i + 1
+!           if (MAFarray(ichr)%ROW(temp(i)) .gt. maf) then
+!              i = i - 1
+!              exit
+!           end if
+!        end do
+!        deallocate(temp)
+!
+!        nAvail = nLoci(iChr) - i
+!        if (nAvail < nReq) then
+!681        format(" Number of QTL is less than nLoci for Chromosome ", i2," for MAF > ", f10.8)
+!682        format(" iChr, NReq, Nloci, available, < maf", i2, 4x, i4, 3x, i4, 2x, i4, 2x, i4)
+!           write(STDERR, 681) iChr, maf
+!           write(STDERR, 682) iChr, NReq, nLoci(iChr), nAvail , i
+!           write(STDERR, '(a)') "exiting..."
+!           stop 2
+!        end if
+!
+!        allocate(temp(nAvail))
+!        do i = 1, nAvail
+!           temp(i) = i
+!        end do
+!        call choice(temp, nAvail, nReq, iReq)
+!        iQTL = iReq(1:nQTL)
+!        iSNP = iReq(nQTL+1:nReq)
+!        QTLlist(ichr,:) = iQTL
+!        SNPlist(ichr,:) = iSNP
+!        deallocate(temp)
+!     end do
+!
+!     open(newUnit = iun , file = QTLfile, status = 'unknown')
+!     open(newUnit = iun2, file = SNPfile, status = 'unknown')
+!     do iChr = 1, nChr
+!        do i = 1, nQTL
+!           call normdev(rand)
+!           values(ichr, i,1) = rand
+!           call normdev(freq)
+!           values(ichr, i,2) = freq
+!           write(iun,'(i3,3x,i6,3x,f15.7,3x,f15.7)') iChr, QTLlist(ichr, i), rand, freq
+!        end do
+!        do i = 1, nSNP
+!           WRITE(iun2, '(i3,3x,i6)') iChr, SNPlist(ichr, i)
+!        end do
+!     end do
+!     close(iun )
+!     close(iun2)
 
   else ! i.e., when the selection is random
 

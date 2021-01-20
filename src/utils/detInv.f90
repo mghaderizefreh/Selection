@@ -105,6 +105,7 @@ subroutine detInv(nobs, V, detV, ipiv, work, verbose)
   double precision, intent(out)                                       :: detV
 
   integer                                                             :: ifail, ineg, info
+  external                                                            :: dsptri, dsptrf, dspdrf_Ldet
 
   if (verbose) write(stdout,*) "  In the subroutine detinv"
   call dsptrf('u', nobs, V, ipiv, info)
