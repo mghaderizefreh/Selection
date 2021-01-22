@@ -17,27 +17,27 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   !! ================ variable definitions  ================ !!
   logical, intent(in)                            :: verbose
   integer, intent(in)                            :: nobs, nvar, nfix, maxid
-  integer, dimension(:), intent(in)              :: id ! real id of animals
-  double precision, dimension(:), intent(in)     :: y ! phenotypes
-  double precision, dimension(:,:), intent(in)   :: x ! incid. mat fixed effects
-  double precision, dimension(:), intent(inout)  :: theta
-  double precision, dimension(:), intent(in)     :: Gmatrix
+  integer, dimension(:), intent(in)              :: id ! real(KINDR) id of animals
+  real(KINDR), dimension(:), intent(in)     :: y ! phenotypes
+  real(KINDR), dimension(:,:), intent(in)   :: x ! incid. mat fixed effects
+  real(KINDR), dimension(:), intent(inout)  :: theta
+  real(KINDR), dimension(:), intent(in)     :: Gmatrix
   integer, intent(in), optional                  :: EmIterations, maxIters
 
-  double precision, dimension(:), intent(out)    :: fixEffects
+  real(KINDR), dimension(:), intent(out)    :: fixEffects
   type(doublePre_Array),dimension(:),intent(out) :: ranEffects
 
   type(doublePre_Array),dimension(:),allocatable :: theZGZ
   type(JArrD), dimension(:), allocatable      :: f
-  double precision, dimension(:), allocatable    :: oldtheta, Py, P, V, AI, rhs, work
-  double precision                               :: logl, epsilon = 1.d-6
-  double precision                               :: val1, val2
-  double precision                               :: detV, det_xt_vinv_x, yPy
+  real(KINDR), dimension(:), allocatable    :: oldtheta, Py, P, V, AI, rhs, work
+  real(KINDR)                               :: logl, epsilon = 1.d-6
+  real(KINDR)                               :: val1, val2
+  real(KINDR)                               :: detV, det_xt_vinv_x, yPy
   integer, dimension(:), allocatable             :: ipiv
-  double precision, dimension(:,:), allocatable  :: Vhat
+  real(KINDR), dimension(:,:), allocatable  :: Vhat
   integer                                        :: i, j, emIteration
   integer                                        :: ifail, iter, maxIter
-  double precision, external                     :: dnrm2, ddot, dasum
+  real(KINDR), external                     :: dnrm2, ddot, dasum
   !! ================ No defintion after this line ================ !!
 
   allocate(Py(nobs), Vhat(nfix, nobs))

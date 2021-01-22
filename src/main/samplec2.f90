@@ -10,11 +10,11 @@ program sample2
   integer :: i, ifail, j
   integer :: nloci, nblock, maxloci, maxblock
   type(chromosome), DIMENSION(:), allocatable :: genome
-  real, dimension(:,:), allocatable :: covMat
+  real(KINDR), dimension(:,:), allocatable :: covMat
   integer, dimension(:,:), allocatable :: SNPlist
   type(QTL_Array) :: QTLlist
 
-  double precision :: val1
+  real(KINDR) :: val1
   integer :: nchr, nqtl, nsnp, ncomp
   logical :: rmaf
   call istart(seed, startfile, i)
@@ -26,7 +26,7 @@ program sample2
 
   prefixfilename = "dumpedigree.ch"
   allocate(genome(1))
-  call initialiseGenotypes(1, 900, 3, nloci, nblock, 1, genome,&
+  call initialiseGenotypes(.true.,1, 900, 3, nloci, nblock, 1, genome,&
        maxloci, maxblock, ifail, prefixfilename)
   
  
@@ -48,7 +48,7 @@ program sample2
   rmaf = .false.
   val1 = 0.1d0
   prefixfilename = "freq.txt"
-  call getQTLandSNP(nchr, nQTL, nSNP, nComp, rmaf, genome, QTLlist, &
+  call getQTLandSNP(.true.,nchr, nQTL, nSNP, nComp, rmaf, genome, QTLlist, &
        SNPlist, covMat, prefixfilename, val1)
 
   open(1,file = 'QTLlist.txt')

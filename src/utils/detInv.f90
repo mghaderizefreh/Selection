@@ -35,11 +35,11 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
   character ( len = * ) :: BLASuplo
   integer          :: info, N
   integer          :: ipiv( * )
-  double precision :: ap( * )
+  real(KINDR) :: ap( * )
 
-  double precision :: logDet
+  real(KINDR) :: logDet
   integer          :: signDet
-  double precision :: val1
+  real(KINDR) :: val1
 
   integer :: k, i,ipos, ipos1
 
@@ -100,9 +100,9 @@ subroutine detInv(nobs, V, detV, ipiv, work, verbose)
   logical, intent(in)                                                 :: verbose
   integer, intent(in)                                                 :: nobs
   integer, dimension(:), intent(in)                                   :: ipiv
-  double precision, dimension(:), intent(in)                          :: work
-  double precision, dimension(:), intent(inout)                       :: V
-  double precision, intent(out)                                       :: detV
+  real(KINDR), dimension(:), intent(in)                          :: work
+  real(KINDR), dimension(:), intent(inout)                       :: V
+  real(KINDR), intent(out)                                       :: detV
 
   integer                                                             :: ifail, ineg, info
   external                                                            :: dsptri, dsptrf, dspdrf_Ldet

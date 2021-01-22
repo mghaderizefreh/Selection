@@ -3,17 +3,17 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
   use global_module
   implicit none
   logical, intent(in)                                                   :: verbose
-  double precision, dimension(:), intent(in)                            :: Vinv
-  double precision, dimension(:,:), intent(in)                          :: X
+  real(KINDR), dimension(:), intent(in)                            :: Vinv
+  real(KINDR), dimension(:,:), intent(in)                          :: X
   integer, intent(in)                                                   :: nobs, nfix
-  double precision, dimension(:), intent(out)                           :: P
-  double precision, intent(out)                                         :: det_xt_vinv_x
-  double precision, dimension(:,:), intent(out)                         :: Vhat
+  real(KINDR), dimension(:), intent(out)                           :: P
+  real(KINDR), intent(out)                                         :: det_xt_vinv_x
+  real(KINDR), dimension(:,:), intent(out)                         :: Vhat
 
   integer                                                               :: info, I
   integer, dimension(:), allocatable, save                              :: ipiv2
-  double precision, dimension(:,:), allocatable, save                   :: Vinvfull, mat, temp
-  double precision, dimension(:), allocatable, save                     :: vec, work2
+  real(KINDR), dimension(:,:), allocatable, save                   :: Vinvfull, mat, temp
+  real(KINDR), dimension(:), allocatable, save                     :: vec, work2
 
   external                                                              :: dgemm, dtrttp, daxpy 
 

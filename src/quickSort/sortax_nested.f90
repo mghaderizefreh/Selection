@@ -2,6 +2,7 @@
 
 !===============================================================================
   subroutine  isSmallerEqualLarger_Int(trait,ncol,columns,ipos1, ipos2, isize)
+    use constants
     implicit none
     integer, dimension(:,:)   , intent(in)        :: trait
     integer,                    intent(in)        :: ncol
@@ -28,6 +29,7 @@
 
 !===============================================================================
   subroutine isSmallerEqualLarger_Int8 ( trait, ncol, columns, ipos1, ipos2, isize )
+      use constants
       implicit none
       integer(kind=8), dimension ( :, : ), intent ( in ) :: trait
       integer, intent ( in ) :: ncol
@@ -54,8 +56,9 @@
 
 !===============================================================================
   subroutine  isSmallerEqualLarger_Rea(trait,ncol,columns,ipos1, ipos2, isize)
+    use constants
     implicit none
-    real   , dimension(:,:)   , intent(in)        :: trait
+    real(KINDR)   , dimension(:,:)   , intent(in)        :: trait
     integer,                    intent(in)        :: ncol
     integer, dimension(:)     , intent(in)        :: columns
     INTEGER                   , INTENT(IN)        :: ipos1, ipos2
@@ -80,8 +83,9 @@
 
 !===============================================================================
   subroutine  isSmallerEqualLarger_Dbl(trait,ncol,columns,ipos1, ipos2, isize)
+    use constants
     implicit none
-    double precision , dimension(:,:), intent(in) :: trait
+    real(KINDR) , dimension(:,:), intent(in) :: trait
     integer,                    intent(in)        :: ncol
     integer, dimension(:)     , intent(in)        :: columns
     INTEGER                   , INTENT(IN)        :: ipos1, ipos2
@@ -106,6 +110,7 @@
 
 !===============================================================================
   subroutine  isSmallerEqualLarger_Cha(trait,ncol,columns,ipos1, ipos2, isize)
+    use constants
     implicit none
     CHARACTER(LEN=*), dimension(:,:), intent(in)  :: trait
     integer,                    intent(in)        :: ncol
@@ -169,6 +174,7 @@
 ! Created:  15 Jul 1986  Len Moss
 !
 !===================================================================
+    use constants
     integer,                 intent(in)        :: ncol
     integer, dimension(:)  , intent(in)        :: columns
  
@@ -445,6 +451,7 @@
 ! Created:  15 Jul 1986  Len Moss
 !
 !===================================================================
+    use constants
     integer,                 intent(in)        :: ncol
     integer, dimension(:)  , intent(in)        :: columns
  
@@ -729,6 +736,7 @@
 ! Created:  15 Jul 1986  Len Moss
 !
 !===================================================================
+          use constants
           integer, intent ( in ) :: ncol
           integer, dimension ( : ), intent ( in ) :: columns
  

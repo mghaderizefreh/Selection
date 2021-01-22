@@ -26,20 +26,20 @@ program makeListExt
   character (len=20) :: startfile, baseNameGenotype, QTLfile, SNPfile, baseNameFreq
   integer :: nChr, iChr, iun, iun2, iun3, i, iostat, iid, nanim, randomSelection,k, j, ii
   integer :: nQTL, nSNP, nReq, nAvail, nComp
-  double precision :: maf
+  real(KINDR) :: maf
   logical :: l_exists
   character(len = 30):: fileName, status, estatus
   character(len = 256):: corrStructFile
   integer, dimension(:), allocatable :: nLoci, nBlocks, iQTL,iSNP,iReq, temp, seed
   integer, dimension(:,:), allocatable :: QTLlist, SNPlist
-  real, dimension(:,:,:), allocatable :: values
-  real, dimension(:,:), allocatable  :: covMat, values_1D
-  real, dimension(:), allocatable ::  means
+  real(KINDR), dimension(:,:,:), allocatable :: values
+  real(KINDR), dimension(:,:), allocatable  :: covMat, values_1D
+  real(KINDR), dimension(:), allocatable ::  means
   type JaggedArray
-     real, dimension(:), allocatable :: ROW
+     real(KINDR), dimension(:), allocatable :: ROW
   end type JaggedArray
   type(JaggedArray) , dimension(:) , allocatable:: MAFArray
-  real :: rand, freq
+  real(KINDR) :: rand, freq
 
   write(startfile,'(a)') "inicio.dat"
   call istart(seed, startfile, i)

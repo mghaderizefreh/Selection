@@ -4,14 +4,14 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
   implicit none
   logical, intent(in)                              :: verbose
   integer, intent(in)                              :: nobs, nvar
-  double precision, dimension(:), intent(in)       :: theta
+  real(KINDR), dimension(:), intent(in)       :: theta
   type (doublePre_array), dimension(:), intent(in) :: theZGZ
   integer, intent(out)                             :: ifail
-  double precision, dimension(:), intent(out)      :: V
+  real(KINDR), dimension(:), intent(out)      :: V
 
   integer, parameter                               :: k = 3  ! the index of the diagonal matrix ZsZs
   integer                                          :: i, ipos, irow, isize
-  double precision                                 :: Val1
+  real(KINDR)                                 :: Val1
 
   if (verbose) write(STDOUT,*) "  In the subroutine CalculateV"
   ifail = 1

@@ -12,7 +12,7 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   integer, intent(in) :: ivar !(0:sample, 1:2pq, 2:2p'q')
   integer, intent(in) :: imiss !(0:mean, 1:ignore)
   integer, intent(in) :: addDom !(1:additive, 2:dominance)
-  double precision, dimension(:), allocatable :: Amat
+  real(KINDR), dimension(:), allocatable :: Amat
 
   integer :: totalSNP, maxLength
   integer :: i, j, k
@@ -21,7 +21,7 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   integer :: totLoci, ibit1, iblck1, iloci, id, iChr, ipos, isnp
   integer, dimension(:,:), allocatable :: genotype
   integer, dimension(:), allocatable :: chr_nlocibefore, pruningSNP, usedSNPMat
-  double precision, dimension(:), allocatable :: cumvarMat
+  real(KINDR), dimension(:), allocatable :: cumvarMat
   character(len=3) :: effect
   integer, dimension(2,2) :: genocode
   integer, dimension(0:3) :: ngeno
@@ -130,23 +130,25 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
           usedSNPMAT, cumvarMAT, ifail)
   end if
 
-  open( 1, FILE = "matrix.txt", STATUS = 'unknown' )
-  ipos = 0
-  i = nanim * ( nanim + 1 ) / 2
-  write(formato, '(a2,i1,a5,i1,a22)') '(i', maxLength, ',1x,i', maxLength, &
-       ',1x,g24.15,i9,g24.15)'
-  write(*,*) " formato= ", trim(formato)
-  do i = 1, nanim
-     do j = 1, i
-        ipos = ipos + 1
-        if (imiss == 0) then
-           write(1, formato) ident(i), ident(j), amat(ipos)
-        else
-           write(1, formato) ident(i), ident(j), amat(ipos),&
-                usedSNPMAT(ipos), cumvarMAT(ipos)
-        end if
+  if (verbose) then
+     open( 1, FILE = "AMAT.txt", STATUS = 'unknown' )
+     ipos = 0
+     i = nanim * ( nanim + 1 ) / 2
+     write(formato, '(a2,i1,a5,i1,a22)') '(i', maxLength, ',1x,i', maxLength, &
+          ',1x,g24.15,i9,g24.15)'
+     write(*,*) " formato= ", trim(formato)
+     do i = 1, nanim
+        do j = 1, i
+           ipos = ipos + 1
+           if (imiss == 0) then
+              write(1, formato) ident(i), ident(j), amat(ipos)
+           else
+              write(1, formato) ident(i), ident(j), amat(ipos),&
+                   usedSNPMAT(ipos), cumvarMAT(ipos)
+           end if
+        end do
      end do
-  end do
-  close(1)
+     close(1)
+  end if
 
 end subroutine getGmatrix

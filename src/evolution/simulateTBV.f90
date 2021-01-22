@@ -1,6 +1,6 @@
 ! Written by Masoud Ghaderi. Documented on 4 Nov, 2019
 subroutine SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome, QTLlist, SNPlist,&
-     TBV)
+     TBV, verbose)
 
   use constants
   implicit none
@@ -11,17 +11,16 @@ subroutine SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome, QTLlist, SNPlist
   type(chromosome), dimension(nChr), intent(in) :: genome
   type(QTL_Array), intent(in) :: QTLlist
   integer, dimension(nChr, nSNP) :: SNPlist
-  double precision, dimension(:,:), allocatable, intent(out) :: TBV
-  !  double precision, dimension(nAnim), intent(out) :: phen
-
+  real(KINDR), dimension(:,:), allocatable, intent(out) :: TBV
+  logical, intent(in) :: verbose
 
   integer, dimension (:), allocatable :: haplotype1, haplotype2
   integer, dimension (:), allocatable :: pruningSNP, chr_nlocibefore, pruningSNP2
-  double precision, dimension(:,:), allocatable :: effect
+  real(KINDR), dimension(:,:), allocatable :: effect
   integer :: i, j, k, id, iloci, a1, a2, nloci, nblock
   integer :: iblck1, ibit1, nbits
   integer :: ichr, totLoci, totQTL
-  double precision :: val1
+  real(KINDR) :: val1
 
   nbits = 32
   allocate(chr_nlocibefore(nChr))
@@ -108,10 +107,7 @@ subroutine SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome, QTLlist, SNPlist
      end do
   end do
 
+  if (verbose) write(STDOUT, *) "breeding values simulated"
+
 end subroutine SimulateTBV
-
-
-
-
-
 

@@ -12,10 +12,10 @@ subroutine getMatricesCorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1, Z1
   logical                                                               :: verbose
   integer, intent(in)                                                   :: nobs
   integer, dimension(:), intent(in)                                     :: id
-  double precision, dimension(:), intent(in)                            :: G
-  double precision, dimension(:,:), intent(in)                          :: X
-  double precision, dimension(:), intent(out)                           :: Z1GZ1, Z2GZ2, Z1Z1, Z1GZ2
-  !  double precision, dimension(:), intent(out), optional                 :: Z1Z1pe, Z2Z2, Z1Z2
+  real(KINDR), dimension(:), intent(in)                            :: G
+  real(KINDR), dimension(:,:), intent(in)                          :: X
+  real(KINDR), dimension(:), intent(out)                           :: Z1GZ1, Z2GZ2, Z1Z1, Z1GZ2
+  !  real(KINDR), dimension(:), intent(out), optional                 :: Z1Z1pe, Z2Z2, Z1Z2
   integer                                                               :: i, j, k, ipos, ipos1, ipos2
   intrinsic                                                             :: max
   integer, external                                                     :: lowerpos
@@ -84,9 +84,9 @@ subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
   logical                                                               :: verbose
   integer, intent(in)                                                   :: nobs
   integer, dimension(:), intent(in)                                     :: id
-  double precision, dimension(:), intent(in)                            :: G
-  double precision, dimension(:,:), intent(in)                          :: X
-  double precision, dimension(:), intent(out)                           :: Z1GZ1, Z2GZ2, Z1Z1
+  real(KINDR), dimension(:), intent(in)                            :: G
+  real(KINDR), dimension(:,:), intent(in)                          :: X
+  real(KINDR), dimension(:), intent(out)                           :: Z1GZ1, Z2GZ2, Z1Z1
   integer                                                               :: i, j, k, ipos, ipos1, ipos2
   intrinsic                                                             :: max
   integer, external                                                     :: lowerpos
@@ -123,12 +123,12 @@ subroutine getMatrices(verbose, nobs, X, G, id, ZGZ)
   logical                         , intent(in)  :: verbose
   integer         , dimension(:)  , intent(in)  :: id
   integer                         , intent(in)  :: nobs
-  double precision, dimension(:)  , intent(in)  :: G
-  double precision, dimension(:,:), intent(in)  :: X
-  double precision, dimension(:)  , intent(out) :: ZGZ
+  real(KINDR), dimension(:)  , intent(in)  :: G
+  real(KINDR), dimension(:,:), intent(in)  :: X
+  real(KINDR), dimension(:)  , intent(out) :: ZGZ
   integer, external                             :: lowerpos
   integer :: i, j, id1, ipos, ipos1 !, nrank
-  !  double precision :: val1
+  !  real(KINDR) :: val1
 
   !ZGZt will be size nobs X nobs
   ! so the array to store half diag is: ( nobs+1) *nobs/2
@@ -159,14 +159,14 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   ! written by R. Pong-Wong
   ! edited by M. Ghaderi Zefreh (minor edits for STDOUT/STDERR output)
   character(len=*)   , intent(IN) :: matfile
-  double precision   , dimension(:), intent(inout) :: amat
+  real(KINDR)   , dimension(:), intent(inout) :: amat
   integer            , intent(inout) :: nrank
   integer            , intent(in) :: skip
   integer            , intent(out) :: ifail
 
   integer :: irow, icol, ipos,i,ibin,k
   integer :: irank,iun
-  double precision :: val1
+  real(KINDR) :: val1
   integer, external :: lowerpos
 
   if (ibin .eq. 1) then

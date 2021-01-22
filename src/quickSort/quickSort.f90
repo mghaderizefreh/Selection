@@ -69,16 +69,17 @@ contains
 !===================================================================
  
 !      INTEGER   N,INDEX(N)
-!      REAL      DATA(:)
+!      REAL(KINDR)      DATA(:)
+use constants
 implicit none
       INTEGER   N
       INTEGER ,dimension(:) :: INDEX
-      REAL ,dimension(:) :: DATA
+      REAL(KINDR) ,dimension(:) :: DATA
 
  
       INTEGER   LSTK(31),RSTK(31),ISTK
       INTEGER   L,R,I,J,P,INDEXP,INDEXT
-      REAL      DATAP
+      REAL(KINDR)      DATAP
  
 !     QuickSort Cutoff
 !
@@ -499,7 +500,7 @@ maxback1=maxback+1
                ENDIF
             INDEX(P+1) = INDEXP
 
-	    
+    
 if(maxback < maxback1)maxback=maxback1
 !write(*,*)'i maxback ',i,k,maxback,maxback1,kkk
 
@@ -751,7 +752,7 @@ if(maxback < maxback1)maxback=maxback1
                   END IF
                   INDEX( P + 1 ) = INDEXP
 
-	    
+    
 !                  if ( maxback < maxback1 ) maxback = maxback1
 !write(*,*)'i maxback ',i,k,maxback,maxback1,kkk
 
@@ -770,7 +771,7 @@ if(maxback < maxback1)maxback=maxback1
       SUBROUTINE SORTDX(N,DATA,INDEX)
 !===================================================================
 !
-!     SORTRX -- SORT, double precision input, indeX output
+!     SORTRX -- SORT, real(KINDR) input, indeX output
 !
 !
 !     Input:  N     INTEGER
@@ -808,14 +809,15 @@ if(maxback < maxback1)maxback=maxback1
  
 !      INTEGER   N,INDEX(N)
 !      REAL      DATA(:)
+use constants
       INTEGER   N
       INTEGER ,dimension(:) :: INDEX
-      DOUBLE PRECISION ,dimension(:) :: DATA
+      REAL(KINDR) ,dimension(:) :: DATA
 
  
       INTEGER   LSTK(31),RSTK(31),ISTK
       INTEGER   L,R,I,J,P,INDEXP,INDEXT
-      DOUBLE PRECISION   DATAP
+      REAL(KINDR)   DATAP
  
 !     QuickSort Cutoff
 !

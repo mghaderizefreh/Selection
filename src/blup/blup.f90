@@ -7,21 +7,21 @@ subroutine blup(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   !! ================ variable definitions  ================ !!
   logical, intent(in)                            :: verbose
   integer, intent(in)                            :: maxid, nvar, nobs, nfix
-  integer, dimension(:), intent(in)              :: id ! real id of animals
-  double precision, dimension(:), intent(in)     :: y ! phenotypes
-  double precision, dimension(:,:), intent(in)   :: X ! incid. matrix
-  double precision, dimension(:), intent(in)     :: Gmatrix
-  double precision, dimension(:),intent(inout)   :: theta
+  integer, dimension(:), intent(in)              :: id ! real(KINDR) id of animals
+  real(KINDR), dimension(:), intent(in)     :: y ! phenotypes
+  real(KINDR), dimension(:,:), intent(in)   :: X ! incid. matrix
+  real(KINDR), dimension(:), intent(in)     :: Gmatrix
+  real(KINDR), dimension(:),intent(inout)   :: theta
   integer, intent(in), optional                  :: EmIterations, maxIters
 
-  double precision, dimension(:), intent(out)    :: fixEffects
+  real(KINDR), dimension(:), intent(out)    :: fixEffects
   type(doublePre_Array),dimension(:),intent(out) :: ranEffects
 
   type(doublePre_Array),dimension(:),allocatable :: theZGZ
-  double precision, dimension(:), allocatable    :: Py, P, V, work
+  real(KINDR), dimension(:), allocatable    :: Py, P, V, work
   integer                                        :: ifail, i, j
-  double precision                               :: val1, val2
-  double precision, dimension(:,:), allocatable  :: Vhat
+  real(KINDR)                               :: val1, val2
+  real(KINDR), dimension(:,:), allocatable  :: Vhat
   integer, dimension(:), allocatable             :: ipiv
   external                            :: dspmv
   !! ================ No defintion after this line ================ !!

@@ -2,6 +2,9 @@ subroutine Choice(source, sourceSize, number, output, seed)
   !---------------------------------------------------------------------------------------------
   ! Samples "number" elements from "Source" with size "sourceSize" and stores in "output"
 
+  use constants
+  implicit none
+
   integer , intent( in ) :: sourceSize, number
   integer, dimension(:), intent(in) :: source
   integer, dimension(:), intent(out) :: output
@@ -9,7 +12,7 @@ subroutine Choice(source, sourceSize, number, output, seed)
 
   integer, dimension(:), allocatable :: sourceCopy
   integer :: ind, temp, i
-  real :: rand
+  real(KINDR) :: rand
 
   if (present(seed)) then
      call random_seed(put = seed)

@@ -55,7 +55,7 @@ subroutine ifinal(seed,startfile)
   integer, dimension(:), intent(inout) :: seed
   character(len = 11), intent(in) :: startfile
   integer :: i, n, iun, HUGEN
-  real, dimension(:), allocatable :: values
+  real(KINDR), dimension(:), allocatable :: values
   logical :: iex
   character(len = 7) :: fmto
   call random_seed(size = n)

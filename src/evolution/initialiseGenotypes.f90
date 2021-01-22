@@ -9,11 +9,12 @@
 !if option 1 and 2 are used, all chromosomes have similar 
 !
 
-subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, genome,&
-     maxloci, maxblock, ifail, prefixfilename)
+subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock, istore&
+     , genome, maxloci, maxblock, ifail, prefixfilename)
   use constants
   implicit none
 
+  logical, intent(in) :: verbose
   integer, intent(in) :: genstart, nanim, nchr, istore
   character(len=*), optional, intent(in) :: prefixfilename
   integer, intent(inout) :: nloci
@@ -21,7 +22,7 @@ subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, gen
   integer, intent(out) :: ifail, nblock
 
   integer :: iun, i, k, id, j, ichr, igam, a1, iblock
-  real :: rand
+  real(KINDR) :: rand
   integer :: maxblock, maxloci
   character(len=256) :: filename
 
@@ -166,7 +167,7 @@ subroutine initialiseGenotypes(nchr, nanim, genstart, nloci, nblock, istore, gen
      end do
   end if
 
-  write(STDOUT,'(a)')' end initialising genotypes'
+  if (verbose) write(STDOUT,'(a)')' end initialising genotypes'
 
 end subroutine initialiseGenotypes
 

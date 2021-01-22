@@ -5,10 +5,10 @@ subroutine calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, f, verbose)
   logical, intent(in)                                 :: verbose
   integer, intent(in)                                 :: nobs, nvar
   type (doublePre_array), dimension(:), intent(in)    :: theZGZ
-  double precision, dimension(:), intent(in)          :: P, Py
-  double precision, dimension(:), intent(out)         :: rhs
+  real(KINDR), dimension(:), intent(in)          :: P, Py
+  real(KINDR), dimension(:), intent(out)         :: rhs
   type (JArrD), dimension(:), intent(inout)           :: f
-  double precision, external                          :: ddot 
+  real(KINDR), external                          :: ddot 
   integer                                             :: i
   integer, parameter                                  :: k=3!ind of diag mat ZsZs
 

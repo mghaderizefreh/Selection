@@ -19,6 +19,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
   !             dominance       needs the heterozygote and at least one homozygote
   !========================================================================
   ! use precision_types
+  use constants
   implicit none
 
   character(len=*), intent(in) :: effect
@@ -28,20 +29,20 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
   integer, intent(in) :: ivar
   integer, dimension(:,:), intent(in) :: genotypes
   !put as inout so amat is not force to be adjusted if failed
-  double precision, dimension(:), intent(inout) :: amat  
+  real(KINDR), dimension(:), intent(inout) :: amat  
   integer, intent(out) :: ifail
 
   integer :: i, j, id1, id2, ipos, isnp
-  double precision :: val1, val4
+  real(KINDR) :: val1, val4
   integer :: k
 
   character(len=3) :: theeffect
   integer :: n, usedSNP, igen, ieffect
   !isHomozygote(0:3)
   integer, dimension(0:3) :: ngen
-  double precision, dimension(0:3) :: genscore
-  double precision, dimension(0:3, 0:3) :: IBSstatus
-  double precision :: sumvar, mean, vari
+  real(KINDR), dimension(0:3) :: genscore
+  real(KINDR), dimension(0:3, 0:3) :: IBSstatus
+  real(KINDR) :: sumvar, mean, vari
 
   integer, dimension(nanim), automatic :: idused
 
@@ -241,6 +242,7 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
   !             dominance       needs the heterozygote and at least one homozygote
   !========================================================================
 !  use precision_types
+  use constants
   implicit none
 
   character(len=*), intent(in) :: effect
@@ -250,26 +252,26 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
   integer, intent(in) :: ivar
   integer, dimension(:,:), intent(in) :: genotypes
   !put as inout so amat is not forced to be adjusted if failed
-  double precision, dimension(:), intent(inout) :: amat
+  real(KINDR), dimension(:), intent(inout) :: amat
   integer, intent(out):: ifail
 
   !put as inout so cumvarMAT is not forced to be adjusted if failed
-  double precision, dimension(:), intent(inout) :: cumvarMAT  
+  real(KINDR), dimension(:), intent(inout) :: cumvarMAT  
   !put as inout so usedSNPMAT is not forced to be adjusted if failed
   integer, dimension(:), intent(inout) :: usedSNPMAT 
   integer :: i, j, id1, id2, ipos, isnp
-  double precision:: val1, val4
+  real(KINDR):: val1, val4
   integer :: k
 
   character(len=3) :: theeffect
   integer :: n, usedSNP, igen, ieffect
   !!,isHomozygote(0:3)
   integer, dimension(0:3) :: ngen
-  double precision, dimension(0:3) :: genscore
-  double precision, dimension(0:3,0:3) :: IBSstatus
-  double precision :: sumvar, mean, vari
+  real(KINDR), dimension(0:3) :: genscore
+  real(KINDR), dimension(0:3,0:3) :: IBSstatus
+  real(KINDR) :: sumvar, mean, vari
 
-  double precision, dimension(0:3) :: IBSvar
+  real(KINDR), dimension(0:3) :: IBSvar
   integer, dimension(0:3) :: IBSnSNP
 
   integer, dimension(nanim), automatic :: idused

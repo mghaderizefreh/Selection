@@ -1,11 +1,12 @@
 subroutine dunpack(uplo, n, ap, a, lda, info)
+  use constants
   implicit none
-  ! unpacks a double precision vector to a full matrix. The difference with the lapack method is
+  ! unpacks a real(KINDR) vector to a full matrix. The difference with the lapack method is
   ! that here I pack both upper and lower part of the matrix
   character(len = 1), intent(in)                                      :: uplo ! not used just kept for consistency
   integer, intent(in)                                                 :: n, lda
-  double precision, dimension(:), intent(in)                          :: ap
-  double precision, dimension(:,:), intent(inout)                     :: a
+  real(KINDR), dimension(:), intent(in)                          :: ap
+  real(KINDR), dimension(:,:), intent(inout)                     :: a
   integer, intent(out)                                                :: info
   integer                                                             :: i, j, k
 

@@ -4,12 +4,12 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
 
   ! Inputs:
   !     `dim`    : dimension of the distribution (integer)
-  !     `mean`   : mean of the distribution (1D real array of shape `dim`)
-  !     `cov`    : covariance matrix (2D real array of shape `dim` x `dim`)
+  !     `mean`   : mean of the distribution (1D real(KINDR) array of shape `dim`)
+  !     `cov`    : covariance matrix (2D real(KINDR) array of shape `dim` x `dim`)
   !     `N`   : number of samples (integer)
-  !     `output` : (2D real array of shape `dim` x `N`) output
+  !     `output` : (2D real(KINDR) array of shape `dim` x `N`) output
   !     `nseed`  : seed for random stream (integer)
-  ! matrix `cov`. `N` is the length of the array and `output` is a real
+  ! matrix `cov`. `N` is the length of the array and `output` is a real(KINDR)
   ! array of shape `dim` x `output`.
   !
   ! written by Masoud Ghaderi Zefreh
@@ -19,19 +19,20 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
 
   implicit none
   integer, intent(in) :: dim, N
-  real, dimension(1:dim), intent(in) :: mean
-  real, dimension(1:dim, 1:dim), intent(in) :: cov
-  real, dimension(1:N, 1:dim), intent(inout) :: output
+  real(KINDR), dimension(1:dim), intent(in) :: mean
+  real(KINDR), dimension(1:dim, 1:dim), intent(in) :: cov
+  real(KINDR), dimension(1:N, 1:dim), intent(inout) :: output
   integer, intent(in), dimension(:), optional :: seed
 
   integer :: dim2, i, j
-  real :: sd, val
-  real, dimension(dim, dim) :: covcopy
-  real, dimension(:,:), allocatable :: uniform
+  real(KINDR) :: sd, val
+  real(KINDR), dimension(dim, dim) :: covcopy
+  real(KINDR), dimension(:,:), allocatable :: uniform
 
-  external :: spotrf, sgemm, normdev
+  external :: dpotrf, dgemm, normdev
 
   covcopy = cov
+
   if (present(seed)) then
      call random_seed(put = seed)
   end if
@@ -69,7 +70,7 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
      uniform = output
 
      ! cholesky factorisation
-     call spotrf('L',dim,covcopy,dim,i)
+     call dpotrf('L',dim,covcopy,dim,i)
      if (i.gt.0) then
         write(STDERR, *) ' Cholesky factorisation failed!'
         write(STDERR, *) ' Covariance matrix is not positive definite'
@@ -98,10 +99,11 @@ subroutine normdev(val)
 ! making a random varaible form standard normal
 ! copy of ricardo's code (goto replaced by while)
 ! Routine 'gasdev' ,Numerical Recipes, page 203
+  use constants
   implicit none
   save
-  real    ::val,v1,v2,fac, r = 2.
-  real    ::gset =0.0
+  real(KINDR)    ::val,v1,v2,fac, r = 2.
+  real(KINDR)    ::gset =0.0
   integer ::iset =0
 
   if (iset .eq. 0) then

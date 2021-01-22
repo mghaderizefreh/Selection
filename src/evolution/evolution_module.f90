@@ -6,4 +6,5 @@ contains
   include "getQTLandSNP.f90"
   include "simulateTBV.f90"
   include "simulatePhenotype.f90"
+  include "covariate.f90"
 end module evolution_module

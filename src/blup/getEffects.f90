@@ -10,16 +10,16 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
   implicit none
   logical                                             :: verbose
   integer, intent(in)                                 :: nobs, nfix, nvar, maxid
-  double precision, dimension(:), intent(in)          :: Gmatrix
+  real(KINDR), dimension(:), intent(in)          :: Gmatrix
   integer, dimension(:), intent(in)                   :: id
-  double precision, dimension(:), intent(in)          :: theta, Py, y
-  double precision, dimension(:,:), intent(in)        :: Vhat, X
-  double precision, dimension(:), intent(out)         :: fixeff
+  real(KINDR), dimension(:), intent(in)          :: theta, Py, y
+  real(KINDR), dimension(:,:), intent(in)        :: Vhat, X
+  real(KINDR), dimension(:), intent(out)         :: fixeff
   type (doublePre_Array), dimension(:), intent(out)   :: raneff
 
-  double precision, dimension(:), allocatable         :: temp
+  real(KINDR), dimension(:), allocatable         :: temp
   integer                                             :: i, j
-  double precision                                    :: val1, s1, s2
+  real(KINDR)                                    :: val1, s1, s2
   type (doublePre_Array), dimension(:), allocatable, target   :: theZPy
 
   external                                            :: dgemm

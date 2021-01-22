@@ -3,8 +3,8 @@ subroutine updatetheta(nvar, AI, rhs, theta, verbose)
   implicit none
   integer, intent(in)                             :: nvar
   logical, intent(in)                             :: verbose
-  double precision, dimension(:), intent(in)      :: AI, rhs
-  double precision, dimension(:), intent(inout)   :: theta
+  real(KINDR), dimension(:), intent(in)      :: AI, rhs
+  real(KINDR), dimension(:), intent(inout)   :: theta
   integer                                         :: n, info
   integer, dimension(:), allocatable, save        :: ipiv
 

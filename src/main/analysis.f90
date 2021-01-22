@@ -21,15 +21,15 @@ program analysis
   integer :: i, j, k, maxid, nvar, nobs, nfix
   integer :: phenFileID, AmatFileID, iunFix, iunRan, iunVar
   integer :: lines, empties, emiteration, maxIter
-  integer, dimension(:), allocatable :: id ! real id of animals
+  integer, dimension(:), allocatable :: id ! real(KINDR) id of animals
 
-  double precision :: val1, val2
-  double precision, dimension(:), allocatable :: y ! phenotypes
-  double precision, dimension(:,:), allocatable :: x !incid. matrix for fixed effects
-  double precision, dimension(:), allocatable :: temAmat
-  double precision, dimension(:), allocatable :: theta, oldtheta
+  real(KINDR) :: val1, val2
+  real(KINDR), dimension(:), allocatable :: y ! phenotypes
+  real(KINDR), dimension(:,:), allocatable :: x !incid. matrix for fixed effects
+  real(KINDR), dimension(:), allocatable :: temAmat
+  real(KINDR), dimension(:), allocatable :: theta, oldtheta
   type (doublePre_Array), dimension(:), allocatable :: raneff
-  double precision, allocatable, dimension(:) :: fixEff
+  real(KINDR), allocatable, dimension(:) :: fixEff
   !! ================ No defintion after this line ================ !!
 
   call askYesNoInteger(i, " should the program be verbose? (0:No, 1:Yes) ", 0)
@@ -56,7 +56,7 @@ program analysis
   if (ifail .ne. 0) stop 1
   nobs=lines-empties
 
-  ! allocating y (phenotypes) and id (real id of animals) and incidience matrix
+  ! allocating y (phenotypes) and id (real(KINDR) id of animals) and incidience matrix
   allocate(y(nobs), id(nobs), X(nobs,nfix))
 
   ! reading the data

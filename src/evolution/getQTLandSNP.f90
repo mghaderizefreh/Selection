@@ -1,28 +1,29 @@
-subroutine getQTLandSNP(nChr, nQTL, nSNP, nComp, randomMAF, genome, QTLlist, &
-     SNPlist, covMat, baseNameFreq, MAF)
+subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
+     QTLlist, SNPlist, covMat, baseNameFreq, MAF)
   use constants
   use rng_module
   use quickSort
   implicit none
 
+  logical, intent(in) :: verbose
   integer, intent(in) :: nChr, nQTL, nSNP, nComp
   logical, intent(in) :: randomMAF
   type(chromosome), dimension(:), allocatable, intent(in) :: genome
   type(QTL_Array), intent(out) :: QTLlist
   integer, dimension(:,:), allocatable, intent(out) :: SNPlist
-  real, dimension(nComp, nComp), intent(in) :: covMat
+  real(KINDR), dimension(nComp, nComp), intent(in) :: covMat
   character (len=20), intent(in), optional :: baseNameFreq
-  double precision, intent(in), optional :: MAF
+  real(KINDR), intent(in), optional :: MAF
 
   integer :: iChr, i, k, j, iun
   integer :: nReq, nAvail
   logical :: l_exists
   character(len = 256):: fileName
   integer, dimension(:), allocatable :: iReq, temp
-  real, dimension(:,:), allocatable  :: values_1D
-  real, dimension(:), allocatable :: means
-  type(JArrR) , dimension(:) , allocatable:: MAFArray
-  double precision :: rand, freq
+  real(KINDR), dimension(:,:), allocatable  :: values_1D
+  real(KINDR), dimension(:), allocatable :: means
+  type(JArr) , dimension(:) , allocatable:: MAFArray
+  real(KINDR) :: rand, freq
   if (.not.randomMAF) then
      if (.not.present(baseNameFreq).or..not.present(MAF)) then
         write(STDERR, *) "Error"
@@ -53,9 +54,10 @@ subroutine getQTLandSNP(nChr, nQTL, nSNP, nComp, randomMAF, genome, QTLlist, &
   QTLList%nQTL = nQTL
   nReq = nQTL + nSNP
   allocate(iReq(nReq))
-
+  write(6, *) covmat(1,:)
+  write(6, *) covmat(2,:)
   call gnormal(means, covMat, nComp, k, values_1D)
-
+  if (verbose) write(STDOUT, *) " random values for tbv created"
   if (.not.randomMAF) then
      allocate(MAFArray(nChr))
 
@@ -126,5 +128,6 @@ subroutine getQTLandSNP(nChr, nQTL, nSNP, nComp, randomMAF, genome, QTLlist, &
 
      end do ICHRLOOP2
   end if
+  if (verbose) write(STDOUT, *) "QTL and SNP list simulated"
 end subroutine getQTLandSNP
 

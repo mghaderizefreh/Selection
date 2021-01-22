@@ -1,15 +1,15 @@
 subroutine inormal(mean, cov, dim, size, output, seed)
   ! this subroutine is a wrapper for vsrnggaussianmv which is the mkl
-  ! function to produce an array of real numbers of given dimension which
+  ! function to produce an array of real(KINDR) numbers of given dimension which
   ! are drawn from the normal distribution with a given mean.
   ! Inputs:
   !     `dim`    : dimension of the distribution (integer)
-  !     `mean`   : mean of the distribution (1D real array of shape `dim`)
-  !     `cov`    : covariance matrix (2D real array of shape `dim` x `dim`)
+  !     `mean`   : mean of the distribution (1D real(KINDR) array of shape `dim`)
+  !     `cov`    : covariance matrix (2D real(KINDR) array of shape `dim` x `dim`)
   !     `size`   : number of samples (integer)
-  !     `output` : (2D real array of shape `dim` x `size`) output
+  !     `output` : (2D real(KINDR) array of shape `dim` x `size`) output
   !     `seed`   : seed for random stream (integer)
-  ! matrix `cov`. `size` is the length of the array and `output` is a real
+  ! matrix `cov`. `size` is the length of the array and `output` is a real(KINDR)
   ! array of shape `dim` x `output`.
   !
   ! written by Masoud Ghaderi Zefreh
@@ -22,9 +22,9 @@ subroutine inormal(mean, cov, dim, size, output, seed)
   implicit none
 
   integer, intent(in) :: dim, size
-  real, dimension(1:dim), intent(in) :: mean
-  real, dimension(1:dim, 1:dim), intent(in) :: cov
-  real, dimension(1:dim, 1:size), intent(out) :: output
+  real(KINDR), dimension(1:dim), intent(in) :: mean
+  real(KINDR), dimension(1:dim, 1:dim), intent(in) :: cov
+  real(KINDR), dimension(1:dim, 1:size), intent(out) :: output
   integer, intent(in), dimension(:), optional :: seed
 
   integer, dimension(:), allocatable :: seed2

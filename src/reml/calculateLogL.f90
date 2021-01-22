@@ -3,11 +3,11 @@ subroutine calculateLogL(nobs, detV, det_xt_vinv_x, P, y, LogL,Py, yPy, verbose)
   implicit none
   logical, intent(in)                                                 :: verbose
   integer, intent(in)                                                 :: nobs
-  double precision, intent(in)                                        :: detV, det_xt_vinv_x
-  double precision, dimension(:), intent(in)                          :: P, y
-  double precision, dimension(:), intent(out)                         :: Py
-  double precision, intent(out)                                       :: yPy, LogL
-  double precision, external                                          :: ddot
+  real(KINDR), intent(in)                                        :: detV, det_xt_vinv_x
+  real(KINDR), dimension(:), intent(in)                          :: P, y
+  real(KINDR), dimension(:), intent(out)                         :: Py
+  real(KINDR), intent(out)                                       :: yPy, LogL
+  real(KINDR), external                                          :: ddot
 
   external                                                            :: dspmv
 

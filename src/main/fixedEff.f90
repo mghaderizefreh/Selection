@@ -17,24 +17,24 @@ program AIREML
   integer                                                   :: skip, lines, empties
   !  integer, dimension(8)                                     :: clock_start, clock_beginning, clock_elements1, clock_elements2
   integer, dimension(:), allocatable                        :: id, tempInd
-  double precision                                          :: phenVar, val1, val2
-  !  double precision                                          :: ypy
-  !  double precision, dimension(:), allocatable               :: gvariances
-  double precision, dimension(:), allocatable               :: y, Amatrix, temAmat
-  double precision, dimension(:,:), allocatable             :: x 
-  !  double precision, dimension(:), allocatable               :: Py, temamat1, raneff, xtvinv
-  !  double precision, dimension(:), pointer                   :: a_trmat1,a_trmat2
-  !  double precision, dimension(:), allocatable               :: yext, theta, newtheta
+  real(KINDR)                                          :: phenVar, val1, val2
+  !  real(KINDR)                                          :: ypy
+  !  real(KINDR), dimension(:), allocatable               :: gvariances
+  real(KINDR), dimension(:), allocatable               :: y, Amatrix, temAmat
+  real(KINDR), dimension(:,:), allocatable             :: x 
+  !  real(KINDR), dimension(:), allocatable               :: Py, temamat1, raneff, xtvinv
+  !  real(KINDR), dimension(:), pointer                   :: a_trmat1,a_trmat2
+  !  real(KINDR), dimension(:), allocatable               :: yext, theta, newtheta
 
   !  type (doublePre_Array), dimension(:), allocatable, target :: theGy
 
-  !  double precision                                          :: determinantV, logl
+  !  real(KINDR)                                          :: determinantV, logl
   !  integer                                                   :: ineg, info
   integer, dimension(:), allocatable                        :: env, temp!, ipiv
-  !  double precision, dimension(:,:), allocatable             :: temp1, temp2
+  !  real(KINDR), dimension(:,:), allocatable             :: temp1, temp2
   !  integer, dimension(:), allocatable                        :: temp1shape, temp2shape
   !  integer                                                   :: temp1dim, temp2dim
-  !  double precision, external                                :: dnrm2, ddot
+  !  real(KINDR), external                                :: dnrm2, ddot
 
   !! ================ No defintion after this line ================ !!
   ! getting phenotype file name and reading it
@@ -53,7 +53,7 @@ program AIREML
   if (ifail .ne. 0) stop 1
   nobs=lines-empties
 
-  ! allocating y (phenotypes) and id (real id of animals)
+  ! allocating y (phenotypes) and id (real(KINDR) id of animals)
   allocate(y(nobs), id(nobs), env(nobs), tempInd(nobs), temp(nobs))
 
   open(newUnit = phenFileID, file = phenFile)

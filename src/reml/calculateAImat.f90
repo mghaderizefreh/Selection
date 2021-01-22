@@ -4,12 +4,12 @@ subroutine calculateAImatrix(nobs, nvar, P, AI, f, verbose)
   implicit none
   logical, intent(in)                                                 :: verbose
   integer, intent(in)                                                 :: nobs, nvar
-  double precision, dimension(:), intent(in)                          :: P
-  double precision, dimension(:), intent(out)                         :: AI
+  real(KINDR), dimension(:), intent(in)                          :: P
+  real(KINDR), dimension(:), intent(out)                         :: AI
   type (JArrD), dimension(:), intent(in)                              :: f
-  double precision, external                                          :: ddot
+  real(KINDR), external                                          :: ddot
   integer                                                             :: i, k, j
-  double precision, dimension(:), allocatable, save                   :: temp
+  real(KINDR), dimension(:), allocatable, save                   :: temp
 
   external                                                            :: dspmv
 
