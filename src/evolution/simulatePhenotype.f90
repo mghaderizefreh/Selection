@@ -1,32 +1,5 @@
-!    Creates the phenotype file for intercept and slope given variances
-!
-!    Inputs are genetic variance for slope and intercept, 
-!                    variance for permanent env effect for slope and intercetp (can be zero)
-!                    environment variance for slope and intercept
-!                    number of equidistance intervals in the environment
-!                    first environment (double precision)
-!                    last environemnt (double precision)
-!                    filename of the id of the inidividuals which are going to be phenotyped
-!                    filename of the id of the founders (variances are based on the founders)
-!                    name of a file for storing true breeding values for intercept __ see makePhenotype.f90 for output type
-!                    name of a file for stroing true breeding values for slope __ see makePhenotype.f90 for output type
-!
-!    The assumptions are:
-!                    individuals are genotyped in files with name `pedigree.ch???` where ??? is chromosome number
-!                    there are 26 chromosomes
-!                    QTL values (for slope and intercept) are stored in QTLlist.txt
-!                    SNP list are stored in SNPlist.txt
-!
-!    Outputs are stored as:
-!                    phen.slo as the phenotype of slope with format ``i, Phen_slo(i), TBV_slo(i), PE_slo(i), E_slo(i,j)''
-!                                    where i is individual and j is the environment
-!                    phen.inc as phenotype of intercept similar to phen.slo
-!                    phen.is as phenotype of individuals as ``i, env(j), Phen(i,j)'' with j being nested in i
-!
-! Written by Masoud Ghaderi. Documented on 4 Nov, 2019
-
-subroutine SimulatePhenotype(nAnim, nComp, indiv, TBV, locations,&
-     ids, phen)
+subroutine SimulatePhenotype(nAnim, nComp, indiv, TBV, variances, means, &
+     locations, ids, phen, proc, cte)
 
   use constants
   use rng_module
@@ -35,80 +8,76 @@ subroutine SimulatePhenotype(nAnim, nComp, indiv, TBV, locations,&
   integer, intent(in) :: nAnim, nComp
   integer, dimension(nanim), intent(in) :: indiv
   double precision, dimension(nanim, ncomp), intent(in) :: TBV
-!  type(variance), intent(in) :: varainces
-!  double precision, dimension(ncomp) :: means
+  type(variance), intent(in) :: variances
+  double precision, dimension(ncomp) :: means
   double precision, dimension(:,:), intent(in) :: locations
   integer, dimension(:), allocatable, intent(out) :: ids
-  double precision, dimension(:), allocatable, intent(out) :: phen
+  double precision, dimension(:,:), allocatable, intent(out) :: phen
+  character(len = *) :: proc
+  double precision, intent(out) :: cte
 
-  integer :: i
-!  real :: rand
-!  real, dimension (:,:), allocatable :: frequency  
-!  double precision, dimension (:), allocatable :: tempval, envarray
-  !double precision, dimension (:), allocatable :: tbvslo, tbvint
- ! CHARACTER ( LEN = 256 ) :: fileeffect, filetbvs, filetbvi,  filepruningIND
-!  double precision :: val1,val2,val3, val4, val5, val6, phenotype, phenotype_slo
-!  double precision :: phenotype_int
-!  double precision :: h2int, h2sl, sd_A_slo, sd_A_int, sd_E_slo, sd_E_int, sd_PE_slo
-!  double precision :: sd_PE_int, sd_P_int, sd_P_sl , env_first, env_last
-!  double precision :: Eij_slo, Eij_int
-!  double precision :: var_A_slo, var_A_int, var_E_slo, var_E_int, var_PE_slo
-!  double precision :: var_PE_int, var_P_slo, var_P_int
-!  CHARACTER ( LEN = 30 ) :: baseName, startfile
-!  INTEGER :: i, j,k, id, iloci, a1, a2, ihap, offfileun
-!  integer :: iblck1, iblck2, ibit1, ibit2, nbits, nseed
-!  integer :: nQTL, totQTL, nsteps, ifile, sfile, nparent, nOff, nFounder
-!  integer :: iungen ,iuneff,iuntbvs, iuntbvi,iunpruneSNP,iunpruneIND, iunps,iunpi
-!  integer :: iunpo, iunpOff
-!  integer :: idmissing, nloci, nblock, ichr, totLoci,totsavedLoci, totSavedInd
-!  integer, dimension(:), allocatable :: chr_nblock, chr_nloci, chr_nlocibefore
-!  character (len=256) :: filepruneSNP, fileQTL
-!  real, DIMENSION ( :, :, : ), allocatable :: chr_frequency
-!  integer, dimension ( : ), allocatable :: pruningIND, pruningSNP
-!  double precision, allocatable, dimension(:) :: temp!, A, Ps, PEs, PEi
-!  logical :: allexist, L_EXISTS, forOff
+  integer :: i, j, k
+  double precision, dimension (:),allocatable :: temp
+  real, dimension(:,:), allocatable :: temp2
+  real, dimension (:), allocatable :: tempr
+  double precision, allocatable, dimension(:,:) :: A, E!, PE
 
-  !  call askInteger(nFounder, " input the number of founders")
-  !  call askInteger(nsteps, ' Enter the number of equidistance intervals')
-  !  read *, env_first
-  !  read *, env_last
-!  var_A_slo = variances%A(1)
-!  var_A_int = variances%A(2)
-!  var_PE_slo = variances%PE(1)
-!  var_PE_int = variances%PE(2)
-!  var_E_slo = variances%E(1)
-!  var_E_int = variances%E(2)
-!
-!  var_P_int = var_A_int + var_PE_int + var_E_int
-!  var_P_slo = var_A_slo + var_PE_slo + var_E_slo
+  allocate(temp2(nComp, nComp))
+  temp2(1:nComp, 1:nComp) = 0.0
+  do i = 1, nComp
+     temp2(i,i) = real(variances%E(i))
+  end do
+  tempr(1:nComp) = 0.0
 
-!  allocate(temp(nanim))
-  
-!  nparent = nfounder
-
-  if (size(locations) == 1) then
+  j = size(locations)
+  if (j == 1) then
      i = nAnim
+     allocate(phen(i,1), ids(i), E(i,nComp))
+     ids = indiv
+  elseif ((j < nAnim) .and. (size(locations, 1) .eq. 1)) then
+     i = j * nAnim
+     allocate(phen(i,2), ids(i))
+     do k = 1, j
+        phen(k:i:j, 1) = locations(1, k)
+        ids(k:i:j) = indiv(1:nAnim)
+     end do
+  elseif (size(locations, 1) == nAnim) then
+     i = size(locations, 2)
+     allocate(phen(j,2), ids(j))
+     write(6, *) "i", i
+     write(6, *) "phen", shape(phen)
+     do k = 1, i
+        write(6, *) 'k, phen to hold', k, shape(phen(k:j:i,1))
+        phen(k:j:i, 1) = locations(1:nAnim, k)
+        ids( ((k - 1) * nAnim + 1) : (k * nAnim) ) = indiv(1:nAnim)
+     end do
   else
-     i = size(locations)
+     write(STDERR, *) "Error: The format of 'locations' is wrong"
+     write(STDERR, *) "Use either:"
+     write(STDERR, *) " - [size:    1 x 1   ] all animals in the same location"
+     write(STDERR, *) " - [size:    1 x nLox] all have phenotypes in nlox places"
+     write(STDERR, *) " - [size:nAnim x nLox] phenotypes at different places"
   end if
-  allocate(phen(i), ids(i))
-  phen(1:i) = 0.d0
-  ids(1:i) = 0
-  !
-  !! what I do here is replacing the original tbvslope by its centralised version
-  ! scaled by parents sd. this is to make sure tvb's have an expectation zero while
-  ! they give a desired value for h2
+
+  call gnormal(tempr, temp2, nComp, i, E)
+  ! todo: implementation for PE if really it is required
   
-  !  
-  !  tbvslo = (tbvslo - val1 / dble(nparent)) / sd_A_slo * sqrt(var_A_slo)
-  !  sd_E_slo = sqrt(var_E_slo)!  sd_E_slo = sqrt(1 - h2sl) * sd_P_sl
-  !
-  !  val4 = sum(tbvint(1 : nparent))
-  !  temp = tbvint * tbvint
-  !  val5 = sum(temp(1 : nparent))
-  !  sd_A_int = sqrt( (val5 - val4 * val4 / dble(nparent)) / dble(nparent - 1))
-  !  tbvint = (tbvint - val4 / dble(nparent)) / sd_A_int * sqrt(var_A_int)
-  !  sd_E_int = sqrt(var_E_int) ! sqrt(1 - h2int) * sd_P_int
+  select case (proc(1:3))
+  case ("COV", "COv", "CoV", "Cov", "cOV", "cOv", "coV", "cov")
+     call covariate(nComp, nAnim, indiv, TBV, E, phen, locations, means, cte)
+  case default
+     write(STDERR, *) "error:"
+     write(STDERR, *) "case '", proc, "' not implemented"
+     stop 2
+  end select
+     
+
+  open(1, file = 'phentest')
+  do i = 1, size(phen,1)
+     write(1, *) ids(i), phen(i,:)
+  end do
+  close(1)
+  stop
   !
   !  ! permanent and random effect to be added later in the loop
   !  ! Ps = musl + tbvslope  

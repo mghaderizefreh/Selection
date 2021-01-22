@@ -9,7 +9,7 @@ program select
   implicit none
 
   logical, parameter :: verbose = .true.
-  integer, parameter :: nChr = 26
+  integer, parameter :: nChr = 1
   integer :: genestart, nanim, istore, nanimNext
   integer :: nloci, nblock, maxloci, maxblock, ifail
   character(len=256) :: startFile, filename1, filename2
@@ -19,21 +19,23 @@ program select
   integer, dimension(:), allocatable :: seed
   integer, dimension(:), pointer :: indiv
 
+  logical :: random
   double precision, dimension(:,:), allocatable :: frequency
   integer :: ngen, withpos
   double precision :: chrL, mutationRate
 
   !ncomp is the number of traits by a QTL (slope, intercept --> 2, otherwise 1)
-  integer, parameter :: nSNP = 1000, nQTL = 500, nComp = 2
+nn  integer, parameter :: nSNP = 1000, nQTL = 500, nComp = 2
   integer, dimension(:,:), allocatable :: SNPlist
   type(QTL_Array) :: QTLlist
   real, dimension(:,:), allocatable :: covMat
 
-  double precision, allocatable, dimension(:,:) :: TBV, locations
-  double precision, allocatable, dimension(:) :: phenotypes, Amat
+  double precision, allocatable, dimension(:,:) :: TBV, locations, CTE, phenotypes
+  double precision, allocatable, dimension(:) :: Amat, means
   integer, allocatable, dimension(:) :: ids
   integer :: ivar, iscaled, imiss, addDom
   double precision :: v1, v2
+  type(variance) :: vars
   real :: rand
   integer :: i, j, k, ichr, iun, iun2
 
@@ -61,37 +63,53 @@ program select
   Parentgenome => genome1
   Offgenome    => genome2
 
+  allocate(vars%A(nComp), vars%E(nComp), vars%PE(nComp), vars%corr(nComp,nComp))
+  vars%A = (/ 1.0, 3.0 /)
+  vars%E = (/ 9.0, 7.0 /)
+  vars%PE = 0.0
+  vars%corr(1,:) = (/ 1.0, 0.3/)
+  vars%corr(2,:) = (/ 0.3, 1.0/)
   ! read the files to initialise the genotype of the first generation
   call initialiseGenotypes(nchr, nanim, genestart, nloci, nblock, istore, genome1,&
        maxloci, maxblock, ifail, filename1)
 
-  allocate(covMat(ncomp,ncomp))
-  covMat(1,:) = (/ 1.0, 0.3/)
-  covMat(2,:) = (/ 0.3, 1.0/)
-  j = 500
-  k = 1000
-  !  call getQTLandSNP(nChr, j, k, ncomp, .true., genome1, QTLlist, &
-  !       SNPlist, covMat)
-  print*, 'reading snplist'
-  allocate(SNPlist(nChr, k))
-  open(1, file = 'SNPlist.txt')
-  do iChr = 1, nChr
-     do j = 1, 1000
-        read(1, *) i, k
-        SNPlist(iChr, j) = k
-     end do
-  end do
-  
+  random = .true.
+  call getQTLandSNP(nChr, nQTL, nSNP, nComp, .true., genome1, QTLlist, &
+       SNPlist, vars%corr)
+ ! print*, 'reading snplist'
+!  allocate(SNPlist(nChr, k))
+!  open(1, file = 'SNPlist.txt')
+!  do iChr = 1, nChr
+!     do j = 1, 1000
+!        read(1, *) i, k
+!        SNPlist(iChr, j) = k
+!     end do
+!  end do
 
-  allocate(indiv(nanim))
+  allocate(indiv(nanim), CTE(nComp, 2))
   indiv= (/( i, i = 1, nanim )/)
-!  call SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome1, QTLlist, SNPlist, TBV)
+  call SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome1, QTLlist, SNPlist, TBV)
 
-!  allocate(locations(1,1))
-!  call SimulatePhenotype(nAnim, nComp, indiv, TBV, locations, ids, phenotypes)
+  ! this shall run only for the first generation
+  CTE(:, 1) = (/( sum(TBV(1:nAnim, i)) / nAnim , i = 1, nComp )/)
+  do i = 1, nComp
+     v1 = sum(TBV(1:nAnim, i)) / nAnim
+     CTE(i, 1) = sum((TBV(1:nAnim, i) - v1) ** 2) / (nAnim - 1)
+     QTLlist%values(1:nChr, 1:nQTL, i) = QTLlist%values(1:nChr, 1:nQTL, i) * &
+          sqrt(vars%A(i)/ CTE(i, 1))
+     TBV(1:nAnim, i) = TBV(1:nAnim, i) * sqrt(vars%A(i)/ CTE(i, 1))
+     CTE(i, 2) = sum(TBV(1:nAnim, i)) / nAnim
+     TBV(1:nAnim, i) = TBV(1:nAnim, i) - CTE(i, 2)
+  end do
+
+  allocate(locations(1,1))
+  locations(1,1) = 1_kindr
+  allocate(means(2))
+  means = (/ -2.0, 11.0 /)
+  call SimulatePhenotype(nAnim, nComp, indiv, TBV, vars, means, locations, ids, phenotypesm, "cov", v1)
 
   ! genomic evaluation
-  ! making Gmatrixo
+  ! making Gmatrix
   iscaled = 1 !(0:no, 1:yes)
   ivar  = 1!(0:sample, 1:2pq, 2:2p'q')
   imiss = 0!(0:mean, 1:ignore)
