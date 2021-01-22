@@ -7,7 +7,7 @@ subroutine calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, f, verbose)
   type (doublePre_array), dimension(:), intent(in)    :: theZGZ
   real(KINDR), dimension(:), intent(in)          :: P, Py
   real(KINDR), dimension(:), intent(out)         :: rhs
-  type (JArrD), dimension(:), intent(inout)           :: f
+  type (JArr), dimension(:), intent(inout)           :: f
   real(KINDR), external                          :: ddot 
   integer                                             :: i
   integer, parameter                                  :: k=3!ind of diag mat ZsZs

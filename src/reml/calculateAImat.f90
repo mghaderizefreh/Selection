@@ -6,7 +6,7 @@ subroutine calculateAImatrix(nobs, nvar, P, AI, f, verbose)
   integer, intent(in)                                                 :: nobs, nvar
   real(KINDR), dimension(:), intent(in)                          :: P
   real(KINDR), dimension(:), intent(out)                         :: AI
-  type (JArrD), dimension(:), intent(in)                              :: f
+  type (JArr), dimension(:), intent(in)                              :: f
   real(KINDR), external                                          :: ddot
   integer                                                             :: i, k, j
   real(KINDR), dimension(:), allocatable, save                   :: temp

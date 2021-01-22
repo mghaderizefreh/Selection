@@ -28,7 +28,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   type(doublePre_Array),dimension(:),intent(out) :: ranEffects
 
   type(doublePre_Array),dimension(:),allocatable :: theZGZ
-  type(JArrD), dimension(:), allocatable      :: f
+  type(JArr), dimension(:), allocatable      :: f
   real(KINDR), dimension(:), allocatable    :: oldtheta, Py, P, V, AI, rhs, work
   real(KINDR)                               :: logl, epsilon = 1.d-6
   real(KINDR)                               :: val1, val2
