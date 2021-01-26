@@ -1,5 +1,5 @@
 subroutine SimulatePhenotype(nAnim, nComp, indiv, TBV, variances, means, &
-     locations, ids, phen, proc, cte)
+     locations, ids, phen, proc, cte, X)
 
   use constants
   use rng_module
@@ -12,15 +12,16 @@ subroutine SimulatePhenotype(nAnim, nComp, indiv, TBV, variances, means, &
   real(KINDR), dimension(ncomp) :: means
   real(KINDR), dimension(:,:), intent(in) :: locations
   integer, dimension(:), allocatable, intent(out) :: ids
-  real(KINDR), dimension(:,:), allocatable, intent(out) :: phen
+  real(KINDR), dimension(:), allocatable, intent(out) :: phen
   character(len = *) :: proc
   real(KINDR), intent(out) :: cte
+  real(KINDR), dimension(:,:), allocatable, intent(out) :: X
 
   integer :: i, j, k
-  real(KINDR), dimension(:),allocatable :: temp
+!  real(KINDR), dimension(:),allocatable :: temp
   real(KINDR), dimension(:,:), allocatable :: temp2
   real(KINDR), dimension(:), allocatable :: tempr
-  real(KINDR), allocatable, dimension(:,:) :: A, E!, PE
+  real(KINDR), allocatable, dimension(:,:) :: E!, A, PE
 
   allocate(temp2(nComp, nComp), tempr(nComp))
   temp2(1:nComp, 1:nComp) = ZERO
@@ -31,26 +32,26 @@ subroutine SimulatePhenotype(nAnim, nComp, indiv, TBV, variances, means, &
   tempr(1:nComp) = ZERO
 
   j = size(locations)
-  write(6, *) j
+
   if (j == 1) then
      i = nAnim
-     allocate(phen(i,1), ids(i), E(i,nComp))
+     allocate(phen(i), ids(i), E(i,nComp), X(i, 1))
+     X(1:i, 1) = ONE
      ids = indiv
   elseif ((j < nAnim) .and. (size(locations, 1) .eq. 1)) then
      i = j * nAnim
-     allocate(phen(i,2), ids(i))
+     allocate(phen(i), ids(i), X(i, 2), E(i, nComp))
      do k = 1, j
-        phen(k:i:j, 1) = locations(1, k)
         ids(k:i:j) = indiv(1:nAnim)
+        X(k:i:j, 1) = locations(1, k)
+        X(1:i, 2) = ONE
      end do
   elseif (size(locations, 1) == nAnim) then
      i = size(locations, 2)
-     allocate(phen(j,2), ids(j))
-     write(6, *) "i", i
-     write(6, *) "phen", shape(phen)
+     allocate(phen(j), ids(j), X(j, 2), E(j, nComp))
      do k = 1, i
-        write(6, *) 'k, phen to hold', k, shape(phen(k:j:i,1))
-        phen(k:j:i, 1) = locations(1:nAnim, k)
+        X(k:j:i, 1) = locations(1:nAnim, k)
+        X(1:i, 2) = ONE
         ids( ((k - 1) * nAnim + 1) : (k * nAnim) ) = indiv(1:nAnim)
      end do
   else
@@ -67,7 +68,7 @@ subroutine SimulatePhenotype(nAnim, nComp, indiv, TBV, variances, means, &
 
   select case (proc(1:3))
   case ("COV", "COv", "CoV", "Cov", "cOV", "cOv", "coV", "cov")
-     call covariate(nComp, nAnim, indiv, TBV, E, phen, locations, means, cte)
+     call covariate(nComp, nAnim, TBV, E, phen, locations, means, cte)
   case default
      write(STDERR, *) "error:"
      write(STDERR, *) "case '", proc, "' not implemented"

@@ -1,8 +1,6 @@
 !This subroutine calculates the fixed and random effects based on the given variances (theta). 
-!It then creates (or overwrites) three files with these information.
 ! In writing the random effects First comes slope effects; then intercept effects; then individual slope residual
 !written by Masoud Ghaderi
-!last modified 25 March 2020
 subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
      id, fixeff, raneff, verbose)
   use constants
@@ -24,15 +22,17 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
 
   external                                            :: dgemm
 
+  if (verbose) write(STDOUT, *) " Inside getEffects"
+  write(6, *) 'nfix,nobs,one, fixeff', nfix,nobs,one,fixeff
   ! fixed effects
-  call dgemm('n', 'n', nfix, 1, nobs, 1.d0, Vhat, nfix, y, nobs, 0.d0, fixeff, nfix)
-  ! if nvar = 1, the procedure is different 
-  ! TODO : generalise this
-
+  call dgemm('n', 'n', nfix, 1, nobs, ONE, Vhat, nfix, y, nobs, ZERO, fixeff, nfix)
+  if (verbose) write(STDOUT, *) "  Fixed effects estimated"
+  
   if (nvar == 1) then
      allocate(theZPy(1))
      allocate(theZPy(1)%level(maxid))
-     theZPy(1)%level(1:maxid) = 0.d0
+     theZPy(1)%level(1:maxid) = ZERO
+     raneff(1)%level(1:maxid) = ZERO
      do i = 1, nobs
         j = id(i)
         theZPy(1)%level(j) = theZPy(1)%level(j) + Py(i)
@@ -58,11 +58,11 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
 
   ! initialisation
   do i = 1, 3
-     theZPy(i)%level(:) = 0.d0
-     raneff(i)%level(:) = 0.d0
+     theZPy(i)%level(:) = ZERO
+     raneff(i)%level(:) = ZERO
   end do
 
-  if (verbose) write(STDOUT, *) "inside getEffects; initialisation done"
+  if (verbose) write(STDOUT, *) "  initialisation done for random effects"
   allocate(temp(maxid))
 
   ! random effects
@@ -96,5 +96,5 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
         end if
      end do
   end do
-
+  
 end subroutine getEffects

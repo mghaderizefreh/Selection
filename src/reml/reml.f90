@@ -24,8 +24,8 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   real(KINDR), dimension(:), intent(in)     :: Gmatrix
   integer, intent(in), optional                  :: EmIterations, maxIters
 
-  real(KINDR), dimension(:), intent(out)    :: fixEffects
-  type(doublePre_Array),dimension(:),intent(out) :: ranEffects
+  real(KINDR), dimension(:), allocatable, intent(out)    :: fixEffects
+  type(doublePre_Array),dimension(:), allocatable, intent(out) :: ranEffects
 
   type(doublePre_Array),dimension(:),allocatable :: theZGZ
   type(JArr), dimension(:), allocatable      :: f
@@ -64,6 +64,21 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   else
      maxIter = maxIters
   end if
+
+  if (nfix == 2) then
+     allocate(fixEffects(2), raneffects(3))
+     allocate(raneffects(1)%level(maxid)) ! slope effect (genetic)
+     allocate(raneffects(2)%level(maxid)) ! intercept effect (genetic)
+     allocate(raneffects(3)%level(nobs))   ! environment slope effect (diagonal)
+  elseif (nfix == 1) then
+     allocate(fixEffects(nfix), raneffects(1))
+     allocate(raneffects(1)%level(maxid)) ! genetic
+  else
+     WRITE(STDERR, *) " ERROR"
+     WRITE(STDERR, *) " not implemented for nfix > 2"
+     stop 2
+  end if
+
 
   ! order of variances: (As, Ai, Es, Cov, Ei) 
   oldtheta(1:(nvar + 1)) = theta(1:(nvar + 1))

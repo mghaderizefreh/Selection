@@ -15,12 +15,12 @@ subroutine SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome, QTLlist, SNPlist
   logical, intent(in) :: verbose
 
   integer, dimension (:), allocatable :: haplotype1, haplotype2
-  integer, dimension (:), allocatable :: pruningSNP, chr_nlocibefore, pruningSNP2
+  integer, dimension (:), allocatable :: chr_nlocibefore, pruningSNP !, pruningSNP2
   real(KINDR), dimension(:,:), allocatable :: effect
   integer :: i, j, k, id, iloci, a1, a2, nloci, nblock
   integer :: iblck1, ibit1, nbits
   integer :: ichr, totLoci, totQTL
-  real(KINDR) :: val1
+!  real(KINDR) :: val1
 
   nbits = 32
   allocate(chr_nlocibefore(nChr))

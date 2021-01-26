@@ -168,21 +168,14 @@ program analysis
 
   if (doreml == 1) then
      call askInteger(emiteration, " number of EM iterations (in case reml): ")
-     call askInteger(maxIter, " max number of iters (in case reml, > 5 + em): ")
+     call askInteger(maxIter, &
+          " max number of iterations (in case reml, > 5 + em): ")
   end if
 
-  if (nfix == 2) then
-     allocate(fixEff(2), raneff(3))
-     allocate(raneff(1)%level(maxid)) ! slope effect (genetic)
-     allocate(raneff(2)%level(maxid)) ! intercept effect (genetic)
-     allocate(raneff(3)%level(nobs))   ! environment slope effect (diagonal)
-  elseif (nfix == 1) then
-     allocate(fixEff(nfix), raneff(1))
-     allocate(raneff(1)%level(maxid)) ! genetic 
-  end if
   if (doreml == 1) then
      call Reml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
-          fixEff, ranEff, verbose, emIterations = emIteration, maxIters = maxIter)
+          fixEff, ranEff, verbose, emIterations = emIteration, &
+          maxIters = maxIter)
   else
      call Blup(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
           fixEff, ranEff, verbose)

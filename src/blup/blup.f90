@@ -14,8 +14,8 @@ subroutine blup(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   real(KINDR), dimension(:),intent(inout)   :: theta
   integer, intent(in), optional                  :: EmIterations, maxIters
 
-  real(KINDR), dimension(:), intent(out)    :: fixEffects
-  type(doublePre_Array),dimension(:),intent(out) :: ranEffects
+  real(KINDR), dimension(:), intent(out), allocatable :: fixEffects
+  type(doublePre_Array),dimension(:), allocatable, intent(out) :: ranEffects
 
   type(doublePre_Array),dimension(:),allocatable :: theZGZ
   real(KINDR), dimension(:), allocatable    :: Py, P, V, work
@@ -34,6 +34,19 @@ subroutine blup(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   if (present(EmIterations)) I = EmIterations
   if (present(maxIters)) I = maxIters
 
+  if (nfix == 2) then
+     allocate(fixEffects(2), raneffects(3))
+     allocate(raneffects(1)%level(maxid)) ! slope effect (genetic)
+     allocate(raneffects(2)%level(maxid)) ! intercept effect (genetic)
+     allocate(raneffects(3)%level(nobs))   ! environment slope effect (diagonal)
+  elseif (nfix == 1) then
+     allocate(fixEffects(nfix), raneffects(1))
+     allocate(raneffects(1)%level(maxid)) ! genetic
+  else
+     WRITE(STDERR, *) " ERROR"
+     WRITE(STDERR, *) " not implemented for nfix > 2"
+     stop 2
+  end if
   if (nvar == 3) then
      if (any ( theta < 0 )) then
         write(STDERR, *) "n_var and initial guess not consistent"
@@ -43,6 +56,7 @@ subroutine blup(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   elseif (nvar > 3) then
      write(STDOUT, '(2x,a30)') "correlation taken into account"
   end if
+
 
   allocate(theZGZ(nvar))
   i = nobs * (nobs + 1) / 2
@@ -77,11 +91,8 @@ subroutine blup(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   call dspmv('u', nobs, 1.d0, P, y, 1, 0.d0, Py, 1)
   if (verbose) write(STDOUT, *) "  DSPMV finished calculating Py (=P * y)"
 
-  do i = 1, size(ranEffects)
-     ranEffects(i)%level(:) = 0.d0
-  end do
-
   call getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
        id, fixEffects, ranEffects, verbose)
+  if (verbose) write(STDOUT, *) " Effects are estimated"
 
 end subroutine blup

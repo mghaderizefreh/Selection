@@ -23,10 +23,10 @@ program makeListExt
   use quickSort
   implicit none
 
-  character (len=20) :: startfile, baseNameGenotype, QTLfile, SNPfile, baseNameFreq
+  character (len=20) :: startfile, QTLfile, SNPfile, baseNameGenotype
   integer :: nChr, iChr, iun, iun2, iun3, i, iostat, iid, nanim, randomSelection,k, j, ii
-  integer :: nQTL, nSNP, nReq, nAvail, nComp
-  real(KINDR) :: maf
+  integer :: nQTL, nSNP, nReq, nComp !, nAvail
+!  real(KINDR) :: maf
   logical :: l_exists
   character(len = 30):: fileName, status, estatus
   character(len = 256):: corrStructFile
@@ -35,11 +35,11 @@ program makeListExt
   real(KINDR), dimension(:,:,:), allocatable :: values
   real(KINDR), dimension(:,:), allocatable  :: covMat, values_1D
   real(KINDR), dimension(:), allocatable ::  means
-  type JaggedArray
-     real(KINDR), dimension(:), allocatable :: ROW
-  end type JaggedArray
-  type(JaggedArray) , dimension(:) , allocatable:: MAFArray
-  real(KINDR) :: rand, freq
+!  type JaggedArray
+!     real(KINDR), dimension(:), allocatable :: ROW
+!  end type JaggedArray
+!  type(JaggedArray) , dimension(:) , allocatable:: MAFArray
+!  real(KINDR) :: rand, freq
 
   write(startfile,'(a)') "inicio.dat"
   call istart(seed, startfile, i)

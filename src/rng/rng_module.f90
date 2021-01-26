@@ -7,5 +7,6 @@ contains
   include "seeding.f90"
   include "choice.f90"
   include "gnormal.f90"
+  include "poissonProb.f90"
 end module rng_module
 !=======================================================================

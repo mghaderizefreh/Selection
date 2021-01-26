@@ -7,4 +7,5 @@ contains
   include "simulateTBV.f90"
   include "simulatePhenotype.f90"
   include "covariate.f90"
+  include "selection.f90"
 end module evolution_module

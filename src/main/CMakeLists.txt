@@ -13,7 +13,7 @@ SET(SA_src ${MAIN}/sample.f90
 SET(SA2_src ${MAIN}/samplec2.f90
 )
 
-SET(SEL_src ${MAIN}/select.f90
+SET(SEL_src ${MAIN}/main.f90
 )
 
 # Define the executable in terms of the source files
