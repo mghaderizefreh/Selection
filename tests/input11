@@ -1,0 +1,79 @@
+! This is a sample input file.
+! Lines that start with exclamation mark are skipped.
+! empty lines are also skipped.
+
+! [int] verbosity: '1' = produces lots of information, else = quiet
+0
+! [int] number of animals in each generation
+900
+! [int] number of chromosome
+1
+! [*] base-name for genepool with integer representation of genes
+! the number of individuals must be greater than number of animals
+! the format should be <basename><xxx> with xxx starting from 001
+pedigree.ch
+! [*] base-name for gene positions same format as above
+SNPpositions.t
+! [real] length of chromosome (assuming all chromosomes have equal length)
+1.0
+! [real] mutation rate (scientic notations are accepted)
+1.e-5
+! [int] number of components. 2 if random regression is involved (slope+intercept)
+2
+! ncomp x [real] genetic variance component for simulation where ncomp = # of components
+3.0
+3.0
+! ncomp x [real] environmental variance component for simulation where ncomp = # 
+! of components
+7.0
+7.0
+! ncorr x [real] correlation structure where ncorr = (ncomp+1)(ncomp+2)/2
+! when ncomp = 1 => 1.0 should be placed
+! when ncomp = 2 => 1.0 [newline] <correlation> [newlien] 1.0 should be placed
+1.0
+0.5
+1.0
+! [int] number of QTLs on each chromosome
+500
+! [int] number of SNPs on each chromosome (excluding QTL)
+1000
+! [int] number of locations per individual (nlox)
+5
+! [int] are locations random? 
+! 1:Yes, else: no : Therefore, next line should indicate whether locations are 
+! common (1:yes, else:no) : if yes, the next if not, the next <nlox> lines should
+! be locations [real] otherwise next line shuld be a file containing locations
+! with (nlocations x nanimal) [real] inputs in matrix format
+! e.g. (locations are random)
+! 1
+! or (locations are not random, they are common, with values 0.3, 0.5, 0.9)
+! 0
+! 1
+! 0.3
+! 0.5
+! 0.9
+! or (custom locations, i.e., not random, not common and name of the file
+! 0
+! 0
+! locations.txt
+1
+! selection type
+! 1 = random, 2 = slopeEBV, 3 = interceptEBV, 4 = slopeTBV, 5 = interceptTBV
+2
+! number of males
+10
+! number of females per male
+30
+! number of offspring per female
+3
+! number of generations
+1
+! analysis type (1 = random regression, 2 = single trait)
+! depending on the nlox and selection type it may not make sense to choose one
+1
+! is reml required (1 = Yes, else = no , i.e., a blup will be performed)
+! this input may be discarded depending on the selection type
+1
+! ncomp x [real] means for traits
+-2.0
+11.0

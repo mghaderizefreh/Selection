@@ -1,139 +1,82 @@
-!     Last change:  R     4 Oct 2013   11:16 am
+!     Last change:  M      Feb 2021
 
 !===============================================================================
-  subroutine  isSmallerEqualLarger_Int(trait,ncol,columns,ipos1, ipos2, isize)
-    use constants
-    implicit none
-    integer, dimension(:,:)   , intent(in)        :: trait
-    integer,                    intent(in)        :: ncol
-    integer, dimension(:)     , intent(in)        :: columns
-    INTEGER                   , INTENT(IN)        :: ipos1, ipos2
-    INTEGER                   , INTENT(OUT)       :: isize
+subroutine  isSmallerEqualLarger_Int(trait,ncol,columns,ipos1, ipos2, isize)
+  use constants
+  implicit none
+  integer, dimension(:,:), intent(in) :: trait
+  integer, intent(in) :: ncol
+  integer, dimension(ncol), intent(in) :: columns
+  integer, intent(in) :: ipos1, ipos2
+  integer, intent(out) :: isize
 
-    INTEGER :: j
+  integer :: j
 
-    isize=0
-    do j=1,ncol
-      if(      trait(ipos1,columns(j) ) < trait( ipos2, columns(j) ) ) then
+  isize=0
+  do j=1,ncol
+     if(      trait(ipos1,columns(j) ) < trait( ipos2, columns(j) ) ) then
         isize = -1   ! value is smaller (no more to look)
         exit
-      else if (trait(ipos1,columns(j) ) > trait( ipos2, columns(j) ) ) then
+     else if (trait(ipos1,columns(j) ) > trait( ipos2, columns(j) ) ) then
         isize = 1    ! value is greater (no more to look)
         exit
-      endif
-    end do
-    !if set was the same, then isize remained =0
+     endif
+  end do
+  !if set was the same, then isize remained =0
 
-  return
-  END subroutine
-
-!===============================================================================
-  subroutine isSmallerEqualLarger_Int8 ( trait, ncol, columns, ipos1, ipos2, isize )
-      use constants
-      implicit none
-      integer(kind=8), dimension ( :, : ), intent ( in ) :: trait
-      integer, intent ( in ) :: ncol
-      integer, dimension ( : ), intent ( in ) :: columns
-      INTEGER, INTENT ( IN ) :: ipos1, ipos2
-      INTEGER, INTENT ( OUT ) :: isize
-
-      INTEGER :: j
-
-      isize = 0
-      do j = 1, ncol
-          if ( trait ( ipos1, columns ( j ) ) < trait ( ipos2, columns ( j ) ) ) then
-              isize = - 1   ! value is smaller (no more to look)
-              exit
-          else if ( trait ( ipos1, columns ( j ) ) > trait ( ipos2, columns ( j ) ) ) then
-              isize = 1    ! value is greater (no more to look)
-              exit
-          end if
-      end do
-    !if set was the same, then isize remained =0
-
-      return
-  END subroutine
+end subroutine isSmallerEqualLarger_Int
 
 !===============================================================================
-  subroutine  isSmallerEqualLarger_Rea(trait,ncol,columns,ipos1, ipos2, isize)
-    use constants
-    implicit none
-    real(KINDR)   , dimension(:,:)   , intent(in)        :: trait
-    integer,                    intent(in)        :: ncol
-    integer, dimension(:)     , intent(in)        :: columns
-    INTEGER                   , INTENT(IN)        :: ipos1, ipos2
-    INTEGER                   , INTENT(OUT)       :: isize
+subroutine isSmallerEqualLarger_Int8 ( trait, ncol, columns, ipos1, ipos2, isize )
+  use constants
+  implicit none
+  integer(kind=8), dimension(:,:), intent(in) :: trait
+  integer, intent(in) :: ncol
+  integer, dimension(:), intent(in) :: columns
+  integer, intent(in) :: ipos1, ipos2
+  integer, intent(out) :: isize
 
-    INTEGER :: j
+  integer :: j
 
-    isize=0
-    do j=1,ncol
-      if(      trait(ipos1,columns(j) ) < trait( ipos2, columns(j) ) ) then
+  isize = 0
+  do j = 1, ncol
+     if ( trait ( ipos1, columns ( j ) ) < trait ( ipos2, columns ( j ) ) ) then
+        isize = - 1   ! value is smaller (no more to look)
+        exit
+     else if ( trait ( ipos1, columns ( j ) ) > trait ( ipos2, columns ( j ) ) ) then
+        isize = 1    ! value is greater (no more to look)
+        exit
+     end if
+  end do
+  !if set was the same, then isize remained =0
+
+end subroutine isSmallerEqualLarger_Int8
+
+!===============================================================================
+subroutine  isSmallerEqualLarger_Cha(trait,ncol,columns,ipos1, ipos2, isize)
+  use constants
+  implicit none
+  character(len=*), dimension(:,:), intent(in) :: trait
+  integer, intent(in) :: ncol
+  integer, dimension(ncol), intent(in) :: columns
+  integer, intent(in) :: ipos1, ipos2
+  integer, intent(out) :: isize
+  
+  integer :: j
+
+  isize = 0
+  do j = 1, ncol
+     if(trait(ipos1, columns(j)) < trait(ipos2, columns(j))) then
         isize = -1   ! value is smaller (no more to look)
         exit
-      else if (trait(ipos1,columns(j) ) > trait( ipos2, columns(j) ) ) then
+     else if (trait(ipos1,columns(j) ) > trait( ipos2, columns(j) ) ) then
         isize = 1    ! value is greater (no more to look)
         exit
-      endif
-    end do
-    !if set was the same, then isize remained =0
-
-  return
-  END subroutine
-
-!===============================================================================
-  subroutine  isSmallerEqualLarger_Dbl(trait,ncol,columns,ipos1, ipos2, isize)
-    use constants
-    implicit none
-    real(KINDR) , dimension(:,:), intent(in) :: trait
-    integer,                    intent(in)        :: ncol
-    integer, dimension(:)     , intent(in)        :: columns
-    INTEGER                   , INTENT(IN)        :: ipos1, ipos2
-    INTEGER                   , INTENT(OUT)       :: isize
-
-    INTEGER :: j
-
-    isize=0
-    do j=1,ncol
-      if(      trait(ipos1,columns(j) ) < trait( ipos2, columns(j) ) ) then
-        isize = -1   ! value is smaller (no more to look)
-        exit
-      else if (trait(ipos1,columns(j) ) > trait( ipos2, columns(j) ) ) then
-        isize = 1    ! value is greater (no more to look)
-        exit
-      endif
-    end do
-    !if set was the same, then isize remained =0
-
-  return
-  END subroutine
-
-!===============================================================================
-  subroutine  isSmallerEqualLarger_Cha(trait,ncol,columns,ipos1, ipos2, isize)
-    use constants
-    implicit none
-    CHARACTER(LEN=*), dimension(:,:), intent(in)  :: trait
-    integer,                    intent(in)        :: ncol
-    integer, dimension(:)     , intent(in)        :: columns
-    INTEGER                   , INTENT(IN)        :: ipos1, ipos2
-    INTEGER                   , INTENT(OUT)       :: isize
-
-    INTEGER :: j
-
-    isize=0
-    do j=1,ncol
-      if(      trait(ipos1,columns(j) ) < trait( ipos2, columns(j) ) ) then
-        isize = -1   ! value is smaller (no more to look)
-        exit
-      else if (trait(ipos1,columns(j) ) > trait( ipos2, columns(j) ) ) then
-        isize = 1    ! value is greater (no more to look)
-        exit
-      endif
-    end do
-    !if set was the same, then isize remained =0
-
-  return
-  END subroutine
+     end if
+  end do
+  !if set was the same, then isize remained =0
+  
+end subroutine isSmallerEqualLarger_Cha
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE SORTAX_nested(N,DATA,ncol,columns,INDEX)

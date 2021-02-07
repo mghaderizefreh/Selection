@@ -21,12 +21,12 @@ module constants
      real(KINDR), dimension(:), pointer :: positions ! nloci
   end type chromosome
 
-  type variance
+  type variances
      real(KINDR), allocatable, dimension(:) :: A ! genetic part
      real(KINDR), allocatable, dimension(:) :: E ! environemntal part
      real(KINDR), allocatable, dimension(:) :: PE ! permanent environment
      real(KINDR), allocatable, dimension(:,:) :: corr ! (genetic) correlation
-  end type variance
+  end type variances
 
   type QTL_Array
      integer :: nQTL ! number of QTL (on one chromosome)

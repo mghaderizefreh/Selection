@@ -7,7 +7,7 @@ subroutine inormal(mean, cov, dim, size, output, seed)
   !     `mean`   : mean of the distribution (1D real(KINDR) array of shape `dim`)
   !     `cov`    : covariance matrix (2D real(KINDR) array of shape `dim` x `dim`)
   !     `size`   : number of samples (integer)
-  !     `output` : (2D real(KINDR) array of shape `dim` x `size`) output
+  !     `output` : (2D real(KINDR) array of shape `size` x `dim`) output
   !     `seed`   : seed for random stream (integer)
   ! matrix `cov`. `size` is the length of the array and `output` is a real(KINDR)
   ! array of shape `dim` x `output`.
@@ -24,11 +24,12 @@ subroutine inormal(mean, cov, dim, size, output, seed)
   integer, intent(in) :: dim, size
   real(KINDR), dimension(1:dim), intent(in) :: mean
   real(KINDR), dimension(1:dim, 1:dim), intent(in) :: cov
-  real(KINDR), dimension(1:dim, 1:size), intent(out) :: output
+  real(KINDR), dimension(1:size, 1:dim), intent(out) :: output
   integer, intent(in), dimension(:), optional :: seed
 
+  real(KINDR), dimension(1:dim, 1:size) :: temp
   integer, dimension(:), allocatable :: seed2
-  integer :: errcode, info, brng, method, mstore, seedi
+  integer :: errcode, info, brng, method, mstore, seedi, i
   TYPE (VSL_STREAM_STATE) :: stream
 
   external :: spotrf
@@ -47,7 +48,7 @@ subroutine inormal(mean, cov, dim, size, output, seed)
   method = VSL_RNG_METHOD_GAUSSIANMV_BOXMULLER2
   mstore = VSL_MATRIX_STORAGE_FULL
 
-  call spotrf('U',dim,cov,dim,info)
+  call dpotrf('U',dim,cov,dim,info)
   if (info.lt.0) then
      write(STDERR, *) ' Cholesky factorisation failed!'
      write(STDERR, *) ' Covariance matrix is not positive definite'
@@ -62,7 +63,7 @@ subroutine inormal(mean, cov, dim, size, output, seed)
      stop 2
   end if
 
-  errcode = vsrnggaussianmv(method, stream, size, output, dim, mstore, mean, cov)
+  errcode = vdrnggaussianmv(method, stream, size, temp, dim, mstore, mean, cov)
   if (errcode.ne.0) then
      write(STDERR, *), ' Failed to sample for uknown reasons'
      write(STDERR, *), ' Exiting...'
@@ -75,4 +76,7 @@ subroutine inormal(mean, cov, dim, size, output, seed)
      write(STDERR, *) ' Exiting...'
      stop 2
   end if
+  do i = 1, dim
+     output(1:size, i) = temp(i, 1:size)
+  end do
 end subroutine inormal

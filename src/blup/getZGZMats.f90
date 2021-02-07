@@ -1,34 +1,39 @@
-subroutine getMatricesCorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1, Z1GZ2)!, Z1Z1pe, Z2Z2, Z1Z2)
+subroutine getMatricesCorrelated(verbose, nobs, nfix, maxid, X, G, id, &
+     Z1GZ1, Z2GZ2, Z1Z1, Z1GZ2)!, Z1Z1pe, Z2Z2, Z1Z2)
   ! This subroutine calculates ZGZ for different terms
   ! Z1GZ1  slope (=Zs*G*Zs') so Z1 is the incidence matrix with challenge levels
   ! Z2GZ2  intercept (=Zi*G*Zi') so Z2 is the incidnece matrix with ones 
-  ! Z1Z1   heterogeneous residual (environmenal slope). It is diagonl (=diag(env)^2) (? and also permanent env effect slope)
+  ! Z1Z1   heterogeneous residual (environmenal slope). It is diagonl 
+  ! (=diag(env)^2) (? and also permanent env effect slope)
   ! Z1GZ2  genetic correlation betweeen slope and intercept (=Zi*G*Zs'+Zs*G*Zi')
   ! Z2Z2   permanent environmental effect (??? it is block diagonal with ones [not sure]) (?=Zi*Zi')
   ! Z1Z2   correlation between permanent environmental effect slope and intercept (=Z1*Z2'+Z2*Z1')
   ! Written by M. Ghaderi Zefreh
   use constants
   implicit none
-  logical                                                               :: verbose
-  integer, intent(in)                                                   :: nobs
-  integer, dimension(:), intent(in)                                     :: id
-  real(KINDR), dimension(:), intent(in)                            :: G
-  real(KINDR), dimension(:,:), intent(in)                          :: X
-  real(KINDR), dimension(:), intent(out)                           :: Z1GZ1, Z2GZ2, Z1Z1, Z1GZ2
-  !  real(KINDR), dimension(:), intent(out), optional                 :: Z1Z1pe, Z2Z2, Z1Z2
-  integer                                                               :: i, j, k, ipos, ipos1, ipos2
-  intrinsic                                                             :: max
-  integer, external                                                     :: lowerpos
-  ! logical                                                               :: IsPeIntPresent = .false., IsPeSloPresent = .false. , IsPeCovPresent = .false.
+  logical :: verbose
+  integer, intent(in) :: nobs, nfix, maxid
+  integer, dimension(1:nobs), intent(in) :: id
+  real(KINDR), dimension(1:(maxid*(maxid+1)/2)), intent(in) :: G
+  real(KINDR), dimension(nobs,nfix), intent(in) :: X
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: Z1GZ1
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: Z2GZ2
+  real(KINDR), dimension(1:nobs), intent(out) :: Z1Z1
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: Z1GZ2
+  !  real(KINDR), dimension(:), intent(out), optional :: Z1Z1pe, Z2Z2, Z1Z2
+  integer :: i, j, k, ipos, ipos1, ipos2
+  intrinsic :: max
+  integer, external :: lowerpos
+  !logical::IsPeIntPresent=.false.,IsPeSloPresent=.false.,IsPeCovPresent = .false.
 
   j = nobs
   i = (j + 1) * j / 2
   !allocate(eye(i))
   !eye(:) = 0.d0
-  Z1Z1(1:j) = 0.d0
-  Z1GZ1(1:i) = 0.d0
-  Z2GZ2(1:i) = 0.d0
-  Z1GZ2(1:i) = 0.d0
+  Z1Z1(1:j) = ZERO
+  Z1GZ1(1:i) = ZERO
+  Z2GZ2(1:i) = ZERO
+  Z1GZ2(1:i) = ZERO
 
   !  if (present(Z1Z1pe)) then
   !     Z1Z1pe(:) = 0.d0
@@ -70,7 +75,8 @@ subroutine getMatricesCorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1, Z1
 end subroutine getMatricesCorrelated
 
 
-subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
+subroutine getMatricesUncorrelated(verbose, nobs, nfix, maxid, X, G, id, &
+     Z1GZ1, Z2GZ2, Z1Z1)
   ! This subroutine calculates ZGZ for different terms
   ! Z1GZ1  slope (=Zs*G*Zs') so Z1 is the incidence matrix with challenge levels
   ! Z2GZ2  intercept (=Zi*G*Zi') so Z2 is the incidnece matrix with ones 
@@ -81,15 +87,17 @@ subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
   ! Written by M. Ghaderi Zefreh
   use constants
   implicit none
-  logical                                                               :: verbose
-  integer, intent(in)                                                   :: nobs
-  integer, dimension(:), intent(in)                                     :: id
-  real(KINDR), dimension(:), intent(in)                            :: G
-  real(KINDR), dimension(:,:), intent(in)                          :: X
-  real(KINDR), dimension(:), intent(out)                           :: Z1GZ1, Z2GZ2, Z1Z1
-  integer                                                               :: i, j, k, ipos, ipos1, ipos2
-  intrinsic                                                             :: max
-  integer, external                                                     :: lowerpos
+  logical :: verbose
+  integer, intent(in) :: nobs, nfix, maxid
+  integer, dimension(1:nobs), intent(in) :: id
+  real(KINDR), dimension(1:(maxid*(maxid+1)/2)), intent(in) :: G
+  real(KINDR), dimension(nobs,nfix), intent(in) :: X
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: Z1GZ1
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: Z2GZ2
+  real(KINDR), dimension(1:nobs), intent(out) :: Z1Z1
+  integer :: i, j, k, ipos, ipos1, ipos2
+  intrinsic :: max
+  integer, external :: lowerpos
 
   j = nobs
   i = (j + 1) * j / 2
@@ -117,16 +125,16 @@ subroutine getMatricesUncorrelated(verbose, nobs, X, G, id, Z1GZ1, Z2GZ2, Z1Z1)
 end subroutine getMatricesUncorrelated
 
 !================================================================================
-subroutine getMatrices(verbose, nobs, X, G, id, ZGZ)
+subroutine getMatrices(verbose, nobs, nfix, maxid, X, G, id, ZGZ)
   use constants
   implicit none
-  logical                         , intent(in)  :: verbose
-  integer         , dimension(:)  , intent(in)  :: id
-  integer                         , intent(in)  :: nobs
-  real(KINDR), dimension(:)  , intent(in)  :: G
-  real(KINDR), dimension(:,:), intent(in)  :: X
-  real(KINDR), dimension(:)  , intent(out) :: ZGZ
-  integer, external                             :: lowerpos
+  logical, intent(in) :: verbose
+  integer, dimension(1:nobs), intent(in) :: id
+  integer, intent(in) :: nobs, nfix, maxid
+  real(KINDR), dimension(1:(maxid*(maxid+1)/2)), intent(in) :: G
+  real(KINDR), dimension(1:nobs,1:nfix), intent(in)  :: X
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: ZGZ
+  integer, external :: lowerpos
   integer :: i, j, id1, ipos, ipos1 !, nrank
   !  real(KINDR) :: val1
 

@@ -2,17 +2,18 @@ subroutine calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, f, verbose)
   use constants
   use global_module
   implicit none
-  logical, intent(in)                                 :: verbose
-  integer, intent(in)                                 :: nobs, nvar
-  type (doublePre_array), dimension(:), intent(in)    :: theZGZ
-  real(KINDR), dimension(:), intent(in)          :: P, Py
-  real(KINDR), dimension(:), intent(out)         :: rhs
-  type (JArr), dimension(:), intent(inout)           :: f
-  real(KINDR), external                          :: ddot 
-  integer                                             :: i
-  integer, parameter                                  :: k=3!ind of diag mat ZsZs
+  logical, intent(in) :: verbose
+  integer, intent(in) :: nobs, nvar
+  type (doublePre_array), dimension(1:nvar), intent(in) :: theZGZ
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(in) :: P
+  real(KINDR), dimension(1:nobs), intent(in) :: Py
+  real(KINDR), dimension(1:(nvar+1)), intent(out) :: rhs
+  type (JArr), dimension(1:(nvar+1)), intent(inout) :: f
+  real(KINDR), external :: ddot 
+  integer :: i
+  integer, parameter :: k=3!ind of diag mat ZsZs
 
-  external                                            :: dspmv
+  external :: dspmv
 
   if (verbose) write(STDOUT, *) "  In the subroutine calculateRHS"
   

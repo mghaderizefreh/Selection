@@ -2,6 +2,7 @@
 
 SET(RNG_src ${SRCRNG}/seeding.f90
 	     ${SRCRNG}/choice.f90
+#	     ${SRCRNG}/inormal.f90
 	     ${SRCRNG}/gnormal.f90
 	     ${SRCRNG}/poissonProb.f90
 	     ${SRCRNG}/rng_module.f90

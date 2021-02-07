@@ -8,7 +8,7 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
   logical, intent(in) :: verbose
   integer, intent(in) :: nChr, nQTL, nSNP, nComp
   logical, intent(in) :: randomMAF
-  type(chromosome), dimension(:), allocatable, intent(in) :: genome
+  type(chromosome), dimension(:), intent(in) :: genome
   type(QTL_Array), intent(out) :: QTLlist
   integer, dimension(:,:), allocatable, intent(out) :: SNPlist
   real(KINDR), dimension(nComp, nComp), intent(in) :: covMat
@@ -54,8 +54,6 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
   QTLList%nQTL = nQTL
   nReq = nQTL + nSNP
   allocate(iReq(nReq))
-  write(6, *) covmat(1,:)
-  write(6, *) covmat(2,:)
   call gnormal(means, covMat, nComp, k, values_1D)
   if (verbose) write(STDOUT, *) " random values for tbv created"
   if (.not.randomMAF) then

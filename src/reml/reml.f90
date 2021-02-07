@@ -65,13 +65,14 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
      maxIter = maxIters
   end if
 
+  allocate(fixEffects(nfix))
   if (nfix == 2) then
-     allocate(fixEffects(2), raneffects(3))
+     allocate(raneffects(3))
      allocate(raneffects(1)%level(maxid)) ! slope effect (genetic)
      allocate(raneffects(2)%level(maxid)) ! intercept effect (genetic)
      allocate(raneffects(3)%level(nobs))   ! environment slope effect (diagonal)
   elseif (nfix == 1) then
-     allocate(fixEffects(nfix), raneffects(1))
+     allocate(raneffects(1))
      allocate(raneffects(1)%level(maxid)) ! genetic
   else
      WRITE(STDERR, *) " ERROR"
@@ -91,9 +92,9 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
         write(STDERR, *) "n_var and initial guess not consistent"
         stop 2
      end if
-     write(STDOUT, '(2x,a22)') "no correlation assumed"
+     if (verbose) write(STDOUT, '(2x,a22)') "no correlation assumed"
   elseif (nvar > 3) then
-     write(STDOUT, '(2x,a30)') "correlation taken into account"
+     if (verbose) write(STDOUT, '(2x,a30)') "correlation taken into account"
   end if
 
   ! making G* matrices
@@ -107,14 +108,14 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
      end if
   end do
   if (nvar .eq. 3) then
-     call getMatricesUncorrelated(verbose, nobs, X, Gmatrix, id, &
+     call getMatricesUncorrelated(verbose, nobs, nfix, maxid, X, Gmatrix, id, &
           theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level)
   elseif (nvar .eq. 4) then
-     call getMatricesCorrelated(verbose, nobs, X, Gmatrix, id, &
+     call getMatricesCorrelated(verbose, nobs, nfix, maxid, X, Gmatrix, id, &
           theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level, &
           theZGZ(4)%level)
   else
-     call getMatrices(verbose, nobs, X, Gmatrix, id, theZGZ(1)%level)
+     call getMatrices(verbose, nobs, nfix, maxid, X, Gmatrix, id, theZGZ(1)%level)
   end if
 
 69 format(a12, i3)

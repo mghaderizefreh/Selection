@@ -12,12 +12,12 @@ lib/
 build/
 *junk*
 *~
-inicio.dat
 *.dat
 \#*#
+distclean.cmake
 
 tests/
-!test/matrix.txt
-!test/input*
-!test/phen
-!test/pedigree.txt
+!tests/minput
+!tests/matrix.txt
+!tests/input?
+!tests/phen

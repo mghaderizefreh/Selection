@@ -48,10 +48,10 @@ ENDIF(FCNAME STREQUAL "pgf90")
 
 # Define the executable name
 SET(analysis analysis.exe)
-SET(SA sample.exe)
-SET(SA2 sample2.exe)
-SET(FE fixeff.exe)
 SET(SEL select.exe)
+#SET(SA sample.exe)
+#SET(SA2 sample2.exe)
+#SET(FE fixeff.exe)
 
 # Define the library name
 SET(UTILLIB util)
@@ -60,6 +60,7 @@ SET(REMLLIB reml)
 SET(SORTLIB sort)
 SET(RNGLIB rng)
 SET(EVOLLIB evolution)
+SET(MATHLIB math)
 
 # Define some directories
 SET(SRC ${CMAKE_SOURCE_DIR}/src)
@@ -69,6 +70,7 @@ SET(LIB3 ${CMAKE_SOURCE_DIR}/lib/blup)
 SET(LIB4 ${CMAKE_SOURCE_DIR}/lib/reml)
 SET(LIB5 ${CMAKE_SOURCE_DIR}/lib/rng)
 SET(LIB6 ${CMAKE_SOURCE_DIR}/lib/evolution)
+SET(LIB7 ${CMAKE_SOURCE_DIR}/lib/math)
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
 SET(TEST ${CMAKE_SOURCE_DIR}/tests)
 SET(SRCUTIL ${SRC}/utils)
@@ -77,6 +79,7 @@ SET(SRCBLUP ${SRC}/blup)
 SET(SRCREML ${SRC}/reml)
 SET(SRCRNG ${SRC}/rng)
 SET(SRCEVOL ${SRC}/evolution)
+SET(SRCMATH ${SRC}/math)
 SET(MAIN ${SRC}/main)
 
 # Have the .mod files placed in the lib folder
@@ -89,6 +92,7 @@ ADD_SUBDIRECTORY(${SRCBLUP} ${LIB3})
 ADD_SUBDIRECTORY(${SRCREML} ${LIB4})
 ADD_SUBDIRECTORY(${SRCRNG} ${LIB5})
 ADD_SUBDIRECTORY(${SRCEVOL} ${LIB6})
+ADD_SUBDIRECTORY(${SRCMATH} ${LIB7})
 
 # The source for the REML binary and have it placed in the bin folder
 ADD_SUBDIRECTORY(${MAIN} ${BIN})
@@ -108,8 +112,6 @@ set(INP3 "${TEST}/input3")
 set(INP4 "${TEST}/input4")
 set(INP5 "${TEST}/input5")
 set(INP6 "${TEST}/input6")
-set(INP7 "${TEST}/input7")
-set(INP8 "${TEST}/input8")
 if (BASH)
     add_test(
         NAME correlated_RR_Reml
@@ -135,23 +137,15 @@ if (BASH)
         NAME single_Blup
 	COMMAND ${BASH} -c "${BIN}/${analysis} < ${INP6};" WORKING_DIRECTORY ${TEST}
     )
-    add_test(
-        NAME fixedEff_uncomplete
-	COMMAND ${BASH} -c "${BIN}/${FE} < ${INP7};" WORKING_DIRECTORY ${TEST}
-    )
-    add_test(
-	NAME sample_uncomplete
-	COMMAND ${BASH} -c "${BIN}/${SA} < ${INP8};" WORKING_DIRECTORY ${TEST}
-    )
 else()
     if (WIN32)
         add_test(
-            NAME correlated
-            COMMAND ${CMAKE_COMMAND} -E chdir ${RR} $ENV{ComSpec} /c "${RR} < ${INP1} & ren randomEffects ranEff.cor & ren fixedEffects fixEff.cor & ren variances var.cor" WORKING_DIRECTORY ${TEST}
+            NAME correlated_RR_Reml
+            COMMAND ${CMAKE_COMMAND} -E chdir ${RR} $ENV{ComSpec} /c "${RR} < ${INP1}" WORKING_DIRECTORY ${TEST}
         )
         add_test(
-            NAME uncorrelated
-            COMMAND ${CMAKE_COMMAND} -E chdir ${RR} $ENV{ComSpec} /c "${RR} < ${INP2} & ren randomEffects ranEff.unc & ren fixedEffects fixEff.unc & ren variances var.unc" WORKING_DIRECTORY ${TEST}
+            NAME uncorrelated_RR_Reml
+            COMMAND ${CMAKE_COMMAND} -E chdir ${RR} $ENV{ComSpec} /c "${RR} < ${INP2}" WORKING_DIRECTORY ${TEST}
         )
 #        add_test(
 #            NAME single

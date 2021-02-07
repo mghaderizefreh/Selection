@@ -1,15 +1,16 @@
 subroutine calculateLogL(nobs, detV, det_xt_vinv_x, P, y, LogL,Py, yPy, verbose)
   use constants
   implicit none
-  logical, intent(in)                                                 :: verbose
-  integer, intent(in)                                                 :: nobs
-  real(KINDR), intent(in)                                        :: detV, det_xt_vinv_x
-  real(KINDR), dimension(:), intent(in)                          :: P, y
-  real(KINDR), dimension(:), intent(out)                         :: Py
-  real(KINDR), intent(out)                                       :: yPy, LogL
-  real(KINDR), external                                          :: ddot
+  logical, intent(in) :: verbose
+  integer, intent(in) :: nobs
+  real(KINDR), intent(in) :: detV, det_xt_vinv_x
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(in) :: P
+  real(KINDR), dimension(1:nobs), intent(in) :: y
+  real(KINDR), dimension(1:nobs), intent(out) :: Py
+  real(KINDR), intent(out) :: yPy, LogL
+  real(KINDR), external :: ddot
 
-  external                                                            :: dspmv
+  external :: dspmv
 
   if (verbose) write(STDOUT, *) "  In the subroutine calculateLogL"
 

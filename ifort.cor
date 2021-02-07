@@ -1,0 +1,32 @@
+#/bin/sh
+set -e
+FC=ifort
+flags="-C -static -mkl -ldl"
+
+## all function, subroutines and modules
+UTL="src/utils/constants.f90 src/utils/askFilename.f90 src/utils/countNumberLines.f90 src/utils/detInv.f90 src/utils/dunpack.f90 src/utils/readData.f90 src/utils/trace.f90 src/utils/global_module.f90"
+MATH="src/math/stats.f90 src/math/math.f90"
+SORT="src/quickSort/quickSort.f90"
+REML="src/reml/calculateAImat.f90 src/reml/calculateLogL.f90 src/reml/calculaterhs.f90 src/reml/reml.f90 src/reml/updatetheta.f90 src/reml/reml_module.f90"
+RNG="src/rng/choice.f90 src/rng/gnormal.f90 src/rng/poissonProb.f90 src/rng/seeding.f90 src/rng/rng_module.f90"
+BLUP="src/blup/blup.f90 src/blup/BSRibsCalc.f90 src/blup/calculateP.f90 src/blup/calculateV.f90 src/blup/getEffects.f90 src/blup/getZGZMats.f90 src/blup/relationMatrix.f90 src/blup/blup_module.f90"
+EVOL="src/evolution/covariate.f90 src/evolution/getQTLandSNP.f90 src/evolution/initialiseGenotypes.f90 src/evolution/prepareMutRec.f90 src/evolution/sampleGamete.f90 src/evolution/sampleMutation.f90 src/evolution/select.f90 src/evolution/simulatePhenotype.f90 src/evolution/simulateTBV.f90 src/evolution/SNP_map.f90 src/evolution/evolution_module.f90"
+
+# main file sources
+SRC1="src/main/analysis.f90"
+SRC2="src/main/selection.f90"
+
+# exectuables
+PRG1="analysis.exe"
+PRG2="selection.exe"
+
+# dependencies for programms
+DEP1="$UTL $SORT $BLUP $REML"
+DEP2="$UTL $MATH $SORT $BLUP $REML $RNG $EVOL"
+
+# main commands
+$FC $flags -o $PRG1 $DEP1 $SRC1
+$FC $flags -o $PRG2 $DEP2 $SRC2
+
+# if the program does not crash and reaches here, delete mod files
+command rm *mod*

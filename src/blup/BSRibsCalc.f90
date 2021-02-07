@@ -1,4 +1,5 @@
-subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifail)
+subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar,&
+     ifail, verbose)
   !=======================================================================
   !
   ! it calculate the relations IBS matrix for additive or dominance effect
@@ -23,14 +24,16 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
   implicit none
 
   character(len=*), intent(in) :: effect
-  integer, intent(in) :: nanim  
+  integer, intent(in) :: nanim
+  integer, intent(in) :: nobs
   integer, intent(in) :: nSNP
   integer, intent(in) :: iscaled
   integer, intent(in) :: ivar
-  integer, dimension(:,:), intent(in) :: genotypes
+  integer, dimension(nanim, nSNP), intent(in) :: genotypes
   !put as inout so amat is not force to be adjusted if failed
-  real(KINDR), dimension(:), intent(inout) :: amat  
+  real(KINDR), dimension(nobs), intent(inout) :: amat  
   integer, intent(out) :: ifail
+  logical, intent(in) :: verbose
 
   integer :: i, j, id1, id2, ipos, isnp
   real(KINDR) :: val1, val4
@@ -56,38 +59,39 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
   ! than 3 characters
   theeffect = effect  
   ieffect = 0
-  genscore(0) = 0.d0
+  genscore(0) = ZERO
   select case (theeffect)
   case ("ADD", "ADd", "AdD", "aDD", "Add", "aDd", "adD", "add")  
      ! if matrix is additive effect
-     genscore(1) = 1.d0
-     genscore(2) = 2.d0
-     genscore(3) = 3.d0
+     genscore(1) = ONE
+     genscore(2) = TWO
+     genscore(3) = 3._KINDR
      ieffect     = 1
   case ("DOM", "DOm", "DoM", "dOM", "Dom", "dOm", "doM", "dom") 
      ! if matrix is dominance effect
-     genscore(1) = 0.d0
-     genscore(2) = 1.d0
-     genscore(3) = 0.d0
+     genscore(1) = ZERO
+     genscore(2) = ONE
+     genscore(3) = ZERO
      ieffect     = 2
   case default
-     write(*,*)' wrong selection of effect'
-     write(*,*)' matris is either for addtive (add) or dominance (dom) effect'
+     write(STDERR, *) " wrong selection of effect"
+     write(STDERR, *) &
+          " matris is either for addtive (add) or dominance (dom) effect"
      ifail=1
      return
   end select
-  write(*, *) ' calculating ', theeffect, ieffect
-  write(*, *) ' scaled  ', iscaled
+  if (verbose) write(STDOUT, *) " calculating ", theeffect, ieffect
+  if (verbose) write(STDOUT, *) " scaled  ", iscaled
 
   !------------------------------------------------------------------------------
   ! setting to zero the IBS status for a pair where at least one has missing genotype
   ! genscore for a missing genotype is the pop mean (or zero after centering).
   ! hence since IBD is the crosproduct of genscore, the IBS of this type of pair is 0
   !------------------------------------------------------------------------------
-  IBSstatus(0,0) = 0.d0
+  IBSstatus(0,0) = ZERO
   do i = 1, 3
-     IBSstatus(0,i) = 0.d0
-     IBSstatus(i,0) = 0.d0
+     IBSstatus(0,i) = ZERO
+     IBSstatus(i,0) = ZERO
   end do
 
   !------------------------------------------------------------------------------
@@ -98,14 +102,14 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
   if (k == 0) k = 1
   ifail = 0
   ipos = nanim * (nanim + 1) / 2
-  amat(1:ipos) = 0.d0
+  amat(1:ipos) = ZERO
 
-  sumvar = 0.d0
+  sumvar = ZERO
   usedSNP = 0
 
   do isnp = 1, nSNP
-     if(mod(isnp, k) == 1) write( *, '(a4,4i9,f25.8 )') 'at ', isnp, usedSNP, nSNP,&
-          k, sumvar
+     !if(mod(isnp, k) == 1) write( *, '(a4,4i9,f25.8 )') 'at ', isnp, usedSNP, nSNP,&
+!          k, sumvar
 
      !   counting number of individuals in each genotype class
      do i = 0, 3
@@ -150,7 +154,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
      if(ivar == 1) then
 
         ! variance of additive  effect assuming HWE = 2pq
-        vari = (2.D0 * ((mean - 1.d0) / 2.D0) * (1.D0 - (mean - 1.d0) / 2.D0))
+        vari = (TWO * ((mean - ONE) / TWO) * (ONE - (mean - ONE) / TWO))
         ! variance of dominance effect assuming HWE = (2pq)*(2pq)
         if (ieffect == 2) vari = vari * vari 
      end if
@@ -164,7 +168,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
      !   calculating the IBS status once and later reading from table should
      !   speed-up calculation
      !------------------------------------------------------------------------------
-     val1 = 1.d0
+     val1 = ONE
      if(iscaled == 1) val1 = vari   !genotype score to be scaled so variance is 1
      do i = 1, 3
         do j = 1, 3
@@ -211,7 +215,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
      if(iscaled == 0) val4 = sumvar ! if not,scaled then denominator is sum variances
      i = nanim * (nanim + 1) / 2
      amat(1:i) = amat(1:i) / val4
-     WRITE(*,*)' number of SNP used ', usedSNP,nSNP
+     if (verbose) WRITE(STDOUT, *) " number of SNP used ", usedSNP,nSNP
   else
      ifail = 2   !no SNP was segregating to get a matrix calculated
   end if
@@ -221,8 +225,8 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nSNP, effect, iscaled, ivar, ifai
 end subroutine BSRibsCalc1
 
 !=======================================================================
-subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNPMAT,&
-     cumvarMAT, ifail)
+subroutine BSRibsCalc1a(genotypes,amat, nanim, nobs, nSNP,effect,iscaled, ivar,&
+     usedSNPMAT, cumvarMAT, ifail, verbose)
   !=======================================================================
   !
   ! it calculates the relations IBS matrix for additive or dominance effect
@@ -246,14 +250,16 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
   implicit none
 
   character(len=*), intent(in) :: effect
-  integer, intent(in) :: nanim  
+  integer, intent(in) :: nanim
+  integer, intent(in) :: nobs
   integer, intent(in) :: nSNP
   integer, intent(in) :: iscaled
   integer, intent(in) :: ivar
-  integer, dimension(:,:), intent(in) :: genotypes
+  integer, dimension(nanim,nSNP), intent(in) :: genotypes
   !put as inout so amat is not forced to be adjusted if failed
-  real(KINDR), dimension(:), intent(inout) :: amat
+  real(KINDR), dimension(nobs), intent(inout) :: amat
   integer, intent(out):: ifail
+  logical, intent(in) :: verbose
 
   !put as inout so cumvarMAT is not forced to be adjusted if failed
   real(KINDR), dimension(:), intent(inout) :: cumvarMAT  
@@ -286,42 +292,43 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
   ! than 3 characters
   theeffect = effect  
   ieffect = 0
-  genscore(0) = 0.d0
+  genscore(0) = ZERO
   select case (theeffect)
   case ("ADD", "ADd", "AdD", "aDD", "Add", "aDd", "adD", "add")
      ! if matrix is additive effect
-     genscore(1) = 1.d0
-     genscore(2) = 2.d0
-     genscore(3) = 3.d0
+     genscore(1) = ONE
+     genscore(2) = TWO
+     genscore(3) = 3._KINDR
      ieffect     = 1
   case ("DOM", "DOm", "DoM", "dOM", "Dom", "dOm", "doM", "dom")
      ! if matrix is dominance effect
-     genscore(1) = 0.d0
-     genscore(2) = 1.d0
-     genscore(3) = 0.d0
+     genscore(1) = ZERO
+     genscore(2) = ONE
+     genscore(3) = ZERO
      ieffect     = 2
   case default
-     write(*,*) ' wrong selection of effect'
-     write(*,*) ' matris is either for addtive (add) or dominance (dom) effect'
+     write(STDERR, *) " wrong selection of effect"
+     write(STDERR, *) &
+          " matris is either for addtive (add) or dominance (dom) effect"
      ifail = 1
      return
   end select
-  write(*, *) ' calculating ', theeffect, ieffect
-  write(*, *) ' scaled  ', iscaled
+  if (verbose) write(STDOUT, *) " calculating ", theeffect, ieffect
+  if (verbose) write(STDOUT, *) " scaled  ", iscaled
 
   !------------------------------------------------------------------------------
   ! setting to zero the IBS status for a pair where at least one has missing genotype
   ! genscore for a missing genotype is the pop mean (or zero after centering).
   ! hence since IBD is the crosproduct of genscore, the IBS of this type of pair is 0
   !------------------------------------------------------------------------------
-  IBSvar(0:3) = 0.d0
+  IBSvar(0:3) = ZERO
   IBSnSNP(0) = 0
   IBSnSNP(1:3) = 1
 
-  IBSstatus(0, 0) = 0.d0
+  IBSstatus(0, 0) = ZERO
   do i = 1, 3
-     IBSstatus(0,i) = 0.d0
-     IBSstatus(i,0) = 0.d0
+     IBSstatus(0,i) = ZERO
+     IBSstatus(i,0) = ZERO
   end do
   !------------------------------------------------------------------------------
   ! calculating the IBS matrix
@@ -331,17 +338,17 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
   ifail = 0
   ipos = nanim * (nanim + 1) / 2
   j = size(amat, dim = 1)
-  write(*,*) ' size of amat', j
-  amat(1:ipos) = 0.d0
-  cumvarMAT(1:ipos) = 0.D0
+
+  amat(1:ipos) = ZERO
+  cumvarMAT(1:ipos) = ZERO
   usedSNPMAT(1:ipos) = 0
 
-  sumvar = 0.d0
+  sumvar = ZERO
   usedSNP = 0
 
   do isnp = 1, nSNP
-     if(mod(isnp, k ) == 1) write(*, '(a4,4i9,f25.8 )') 'at ', isnp, usedSNP, nSNP,&
-          k, sumvar
+!     if(mod(isnp, k ) == 1) write(*, '(a4,4i9,f25.8 )') 'at ', isnp, usedSNP, nSNP,&
+!          k, sumvar
 
      !   counting number of individuals in each genotype class
      do i = 0, 3
@@ -349,7 +356,7 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
      end do
      n = ngen(1) + ngen(2) + ngen(3)
      if(n == 0) then
-        write(*, '(a,6i9)') ' snp not used', isnp, ngen(0:3), n
+        if (verbose) write(STDOUT, '(a,6i9)') " snp not used", isnp, ngen(0:3), n
         cycle   !SNP has all genotypes missing (SNP not used in IBS calc)
      end if
      !now checking if SNP can be used in IBS calculation
@@ -367,7 +374,7 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
         if(ngen(1) > 0 .or. ngen(3) > 0) i = i + 1
      end if
      if(i <= 1) then
-        write(*,'(a,6i9)')' snp not used', isnp, ngen(0:3), n
+        if (verbose) write(STDOUT,'(a,6i9)')' snp not used', isnp, ngen(0:3), n
         cycle ! the SNP has all genotypes missing or they are fixed to a given 
         ! genotype. NO possible to be used in IBS calc
      end if
@@ -387,7 +394,7 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
      mean = mean / dble(n) !mean (assuming genescore 1,2,3 for aa,ab, bb)
      if (ivar == 1) then
         ! variance of additive  effect assuming HWE = 2pq
-        vari = (2.D0 * ((mean - 1.d0) / 2.D0) * (1.D0 - (mean - 1.d0) / 2.D0)) 
+        vari = (TWO * ((mean - ONE) / TWO) * (ONE - (mean - ONE) / TWO)) 
         ! variance of dominance effect assuming HWE = (2pq)*(2pq)
         if (ieffect == 2) vari = vari * vari 
      end if
@@ -401,7 +408,7 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
      !   calculating the IBS status once and later reading from table should
      !   speed-up calculation
      !------------------------------------------------------------------------------
-     val1 = 1.d0
+     val1 = ONE
      if(iscaled==1) val1 = vari   !genotype score to be scaled so variance is 1
      do i = 1, 3
         do j = 1, 3
@@ -457,7 +464,7 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim,nSNP,effect,iscaled, ivar, usedSNP
      ! total normalised by number of SNPused
      if (iscaled /= 0) amat(1:i) = amat(1:i) / usedSNPMAT(1:i)
 
-     write(*,*)' number of SNP used ', usedSNP, nSNP
+     if (verbose) write(STDOUT, *) " number of SNP used ", usedSNP, nSNP
   else
      ifail = 2   !no SNP was segregating to get a matrix calculated
   end if
