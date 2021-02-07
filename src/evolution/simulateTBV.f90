@@ -7,7 +7,7 @@ subroutine SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome, QTLlist, SNPlist
 
   integer, intent(in) :: nAnim, nChr, nComp, nSNP
   integer, dimension(nanim), intent(in) :: indiv
-  !  type(variance), intent(in) :: varainces
+  !  type(variances), intent(in) :: vars
   type(chromosome), dimension(nChr), intent(in) :: genome
   type(QTL_Array), intent(in) :: QTLlist
   integer, dimension(nChr, nSNP) :: SNPlist

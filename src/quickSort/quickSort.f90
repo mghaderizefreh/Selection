@@ -18,16 +18,16 @@ module quickSort
 implicit none
 !  include 'interfaceProc.f90'
 
-  private isSmallerEqualLarger_Int
-  private isSmallerEqualLarger_Int8
-  private isSmallerEqualLarger_Rea
-  private isSmallerEqualLarger_Dbl
-  private isSmallerEqualLarger_Cha
+!  private isSmallerEqualLarger_Int
+!  private isSmallerEqualLarger_Int8
+!  private isSmallerEqualLarger_Rea
+!  private isSmallerEqualLarger_Dbl
+!  private isSmallerEqualLarger_Cha
 
 
 
 contains
-    INCLUDE 'sortax_nested.f90'
+!    INCLUDE 'sortax_nested.f90'
 
       SUBROUTINE SORTRX(N,DATA,INDEX)
 !===================================================================

@@ -1,14 +1,15 @@
 subroutine updatetheta(nvar, AI, rhs, theta, verbose)
   use constants
   implicit none
-  integer, intent(in)                             :: nvar
-  logical, intent(in)                             :: verbose
-  real(KINDR), dimension(:), intent(in)      :: AI, rhs
-  real(KINDR), dimension(:), intent(inout)   :: theta
-  integer                                         :: n, info
-  integer, dimension(:), allocatable, save        :: ipiv
+  integer, intent(in) :: nvar
+  logical, intent(in) :: verbose
+  real(KINDR), dimension(1:((nvar+1)*(nvar+2)/2)), intent(in) :: AI
+  real(KINDR), dimension(1:(nvar+1)), intent(in) :: rhs
+  real(KINDR), dimension(1:(nvar+1)), intent(inout) :: theta
+  integer :: n, info
+  integer, dimension(:), allocatable, save :: ipiv
 
-  external                                        :: dspsv
+  external :: dspsv
 
   if (verbose) write(STDOUT, *) "  In the subroutine solve"
   n = nvar + 1

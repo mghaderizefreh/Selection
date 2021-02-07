@@ -23,21 +23,21 @@ subroutine selectbyIntercept(nanim, indiv, sex, n_m, n_fpm, male, female, ranEff
   index = merge(1, 2, size(raneff) == 1)
   nmale = count(sex)
   nfemale = size(sex) - nmale
-  i = max(nmale, nfemale)
+  i = max(nmale, nfemale) !using one array for both female and male per type
   allocate(tempI(i))
   allocate(tempR(i))
   
-  tempI(1:nmale) = pack(indiv, sex)
+  tempI(1:nmale) = pack(indiv, sex) ! true is male
   tempR(1:nmale) = raneff(index)%level(tempI(1:nmale))
   call sortrx(nmale, tempR, tempI)
   i = nmale - n_m + 1
-  male(1:n_m) = tempI(i:nmale)
+  male(1:n_m) = tempI(i:nmale) ! sort is ascending
 
   tempI(1:nfemale) = pack(indiv, .not.sex)
   tempR(1:nfemale) = raneff(index)%level(tempI(1:nfemale))
   call sortrx(nfemale, tempR, tempI)
   i = nfemale - n_fpm * n_m + 1
-  female(1:(n_fpm * n_m)) = tempI(i:nfemale)
+  female(1:(n_fpm * n_m)) = tempI(i:nfemale) + nmale !offset indices by nmale
   
 end subroutine selectbyIntercept
 
@@ -82,8 +82,8 @@ subroutine SelectBySlope(nanim, indiv, sex, n_m, n_fpm, male, female, ranEff)
   tempR(1:nfemale) = raneff(index)%level(tempI(1:nfemale))
   call sortrx(nfemale, tempR, tempI)
   i = nfemale - n_fpm * n_m + 1
-  female(1:(n_fpm * n_m)) = tempI(i:nfemale)
-  
+  female(1:(n_fpm * n_m)) = tempI(i:nfemale) + nmale
+
 end subroutine SelectBySlope
 
 

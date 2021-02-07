@@ -9,16 +9,18 @@
 !if option 1 and 2 are used, all chromosomes have similar 
 !
 
-subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock, istore&
-     , genome, maxloci, maxblock, ifail, prefixfilename)
+subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
+     istore, genome, genome2, maxloci, maxblock, ifail, chrL, &
+     prefixfilename1, prefixfilename2)
   use constants
   implicit none
 
   logical, intent(in) :: verbose
   integer, intent(in) :: genstart, nanim, nchr, istore
-  character(len=*), optional, intent(in) :: prefixfilename
+  character(len=*), optional, intent(in) :: prefixfilename1, prefixfilename2
   integer, intent(inout) :: nloci
-  type(chromosome), DIMENSION(:), intent(out) :: genome
+  type(chromosome), dimension(:), intent(out) :: genome, genome2
+  real(KINDR), intent(in) :: chrL
   integer, intent(out) :: ifail, nblock
 
   integer :: iun, i, k, id, j, ichr, igam, a1, iblock
@@ -27,7 +29,12 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock, is
   character(len=256) :: filename
 
   !nloci is input if genstart is 1 or 2
-  write(STDOUT, '(a24, i1)') " initialising genotypes",genstart
+  if (verbose) write(STDOUT, '(a24, i1)') " initialising genotypes",genstart
+  if (genstart .eq. 1 .or. genstart .eq. 2) then
+     write(STDERR, *) "ERROR:"
+     write(STDERR, *) "implementation needed for positions"
+     stop 2
+  end if
   !=====================================================
   ! IF GENSTART=1 or 2
   ! all chrmosmoe have the same number of SNP
@@ -51,6 +58,7 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock, is
      do ichr = 1, nchr
         genome(ichr)%nloci  = nloci
         genome(ichr)%nblock = nblock
+        genome(ichr)%chrL = chrL
         allocate(genome(ichr)%genotypes(nanim, 2, nblock))
      end do
   end if
@@ -92,7 +100,7 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock, is
                        call random_number(rand)
                        !ibset(i,j) returns the value of i with 
                        !the bit at position j set to one.
-                       if ( rand > 0.5 ) a1 = ibset( a1, j ) 
+                       if ( rand > HALF ) a1 = ibset( a1, j ) 
                     end do
                     genome(ichr)%genotypes(id, igam, iblock ) = a1
                  end do
@@ -127,15 +135,12 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock, is
 
      maxblock = 0
      maxloci = 0
-     do ichr = 1, nChr
-        write(filename,'(a,i3.3)') trim(prefixfilename), ichr
-
-        write(STDOUT,*)' reading ', trim(filename)
+     chr: do ichr = 1, nChr
+        genome(ichr)%chrL = chrL
+        write(filename,'(a,i3.3)') trim(prefixfilename1), ichr
+        if (verbose) write(STDOUT,*)' reading ', trim(filename)
         open(newunit = iun, file=filename, status = 'old')
         read(iun,*) i, nloci, nblock, k
-
-        write(*,'(a,8i6)') 'ich i nloci nbloc k nanim', ichr, i,&
-             nloci, nblock, k, nanim
 
         if (i .lt. nanim) then
            ifail = 1
@@ -164,8 +169,34 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock, is
            end do
         end if
         close(iun)
-     end do
+
+        allocate(genome(iChr)%positions(genome(iChr)%nLoci))
+        write(filename, '(a,i3.3)') trim(prefixfilename2), ichr
+        open(newunit = iun, file = filename, status = 'old')
+        read(iun, *)
+        do i = 1, genome(ichr)%nloci
+           read(iun, *) k , rand
+           if ((rand < ZERO) .or. rand > (genome(ichr)%chrL)) then
+              write(STDERR, *) "ERROR:"
+              write(STDERR, *) " wrong position", rand
+              write(STDERR, *) " should be between 0 and ", genome(ichr)%chrL
+              stop 2
+           end if
+           genome(ichr)%positions(i) = rand
+        end do
+        close(iun)
+     end do chr
   end if
+
+  ! copy common attributes to genome2 and allocate
+  do iChr = 1, nChr
+     genome2(iChr)%nloci = genome(iChr)%nloci
+     genome2(iChr)%nblock = genome(iChr)%nblock
+     genome2(iChr)%chrL = genome(iChr)%ChrL
+     genome2(iChr)%positions => genome(iChr)%positions
+     allocate(genome2(iChr)%genotypes(nanim, 2, genome(iChr)%nblock))
+  end do
+
 
   if (verbose) write(STDOUT,'(a)')' end initialising genotypes'
 

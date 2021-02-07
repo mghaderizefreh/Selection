@@ -2,20 +2,20 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
   use constants
   use global_module
   implicit none
-  logical, intent(in)                                                   :: verbose
-  real(KINDR), dimension(:), intent(in)                            :: Vinv
-  real(KINDR), dimension(:,:), intent(in)                          :: X
-  integer, intent(in)                                                   :: nobs, nfix
-  real(KINDR), dimension(:), intent(out)                           :: P
-  real(KINDR), intent(out)                                         :: det_xt_vinv_x
-  real(KINDR), dimension(:,:), intent(out)                         :: Vhat
+  logical, intent(in) :: verbose
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(in) :: Vinv
+  real(KINDR), dimension(1:nobs,1:nfix), intent(in) :: X
+  integer, intent(in) :: nobs, nfix
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: P
+  real(KINDR), intent(out) :: det_xt_vinv_x
+  real(KINDR), dimension(1:nfix,1:nobs), intent(out) :: Vhat
 
-  integer                                                               :: info, I
-  integer, dimension(:), allocatable, save                              :: ipiv2
-  real(KINDR), dimension(:,:), allocatable, save                   :: Vinvfull, mat, temp
-  real(KINDR), dimension(:), allocatable, save                     :: vec, work2
+  integer :: info, I
+  integer, dimension(:), allocatable, save :: ipiv2
+  real(KINDR), dimension(:,:), allocatable, save :: Vinvfull, mat, temp
+  real(KINDR), dimension(:), allocatable, save :: vec, work2
 
-  external                                                              :: dgemm, dtrttp, daxpy 
+  external :: dgemm, dtrttp, daxpy 
 
   if (verbose) write(STDOUT,*) "  In the subroutine CalculateP"
   if (.not.allocated(Vinvfull)) then

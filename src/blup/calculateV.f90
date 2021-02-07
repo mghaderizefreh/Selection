@@ -2,16 +2,16 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
   use constants
   use global_module
   implicit none
-  logical, intent(in)                              :: verbose
-  integer, intent(in)                              :: nobs, nvar
-  real(KINDR), dimension(:), intent(in)       :: theta
-  type (doublePre_array), dimension(:), intent(in) :: theZGZ
-  integer, intent(out)                             :: ifail
-  real(KINDR), dimension(:), intent(out)      :: V
+  logical, intent(in) :: verbose
+  integer, intent(in) :: nobs, nvar
+  real(KINDR), dimension(1:(nvar+1)), intent(in) :: theta
+  type (doublePre_array), dimension(1:nvar), intent(in) :: theZGZ
+  integer, intent(out) :: ifail
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: V
 
-  integer, parameter                               :: k = 3  ! the index of the diagonal matrix ZsZs
-  integer                                          :: i, ipos, irow, isize
-  real(KINDR)                                 :: Val1
+  integer, parameter :: k = 3  ! the index of the diagonal matrix ZsZs
+  integer :: i, ipos, irow, isize
+  real(KINDR) :: val1
 
   if (verbose) write(STDOUT,*) "  In the subroutine CalculateV"
   ifail = 1

@@ -6,24 +6,25 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
   use constants
   use global_module
   implicit none
-  logical                                             :: verbose
-  integer, intent(in)                                 :: nobs, nfix, nvar, maxid
-  real(KINDR), dimension(:), intent(in)          :: Gmatrix
-  integer, dimension(:), intent(in)                   :: id
-  real(KINDR), dimension(:), intent(in)          :: theta, Py, y
-  real(KINDR), dimension(:,:), intent(in)        :: Vhat, X
-  real(KINDR), dimension(:), intent(out)         :: fixeff
-  type (doublePre_Array), dimension(:), intent(out)   :: raneff
+  logical :: verbose
+  integer, intent(in) :: nobs, nfix, nvar, maxid
+  real(KINDR), dimension(1:(maxid*(maxid+1))), intent(in) :: Gmatrix
+  integer, dimension(1:nobs), intent(in) :: id
+  real(KINDR), dimension(1:(nvar+1)), intent(in) :: theta
+  real(KINDR), dimension(1:nobs), intent(in) :: Py, y
+  real(KINDR), dimension(1:nfix,1:nobs), intent(in) :: Vhat
+  real(KINDR), dimension(1:nobs,1:nfix), intent(in) :: X
+  real(KINDR), dimension(1:nfix), intent(out) :: fixeff
+  type (doublePre_Array), dimension(1:merge(3,1,nfix>1)), intent(out) :: raneff
 
-  real(KINDR), dimension(:), allocatable         :: temp
-  integer                                             :: i, j
-  real(KINDR)                                    :: val1, s1, s2
-  type (doublePre_Array), dimension(:), allocatable, target   :: theZPy
+  real(KINDR), dimension(:), allocatable :: temp
+  integer :: i, j
+  real(KINDR) :: val1, s1, s2
+  type (doublePre_Array), dimension(:), allocatable, target :: theZPy
 
-  external                                            :: dgemm
+  external :: dgemm
 
   if (verbose) write(STDOUT, *) " Inside getEffects"
-  write(6, *) 'nfix,nobs,one, fixeff', nfix,nobs,one,fixeff
   ! fixed effects
   call dgemm('n', 'n', nfix, 1, nobs, ONE, Vhat, nfix, y, nobs, ZERO, fixeff, nfix)
   if (verbose) write(STDOUT, *) "  Fixed effects estimated"

@@ -2,16 +2,16 @@ subroutine calculateAImatrix(nobs, nvar, P, AI, f, verbose)
   use constants
   use global_module
   implicit none
-  logical, intent(in)                                                 :: verbose
-  integer, intent(in)                                                 :: nobs, nvar
-  real(KINDR), dimension(:), intent(in)                          :: P
-  real(KINDR), dimension(:), intent(out)                         :: AI
-  type (JArr), dimension(:), intent(in)                              :: f
-  real(KINDR), external                                          :: ddot
-  integer                                                             :: i, k, j
-  real(KINDR), dimension(:), allocatable, save                   :: temp
+  logical, intent(in) :: verbose
+  integer, intent(in) :: nobs, nvar
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(in) :: P
+  real(KINDR), dimension(1:((nvar+1)*(nvar+2)/2)), intent(out) :: AI
+  type (JArr), dimension(1:(nvar+1)), intent(in) :: f
+  real(KINDR), external :: ddot
+  integer :: i, k, j
+  real(KINDR), dimension(:), allocatable, save :: temp
 
-  external                                                            :: dspmv
+  external :: dspmv
 
   if (verbose) write(STDOUT, *) "  In the subroutine calculateAImatrix"
   if (.not. allocated(temp))  allocate(temp(nobs))

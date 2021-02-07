@@ -14,8 +14,8 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   integer, intent(in) :: addDom !(1:additive, 2:dominance)
   real(KINDR), dimension(:), allocatable :: Amat
 
-  integer :: totalSNP, maxLength
-  integer :: i, j, k
+  integer :: totalSNP!, maxLength = 1
+  integer :: i, k
   integer :: a1, a2
   integer, parameter :: nbits = 32
   integer :: totLoci, ibit1, iblck1, iloci, id, iChr, ipos, isnp
@@ -26,21 +26,25 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   integer, dimension(2,2) :: genocode
   integer, dimension(0:3) :: ngeno
   integer :: ifail
-  character(len = 60) :: formato
+!  character(len = 100) :: formato
+
+  external :: bsribscalc1, bsribscalc1a
 
   genocode(1,1) = 1
   genocode(1,2) = 2
   genocode(2,1) = 2
   genocode(2,2) = 3
 
+  if (ident(1) > 0) then
+  end if
   !--------------------------------------------
   ! reading genome to create the genotype
   !--------------------------------------------
   allocate(chr_nlocibefore(nChr))
   totLoci = 0
   do iChr = 1, nChr
-     if (genome(iChr)%nblock > i) i = genome(iChr)%nblock
-     if (genome(iChr)%nloci > j) j = genome(iChr)%nloci
+!     if (genome(iChr)%nblock > i) i = genome(iChr)%nblock
+!     if (genome(iChr)%nloci > j) j = genome(iChr)%nloci
      chr_nlocibefore(iChr) = totLoci
      totLoci = totLoci + genome(iChr)%nloci
   end do
@@ -79,16 +83,6 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   end do
   !====================================
   !------------------------------------
-  ! getting max length of ids
-  !------------------------------------
-  i = maxval(ident)
-  j = 1
-  do while (i >= 10)
-     i = i / 10
-     maxLength = maxLength + 1
-  end do
-  !====================================
-  !------------------------------------
   ! counting non-segregating snp?
   !------------------------------------
   ipos=0    ! counting non-segregating snp?
@@ -110,10 +104,10 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   !====================================
   effect = "add"
   if (addDom == 2) effect = "dom"
-  if (verbose) write(STDOUT, '(a)') "effect is ", effect
+  if (verbose) write(STDOUT, '(a11,a3)') "effect is ", effect
 
   i = nAnim * (nAnim + 1) / 2   
-  allocate(amat(i))
+  if (.not.allocated(amat)) allocate(amat(i))
 
   if (imiss == 1) then
      allocate(usedSNPMAT(i))
@@ -124,31 +118,11 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   if (verbose) write(STDOUT, '(a)') " starting ibs cal"
 
   if (imiss == 0) then
-     call bsribscalc1(genotype, amat, nanim, totalSNP, effect, iscaled, ivar, ifail)
+     call bsribscalc1(genotype, amat, nanim, i, totalSNP, effect, iscaled,&
+          ivar, ifail, verbose)
   else
-     call bsribscalc1a(genotype, amat, nanim, totalSNP, effect, iscaled, ivar,&
-          usedSNPMAT, cumvarMAT, ifail)
-  end if
-
-  if (verbose) then
-     open( 1, FILE = "AMAT.txt", STATUS = 'unknown' )
-     ipos = 0
-     i = nanim * ( nanim + 1 ) / 2
-     write(formato, '(a2,i1,a5,i1,a22)') '(i', maxLength, ',1x,i', maxLength, &
-          ',1x,g24.15,i9,g24.15)'
-     write(*,*) " formato= ", trim(formato)
-     do i = 1, nanim
-        do j = 1, i
-           ipos = ipos + 1
-           if (imiss == 0) then
-              write(1, formato) ident(i), ident(j), amat(ipos)
-           else
-              write(1, formato) ident(i), ident(j), amat(ipos),&
-                   usedSNPMAT(ipos), cumvarMAT(ipos)
-           end if
-        end do
-     end do
-     close(1)
+     call bsribscalc1a(genotype, amat, nanim, i, totalSNP, effect, iscaled,&
+          ivar, usedSNPMAT, cumvarMAT, ifail, verbose)
   end if
 
 end subroutine getGmatrix

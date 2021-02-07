@@ -80,13 +80,18 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
         write(STDERR, *) "some other shit happened"
         stop 2
      end if
+
+     ! the cholesky factorisation routine ?potrf(with 'L') returns the lower
+     ! part of the cholesky. The upper part must be zero.
      do i = 1, dim - 1
         do j = i + 1, dim
-           covcopy(i,j) = 0.0
+           covcopy(i,j) = ZERO
         end do
      end do
 
-     call sgemm('N','N',N,dim,dim,1.0,uniform,N,covcopy,dim,0.0,output,N)
+     ! the output is normal(nxd) = unifrm(nxd) * chol.Transpose
+     call dgemm('N','T', N, dim, dim, ONE, uniform, N, covcopy, dim, &
+          ZERO, output, N)
 
      forall( i = 1:N)
         output(i,1:DIM) = mean(1:DIM) + output(i,1:DIM)
@@ -123,4 +128,3 @@ subroutine normdev(val)
      iset = 0
   end if
 end subroutine normdev
-
