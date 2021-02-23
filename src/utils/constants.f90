@@ -4,6 +4,9 @@ module constants
   !   Precision
   integer,        parameter :: KINDR = KIND(0d0)
 
+  ! integer representation of alleles
+  integer, parameter :: NBITS = 32
+
   ! derived types
   type doublePre_Array
      real(KINDR), dimension(:), pointer :: level(:)
@@ -26,6 +29,7 @@ module constants
      real(KINDR), allocatable, dimension(:) :: E ! environemntal part
      real(KINDR), allocatable, dimension(:) :: PE ! permanent environment
      real(KINDR), allocatable, dimension(:,:) :: corr ! (genetic) correlation
+     real(KINDR), allocatable, dimension(:,:) :: cov ! (genetic) covariance
   end type variances
 
   type QTL_Array

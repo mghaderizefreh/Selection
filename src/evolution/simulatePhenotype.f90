@@ -1,31 +1,32 @@
-subroutine SimulatePhenotype(verbose, nAnim, nComp, indiv, TBV, vars, means, &
-     nobs, locations, ids, phen, proc, X)
-
+subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, indiv, &
+     TBV, vars, means, nobs, locations, ids, phen, proc, X)
+! note that nfix and ncomp are different. nComp refers to number of components
+! in simulation: for intercept and slope ncomp = 2. However, nfix depends on the
+! type of analysis: if a single trait is desired nfix = 1, if random regression
+! is to be conducted nfix = 2
   use constants
   use rng_module
   implicit none
 
   logical, intent(in) :: verbose
-  integer, intent(in) :: nAnim, nComp
+  integer, intent(in) :: nAnim, nComp, nLox, nFix
   integer, dimension(nanim), intent(in) :: indiv
-  real(KINDR), dimension(nanim, ncomp), intent(in) :: TBV
+  real(KINDR), dimension(nAnim, nComp), intent(in) :: TBV
   type(variances), intent(in) :: vars
-  real(KINDR), dimension(ncomp), intent(in) :: means
+  real(KINDR), dimension(nComp), intent(in) :: means
   integer, intent(in) :: nobs
-  real(KINDR), dimension(:,:), intent(in) :: locations
-  integer, dimension(nobs), intent(out) :: ids
-  real(KINDR), dimension(nobs), intent(out) :: phen
+  real(KINDR), dimension(nAnim,nLox), intent(in) :: locations
+  integer, dimension(nObs), intent(out) :: ids
+  real(KINDR), dimension(nObs), intent(out) :: phen
   character(len = *) :: proc
-  real(KINDR), dimension(:,:), allocatable, intent(out) :: X
+  real(KINDR), dimension(nobs,nFix), intent(out) :: X
 
-  integer :: i, j, k, len
+  integer :: i, k
   real(KINDR), dimension(:,:), allocatable, save :: temp2
   real(KINDR), dimension(:), allocatable, save :: tempr ! to hold mean of zero
   real(KINDR), allocatable, dimension(:,:), save :: E!, A, PE
 
   external :: covariate
-
-  if (verbose) write(STDOUT, *) " simulating phenotypes"
 
   if (.not.allocated(temp2)) then
      allocate(temp2(nComp, nComp), tempr(nComp))
@@ -33,55 +34,87 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, indiv, TBV, vars, means, &
      temp2(1:nComp, 1:nComp) = ZERO
      do i = 1, nComp
         temp2(i,i) = vars%E(i)
-        tempr(1:nComp) = ZERO
+     end do
+     tempr(1:nComp) = ZERO
+  end if
+  if (nFix .eq. 2) then
+     do k = 1, nlox
+        X(k:nobs:nLox, 1) = locations(1:nAnim, k) ! for mu_slo if nfix == 2
      end do
   end if
+  do k = 1, nlox
+     ids(k:nobs:nLox) = indiv(1:nAnim) ! ids are repeated
+  end do
+  X(1:nobs, nFix) = ONE ! for mu_int
 
-  j = size(locations)
-
-  if (j == 1) then
-     i = 1
-     len = nAnim
-     allocate(X(len, i))
-     ids = indiv
-  elseif ((j < nAnim) .and. (size(locations, 1) .eq. 1)) then
-     i = 2
-     len = j * nAnim
-     allocate(X(len, i))
-     do k = 1, j
-        ids(k:len:j) = indiv(1:nAnim)
-        X(k:len:j, 1) = locations(1, k) !for mu_slope (locations are repeated)
-     end do
-  elseif (size(locations, 1) == nAnim) then
-     i = 2
-     len = j
-     allocate(X(len, i))
-     j = size(locations, 2)
-     do k = 1, j
-        ids(k:len:j) = indiv(1:nAnim) ! ids are repeated
-        X(k:len:j, 1) = locations(1:nAnim, k) ! different locations
-     end do
-  else
-     write(STDERR, *) "Error: The format of 'locations' is wrong"
-     write(STDERR, *) "Use either:"
-     write(STDERR, *) " - [size:    1 x 1   ] all animals in the same location"
-     write(STDERR, *) " - [size:    1 x nLox] all have phenotypes in nlox places"
-     write(STDERR, *) " - [size:nAnim x nLox] phenotypes at different places"
-     stop 2
-  end if
-  if (.not.allocated(E)) allocate(E(len,nComp))
-  X(1:len, i) = ONE ! for mu_int
-  call gnormal(tempr, temp2, nComp, len, E)
+  if (.not.allocated(E)) allocate(E(nobs,nComp))
+  call gnormal(tempr, temp2, nComp, nobs, E)
    ! todo: implementation for PE if really it is required
+
   select case (proc(1:3))
   case ("COV", "COv", "CoV", "Cov", "cOV", "cOv", "coV", "cov")
-     call covariate(nComp, len, nAnim, TBV, E, phen, locations, &
-          size(locations,1), size(locations,2), means)
+     if (verbose) write(STDOUT, *) "Using locations as covariates"
+     ! location is used instead of X because X is to be used in analysis
+     ! and varies in dimension depending on the type of analysis
+     call covariate(nComp, nObs, nAnim, nLox, TBV, E, phen, locations, means)
+     if (verbose) write(STDOUT, *) " number of locations used:", nlox
   case default
-     write(STDERR, *) "error:"
+     write(STDERR, '(a)') "Error:"
      write(STDERR, *) "case '", proc, "' not implemented"
      stop 2
   end select
 
-  if (verbose) write(STDOUT, *) " end of SimulatePhenotype subroutine"
 end subroutine SimulatePhenotype
+
+
+!!!! ============================================================ !!!!
+subroutine allocateInd(nAnim, nlox, nfarm, allocation, interval, farms, &
+     locations)
+  use constants
+  implicit none
+  integer, intent(in) :: nAnim, nLox, nFarm
+  integer, intent(in) :: allocation
+  real(KINDR), dimension(2), intent(in) :: interval
+  real(KINDR), dimension(nfarm, 2), intent(in) :: farms
+  real(KINDR), dimension(nAnim, nLox), intent(out) :: locations
+
+  select case (allocation)
+  case(1) ! random
+     call random_number(locations)
+     ! shifting and scaling to match interval
+     ! random_number is in [0,1] so no need to shift by 0 and divide by 1
+     locations(1:nAnim, 1:nLox) = locations(1:nAnim, 1:nLox) * &
+          (interval(2) - interval(1)) + interval(1)
+  case(2:)
+  end select
+  
+end subroutine allocateInd
+
+!!!! ============================================================ !!!!
+subroutine defineFarms(interval, nfarm, diameter, farms)
+  use constants
+  use quickSort
+  implicit none
+  integer, intent(in) :: nfarm
+  real(KINDR), dimension(2), intent(in) :: interval
+  real(KINDR), intent(in) :: diameter
+  real(KINDR), dimension(nfarm, 2), intent(out) :: farms
+
+  real(KINDR), dimension(nfarm) :: centres
+  integer, dimension(nfarm) :: ind
+  
+  call random_number(centres)
+  call sortrx(nfarm, centres, ind)
+  centres(1:nfarm) = centres(ind(1:nfarm))
+  centres(1:nfarm) = (centres(1:nfarm) - centres(1)) / &
+       (centres(nfarm) - centres(1)) * &
+       (interval(2) - interval(1) - diameter) +&
+       interval(1) + diameter / 2
+  farms(1:nfarm, 1) = centres(1:nfarm) - diameter / 2
+  farms(1:nfarm, 2) = centres(1:nfarm) + diameter / 2
+  ! arithmetic floating point messes up with first and last boundary
+  ! although experiment showed this is not required most of the times
+  farms(1      , 1) = interval(1)
+  farms(nfarm  , 2) = interval(2)
+    
+end subroutine defineFarms

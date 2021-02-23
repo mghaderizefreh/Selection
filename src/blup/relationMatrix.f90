@@ -17,7 +17,6 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   integer :: totalSNP!, maxLength = 1
   integer :: i, k
   integer :: a1, a2
-  integer, parameter :: nbits = 32
   integer :: totLoci, ibit1, iblck1, iloci, id, iChr, ipos, isnp
   integer, dimension(:,:), allocatable :: genotype
   integer, dimension(:), allocatable :: chr_nlocibefore, pruningSNP, usedSNPMat
@@ -67,7 +66,7 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
 
            if (ibit1 < 0) then
               iblck1 = iblck1 + 1 ! a new block
-              ibit1 = nbits - 1 ! start from the 1st bit
+              ibit1 = NBITS - 1 ! start from the 1st bit
            end if
 
            if (pruningSNP(chr_nlocibefore(iChr) + iloci) .eq. 0) cycle

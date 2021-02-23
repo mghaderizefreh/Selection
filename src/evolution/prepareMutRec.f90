@@ -20,8 +20,8 @@ subroutine GetMutRecArray(verbose, maxVal, chrL, mutationRate, nLoci, &
   allocate(chiasmacumP(maxval), mutationcumP(maxval))
   allocate(totalchiasma(0:maxval), totalmutation(0:maxval))
 
-  totalmutation(:)=0
-  totalchiasma(:)=0
+  totalmutation(0:maxval) = 0
+  totalchiasma(0:maxval) = 0
 
   maxchiasma = 0
   call poissonProb(chrL, maxchiasma, chiasmacumP0)
@@ -35,7 +35,7 @@ subroutine GetMutRecArray(verbose, maxVal, chrL, mutationRate, nLoci, &
      if (v1 > ONE) v1 = ONE
      chiasmacumP(maxchiasma) = v1
      if (verbose) write(STDOUT,*) ' # recom', maxchiasma, v2, v1
-     if (abs(ONE - v1) <= 0.0000001) then
+     if (abs(ONE - v1) <= 0.0000001_KINDR) then
         chiasmacumP(maxchiasma) = ONE
         exit
      end if

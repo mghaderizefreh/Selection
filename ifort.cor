@@ -1,7 +1,9 @@
 #/bin/sh
 set -e
 FC=ifort
-flags="-C -static -mkl -ldl"
+export TMPDIR=/exports/eddie/scratch/mghaderi/tmp
+###flags="-g -C -warn all -check all -mkl"
+flags="-fast -static -mkl"
 
 ## all function, subroutines and modules
 UTL="src/utils/constants.f90 src/utils/askFilename.f90 src/utils/countNumberLines.f90 src/utils/detInv.f90 src/utils/dunpack.f90 src/utils/readData.f90 src/utils/trace.f90 src/utils/global_module.f90"

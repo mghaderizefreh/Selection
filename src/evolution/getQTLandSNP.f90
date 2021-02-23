@@ -8,15 +8,15 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
   logical, intent(in) :: verbose
   integer, intent(in) :: nChr, nQTL, nSNP, nComp
   logical, intent(in) :: randomMAF
-  type(chromosome), dimension(:), intent(in) :: genome
+  type(chromosome), dimension(1:nChr), intent(in) :: genome
   type(QTL_Array), intent(out) :: QTLlist
   integer, dimension(:,:), allocatable, intent(out) :: SNPlist
   real(KINDR), dimension(nComp, nComp), intent(in) :: covMat
-  character (len=20), intent(in), optional :: baseNameFreq
+  character (len=10), intent(in), optional :: baseNameFreq
   real(KINDR), intent(in), optional :: MAF
 
   integer :: iChr, i, k, j, iun
-  integer :: nReq, nAvail
+  integer :: nReq, nAvail, maxloci
   logical :: l_exists
   character(len = 256):: fileName
   integer, dimension(:), allocatable :: iReq, temp
@@ -26,7 +26,7 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
   real(KINDR) :: rand, freq
   if (.not.randomMAF) then
      if (.not.present(baseNameFreq).or..not.present(MAF)) then
-        write(STDERR, *) "Error"
+        write(STDERR, '(a)') "Error"
         write(STDERR, *) "baseNameFreq and/or MAF not present"
         write(STDERR, *) "and non-random selection instructed"
         stop 2
@@ -35,9 +35,10 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
            write(filename, '(a,i3.3)') trim(baseNameFreq), ichr
            inquire(file=filename, exist=l_exists)
            if (.not. l_exists) then
-              write(STDERR,'(a4,1x,a,i3.3,1x,a)') "File", trim(baseNameFreq),&
+              write(STDERR, '(a)') "Error"
+              write(STDERR,'(a5,1x,a,i3.3,1x,a)') " File", trim(baseNameFreq),&
                    ichr,"does not exist"
-              write(STDERR, '(a)') "exiting..."
+              write(STDERR, '(a)') " exiting..."
               stop 2
            end if
         end do
@@ -47,30 +48,36 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
   allocate(SNPlist(nChr, nSNP))
   allocate(QTLlist%indices(nChr, nQTL), QTLlist%values(nChr, nQTL, nComp))
   allocate(means(ncomp))
-  means(1:ncomp) = 0.d0
+  means(1:ncomp) = ZERO
   k = nQTL * nChr
-  allocate(values_1D(nComp, k))
+  allocate(values_1D(k, nComp))
   QTLlist%nComp = nComp
   QTLList%nQTL = nQTL
   nReq = nQTL + nSNP
   allocate(iReq(nReq))
   call gnormal(means, covMat, nComp, k, values_1D)
   if (verbose) write(STDOUT, *) " random values for tbv created"
+  maxLoci = 0
+  do iChr = 1, nChr
+     if (genome(iChr)%nLoci > maxLoci) maxLoci = genome(iChr)%nLoci
+  end do
+  allocate(temp(maxLoci))
+  temp = (/(i, i = 1, maxLoci)/)
+
   if (.not.randomMAF) then
      allocate(MAFArray(nChr))
-
-     ICHRLOOP: do iChr = 1, nChr 
+     ICHRLOOP: do iChr = 1, nChr
         allocate(MAFArray(iChr)%array(genome(iChr)%nloci))
         write(fileName,'(a,i3.3)') trim(baseNameFreq), ichr
         open(newUnit = iun, file = fileName, status = 'old')
-        read(iun, *) 
+        read(iun, *)
         do i = 1, genome(iChr)%nloci
            read(iun, *) j, rand, k, freq
-           MAFArray(iChr)%array(i) = min(freq, 1- freq)
+           MAFArray(iChr)%array(i) = min(freq, 1 - freq)
         end do
         close(iun)
-
-        allocate(temp(genome(iChr)%nloci))
+        
+        ! sortrx does not need to know the number of elements in temp
         call sortrx(genome(iChr)%nloci, MAFArray(ichr)%array, temp)
 
         i = 0
@@ -85,47 +92,42 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
         nAvail = genome(iChr)%nloci - i
 
         if (nAvail < nReq) then
+           write(STDERR, '(a)') "Erorr"
 681        format(" Number of QTL is less than nLoci for Chromosome ", &
                 i2," for MAF > ", f10.8)
 682        format(" iChr, NReq, Nloci, available, < maf", i2, 4x, i4, 3x,&
                 i4, 2x, i4, 2x, i4)
            write(STDERR, 681) iChr, maf
            write(STDERR, 682) iChr, NReq, genome(iChr)%nLoci, nAvail , i
-           write(STDERR, '(a)') "exiting..."
+           write(STDERR, '(a)') " exiting..."
            stop 2
         end if
 
         temp(1:nAvail) = (/(i, i = 1, nAvail)/)
-        call choice(temp, nAvail, nReq, iReq)
+        call choice(temp, maxloci, nAvail, nReq, iReq, nReq)
 
         QTLlist%indices(iChr, 1:nQTL) = iReq(1:nQTL)
         do i = 1, nComp
            k = (iChr - 1) * nQTL
-           QTLlist%values(iChr, 1:nQTL, i) = values_1D(i, (k + 1) : (k + nQTL))
+           QTLlist%values(iChr, 1:nQTL, i) = values_1D((k + 1) : (k + nQTL), i)
         end do
         SNPlist(ichr, 1:nSNP) = iReq((nQTL+1):nReq)
 
-        deallocate(temp)
      end do ICHRLOOP
 
   else ! i.e., when the selection is random
 
      ICHRLOOP2: do iChr = 1, nChr
-        k = genome(iChr)%nLoci
-        allocate(temp(k))
-        temp = (/(i, i = 1, k)/)
-        call choice(temp, k, nReq, iReq)
+        !          src,   dim,     size,              n,  output, dim
+        call choice(temp, maxLoci, genome(iChr)%nLoci, nReq, iReq, nReq)
         QTLlist%indices(iChr, 1:nQTL) = iReq(1:nQTL)
         SNPlist(iChr, 1:nSNP) = iReq((nQTL+1):nReq)
-        deallocate(temp)
-
         do i = 1, nComp
-           k = (iChr - 1) * nQTL
-           QTLlist%values(iChr, 1:nQTL, i) = values_1D(i, (k+1):(k+nQTL))
+           j = (iChr - 1) * nQTL
+           QTLlist%values(iChr, 1:nQTL, i) = values_1D((j+1):(j+nQTL), i)
         end do
 
      end do ICHRLOOP2
   end if
-  if (verbose) write(STDOUT, *) "QTL and SNP list simulated"
 end subroutine getQTLandSNP
 

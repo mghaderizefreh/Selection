@@ -29,10 +29,10 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
   character(len=256) :: filename
 
   !nloci is input if genstart is 1 or 2
-  if (verbose) write(STDOUT, '(a24, i1)') " initialising genotypes",genstart
+  if (verbose) write(STDOUT, '(a35, i1,a1)') " Initialising genotypes (genstart: ",genstart, ")"
   if (genstart .eq. 1 .or. genstart .eq. 2) then
-     write(STDERR, *) "ERROR:"
-     write(STDERR, *) "implementation needed for positions"
+     write(STDERR, '(a)') "ERROR:"
+     write(STDERR, '(a)') "implementation needed for positions"
      stop 2
   end if
   !=====================================================
@@ -138,16 +138,16 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
      chr: do ichr = 1, nChr
         genome(ichr)%chrL = chrL
         write(filename,'(a,i3.3)') trim(prefixfilename1), ichr
-        if (verbose) write(STDOUT,*)' reading ', trim(filename)
+        if (verbose) write(STDOUT,'(a, a)') "  reading ", trim(filename)
         open(newunit = iun, file=filename, status = 'old')
         read(iun,*) i, nloci, nblock, k
 
         if (i .lt. nanim) then
            ifail = 1
-           write(STDERR,*) &
-                ' Error. Genotype file does not have enough individuals',&
+           write(STDERR,'(a, a)') &
+                "Error. Genotype file does not have enough individuals: ",&
                 trim(filename)
-           write(STDERR,*) 'i nanim', i, nanim
+           write(STDERR,'(a, 2i8)') "  i nanim", i, nanim
            stop 2
         end if
         if (nloci > maxloci) maxloci = nloci
@@ -177,7 +177,7 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
         do i = 1, genome(ichr)%nloci
            read(iun, *) k , rand
            if ((rand < ZERO) .or. rand > (genome(ichr)%chrL)) then
-              write(STDERR, *) "ERROR:"
+              write(STDERR, '(a)') "ERROR:"
               write(STDERR, *) " wrong position", rand
               write(STDERR, *) " should be between 0 and ", genome(ichr)%chrL
               stop 2
@@ -198,7 +198,7 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
   end do
 
 
-  if (verbose) write(STDOUT,'(a)')' end initialising genotypes'
+  if (verbose) write(STDOUT,'(a)') " end initialising genotypes"
 
 end subroutine initialiseGenotypes
 

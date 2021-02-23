@@ -1,6 +1,8 @@
 subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
-     geneposfile, chrL, mu, ncomp, vars, nQTL, nSNP, locations, selectionType,&
-     nobs, means, analysisType, theta, n_m, n_fpm, n_opf, ngen, doreml, nfix, nvar)
+     geneposfile, chrL, mu, ncomp, vars, nQTL, nSNP, MAF, baseNameFreq,&
+     randomQTL, interval, locations, X, nlox, nFarm, farms, farmRange,&
+     allocation, selectionType, nobs, means, analysisType, theta, n_m,&
+     n_fpm, n_opf, ngen, doreml, nfix, nvar, output)
   use constants
   implicit none
   character(len=*), intent(in) :: inputfile ! list of all inputs
@@ -16,7 +18,18 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   type(variances), intent(out) :: vars
   integer, intent(out) :: nQTL
   integer, intent(out) :: nSNP
+  real(KINDR), intent(out) :: MAF
+  character(len=100), intent(out) :: baseNameFreq
+  logical, intent(out) :: randomQTL
+  real(KINDR), dimension(2), intent(out) :: interval
   real(KINDR), allocatable, dimension(:,:), intent(out) :: locations
+  real(KINDR), allocatable, dimension(:,:), intent(out) :: X
+  integer, intent(out) :: nlox
+  integer, intent(out) :: nFarm
+  real(KINDR), allocatable, dimension(:,:), intent(out) :: farms
+  real(KINDR), intent(out) :: farmRange
+  integer, intent(out) :: allocation ! allocation scenario
+  ! 1 = random, 
   integer, intent(out) :: selectionType 
   integer, intent(out) :: nobs
   real(KINDR), allocatable, dimension(:), intent(out) :: means
@@ -30,11 +43,12 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   logical, intent(out) :: doreml ! whether to do a reml or only a blup
   integer, intent(out) :: nfix
   integer, intent(out) :: nvar
+  character(len=100), intent(out) :: output
 
   character(len = 200) :: line, formato
-  integer :: iinput, stat, iun, lno, j, i, nlox
+  integer :: iinput, stat, iun, lno, j, i
   real(KINDR) :: rinput
-  logical :: bool, locRandom, bool2
+  logical :: bool
   lno = 0
 
   open(newUnit = iun, file = trim(inputfile))
@@ -140,7 +154,7 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   vars%PE = ZERO
 
   ! correlations
-  allocate(vars%corr(ncomp,ncomp))
+  allocate(vars%corr(ncomp,ncomp), vars%cov(ncomp,ncomp))
   do i = 1, ncomp
      do j = 1, i
         call nextInput(iun, line, lno)
@@ -152,8 +166,12 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
              lno)
         vars%corr(i,j) = rinput
         vars%corr(j,i) = rinput
+        vars%cov(i,j) = vars%corr(i,j) * sqrt(vars%A(i)) * sqrt(vars%A(j))
+        vars%cov(j,i) = vars%cov(i,j)
         write(formato, '(a10,2(i1,a1))') "vars%corr(", i, ",", j, ")"
         write(STDOUT, 35) trim(formato), vars%corr(i,j)
+        write(formato, '(a9,2(i1,a1))') "vars%cov(", i, ",", j, ")"
+        write(STDOUT, 35) trim(formato), vars%cov(i,j)
      end do
   end do
 
@@ -173,6 +191,55 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   nSNP = iinput
   write(STDOUT, 34) "number of SNP/chromosome", nSNP
 
+  ! randomQTL
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to read input for randomQTL", lno)
+  randomQTL = iinput .eq. 1
+  write(STDOUT, 33) "Are QTLs random?", verbose
+
+  ! baseNameFreq
+  call nextInput(iun, line, lno)
+  baseNameFreq = trim(line)
+  if (.not.randomQTL) then
+     do i = 1, nchr
+        write(line, '(a,i3.3)') trim(baseNameFreq),i
+        inquire(file=line, exist = bool)
+        call assert(bool, "error in finding a file for frequenecies with&
+             &as many as chromosomes", lno)
+     end do
+     write(STDOUT, 36) "file for frequnecy", baseNameFreq
+  else
+     write(STDOUT, 36) "file for frequency (is ignored)", baseNameFreq
+  end if
+
+  ! MAF
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) rinput
+  call assert(stat.eq.0, "failed to read MAF for finding QTLs", lno)
+  if (.not.randomQTL) then
+     call assert((rinput.ge.ZERO).and.(rinput.lt.HALF), "maf must be &
+          &between 0.0 and 0.5 (incl,excl., respecitvely)",lno)
+     maf = rinput
+     write(STDOUT, 35) "MAF cutoff for QTL", MAF
+  else
+     maf = rinput
+     write(STDOUT, 35) "MAF cutoff for QTL (is ignored)", MAF
+  end if
+
+  ! interval (boundaries of X; xmin, xmax)
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) rinput
+  call assert(stat.eq.0, "failed to read xmin", lno)
+  interval(1) = rinput
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) rinput
+  call assert(stat.eq.0, "failed to read xmamx", lno)
+  interval(2) = rinput
+  call assert(interval(2)>interval(1), "xmax must be > xmin", lno)
+  write(STDOUT, 35) "xmin", interval(1)
+  write(STDOUT, 35) "xmax", interval(2)
+
   ! nlox
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
@@ -180,52 +247,44 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   call assert((iinput.gt.0).and.(iinput.lt.nanim)&
        , "number of locations must be > 0 and < nanim", lno)
   nlox = iinput
+  allocate(locations(nanim, nlox))
   write(STDOUT, 34) "number of locations per individual", nlox
 
-  ! random locations  
+  ! number of farms  
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read randomness of locations", lno)
-  locRandom = iinput == 1
-  write(STDOUT, 33) "random location for individuals?", locRandom
-  ! if locations are random
-  if (locRandom) then
-     allocate(locations(nanim, nlox))
-     call random_number(locations)
-  else ! if not, further information is required
-     call nextInput(iun, line, lno)
-     read(line, *, iostat = stat) iinput
-     call assert(stat.eq.0, "failed to read wether locations are common", lno)
-     bool = iinput == 1
-     write(STDOUT, 33) "common locations for all individuals?", bool
-     if (bool) then! if locations are common, j locations are required
-        allocate(locations(1,nlox))
-        do i = 1, nlox
-           call nextInput(iun, line, lno)
-           read(line, *, iostat = stat) rinput
-           call assert(stat.eq.0, "failed to read one of the locations", lno)
-           locations(1,i) = rinput
-           write(formato, '(a15,1x,i2,1x,a2)') "common location", i, "is"
-           write(STDOUT, 35) trim(formato), locations(1,i)
-        end do
-     else ! otherwise a filename is required
-        allocate(locations(nanim, nlox))
-        call nextInput(iun, line, lno)
-        inquire(file = trim(line), exist = bool2)
-        call assert(bool2, "file for locations does not exist", lno)
-        open(1, file = trim(line))
-        do i = 1, nanim
-           read(1, *, err = 101) locations(i, 1:j)
-        end do
-        write(STDOUT, 36) trim(line), " was successfully read"
-     end if
-  end if
+  call assert(stat.eq.0, "failed to read number of farms", lno)
+  nFarm = iinput
+  allocate(farms(nfarm, 2))
+  write(STDOUT, 34) "number of farms", nFarm
+
+  ! farm range
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) rinput
+  call assert(stat.eq.0, "failed to read range of each farm", lno)
+  call assert((rinput.gt.ZERO).and.(rinput.lt.ONE), &
+       "farm range must be betwen 0.0 and 1.0 (excl.)", lno)
+  farmRange = rinput
+  write(STDOUT, 35) "range of each farm", farmRange
+
+  ! allocation scenario
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to read allocation scenario", lno)
+  call assert(iinput.eq.1, "so far only random allocation is allowed", lno)
+  allocation = iinput
+  write(STDOUT, 34, advance = 'no') "allocation scenario", allocation
+  select case(allocation)
+  case(1)
+     write(STDOUT, *) "(random)"
+  end select
 
   ! selection type
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, &
-       "selection type must be an integer from 1 to 5 incl.", lno)
+  call assert(stat.eq.0, "failed to read selection type", lno)
+  call assert((iinput.gt.0).and.(iinput.lt.7), &
+       "selection type must be an integer from 1 to 6 incl.", lno)
   selectionType = iinput
   write(STDOUT, 34, advance = 'no') "selection type", selectionType
   select case (selectionType)
@@ -239,6 +298,8 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      write(STDOUT, *) "(TBV slope)"
   case(5) 
      write(STDOUT, *) "(TBV intercept)"
+  case(6)
+     write(STDOUT, *) "(overall performance)"
   end select
 
   ! nobs
@@ -282,19 +343,10 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   if (analysisType .eq. 1) write(STDOUT, *) "(random regression)"
   if (analysisType .eq. 2) write(STDOUT, *) "(single trait)"
   if (analysisType .eq. 2) then
-     if (Locrandom) then
-        call assert(.false., &
-             "cannot do single trait analysis when locations are random", lno)
-     elseif (.not.bool) then
-        call assert(.false.,&
-             "cannot do single trait analysis when locations are not common", lno)
-     end if
-  elseif (analysisType .eq. 1) then
-     if ((.not.LocRandom).and.bool.and.(size(locations,2).eq.1)) then
-        call assert(.false., &
-             "RR analysis not possible when animals  phenotyped at 1 location",&
-             lno)
-     end if
+     call assert((selectionType.eq.1).or.(selectionType.eq.6), &
+       "For single trait analysis, only selection type 1(random) and 6 (o&
+       &verall performace) is allowed", lno)
+  else     
   end if
 
   ! reml
@@ -315,15 +367,18 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      write(STDOUT, 35) trim(formato), means(i)
   end do
 
+  ! outputfile
+  call nextInput(iun, line, lno)
+  output = trim(line)
+  write(STDOUT, 36) "output file", trim(output)
+
   ! making theta
-  if ((.not.locRandom).and.bool.and.(size(locations,2).eq.1)) then
+  if (analysisType .eq. 2) then
      allocate(theta(2))
+     theta(1:2) = ZERO
      nvar = 1
      nfix = 1
-     theta(1) = vars%A(1)* locations(1,1)**2 + vars%A(2) + 2* vars%corr(1,2)*&
-          sqrt(vars%A(1) * vars%A(2))
-     theta(2) = theta(1) + vars%E(1)* locations(1,1)**2 + vars%E(2) 
-  else
+  elseif (analysisType .eq. 1) then
      nfix = 2
      if (vars%corr(1,2) .eq. ZERO) then
         allocate(theta(4))
@@ -331,11 +386,12 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      else
         allocate(theta(5))
         nvar = 4
-        theta(4) = vars%corr(1,2) * sqrt(vars%A(1) * vars%A(2))
+        theta(4) = vars%cov(1,2)
      end if
      theta(1:2) = vars%A(1:2)
      theta(3) = vars%E(1)
      theta(nvar+1) = vars%E(2)
+  else
   end if
   write(STDOUT, 34) "number of fix effects", nfix
   write(STDOUT, 34) "number of variance components", nvar
@@ -344,11 +400,12 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      write(STDOUT, 35) trim(formato), theta(i)
   end do
 
+  ! dealing with X
+  allocate(X(nobs, nfix))
+  X(1:nobs, 1:nfix) = ZERO
+
   write(STDOUT, '(a,i4,a)') "all inputs read in", lno, " lines"
   close(iun)
-  return
-101 call assert(.false.,&
-       " location file must be in format nanim x nlox real values", lno)
 end subroutine readInput
 subroutine nextInput(iun, output, lno)
   use constants
@@ -376,7 +433,7 @@ subroutine assert(iostat, msg, no)
   logical, intent(in) :: iostat
   integer, intent(in) :: no
   if (iostat) return
-  write(STDERR, '(a21,i2)') "ERROR in line number ", no
+  write(STDERR, '(a21,i3)') "ERROR in line ", no
   write(STDERR, *) msg
   stop 2
 end subroutine assert

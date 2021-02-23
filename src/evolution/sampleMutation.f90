@@ -21,7 +21,6 @@ subroutine sampleMutation(id, igam, genotypes, nloci, nmut, mutCum0,&
 !  real(KINDR)   :: val1
   integer, dimension(nmut) :: mutation_points
   integer :: ipos, g, i, array_pos, bit_pos !,j, k, ihap, frompos, topos
-  integer, parameter :: nbits = 32 !an integer variable has 32 bits
 
   external :: getPosition
 
@@ -76,7 +75,7 @@ subroutine sampleMutation(id, igam, genotypes, nloci, nmut, mutCum0,&
   else
      do i = 1, imut
         ipos = mutation_points(i)
-        call getPosition(ipos, nbits, array_pos, bit_pos)
+        call getPosition(ipos, NBITS, array_pos, bit_pos)
         g = genotypes(id, igam, array_pos)
         if (Btest(g,bit_pos)) then
            g = ibclr(g,bit_pos) !if 1 => 0

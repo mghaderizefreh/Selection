@@ -1,94 +1,48 @@
-subroutine selectbyIntercept(nanim, indiv, sex, n_m, n_fpm, male, female, ranEff)
+subroutine selectMates(nanim, indiv, sex, n_m, n_fpm, male, female, effects, verbose)
   use constants
   use quickSort
   implicit none
 
   integer, intent(in) :: nanim
   integer, dimension(nanim), intent(in) :: indiv
-  logical, dimension(:), intent(inout) :: sex
-  type(doublePre_Array), dimension(:), intent(in) :: raneff
+  logical, dimension(1:nAnim), intent(inout) :: sex
+  real(KINDR), dimension(1:nAnim), intent(in) :: effects ! breeding values
   integer, intent(in) :: n_m, n_fpm
   integer, dimension(:), intent(out) :: male, female
+  logical, intent(in) :: verbose
 
-  integer :: nmale, nfemale, index
-  integer :: i
-  real(KINDR), dimension(:), allocatable :: tempR
-  integer, dimension(:), allocatable :: tempI
+  integer :: nmale, nfemale
+  integer :: i, j
+  real(KINDR), dimension(:), allocatable, save :: mR, fR ! real array for (fe)male
+  integer, dimension(:), allocatable, save :: mI, fI, tempMI, tempFI
 
-  if (size(raneff) > 3) then
-     write(STDERR, *) " ERROR:"
-     write(STDERR, *) " selectByIntercept not implemented for raneff > 3"
-     stop 2
-  end if
-  index = merge(1, 2, size(raneff) == 1)
   nmale = count(sex)
-  nfemale = size(sex) - nmale
-  i = max(nmale, nfemale) !using one array for both female and male per type
-  allocate(tempI(i))
-  allocate(tempR(i))
+  nfemale = nAnim - nmale
+  if (.not.allocated(mI)) allocate(mI(nmale), fI(nfemale), &
+       mR(nmale), fR(nfemale), tempMI(nmale), tempFI(nfemale))
   
-  tempI(1:nmale) = pack(indiv, sex) ! true is male
-  tempR(1:nmale) = raneff(index)%level(tempI(1:nmale))
-  call sortrx(nmale, tempR, tempI)
+  mI(1:nmale) = pack(indiv, sex) ! true is male
+  mR(1:nmale) = effects(mI(1:nmale))
+  call sortrx(nmale, mR, tempMI)
   i = nmale - n_m + 1
-  male(1:n_m) = tempI(i:nmale) ! sort is ascending
+  male(1:n_m) = mI(tempMI(i:nmale)) ! sort is ascending
+!  if(verbose) write(STDOUT, *) "best male (ind,val)", male(n_m), &
+!       mR(tempMI(nmale)), sex(male(n_m))
+!  if(verbose) write(STDOUT, *) "2nd best male      ", male(n_m-1),&
+!       mR(tempMI(nmale-1)), sex(male(n_m-1))
 
-  tempI(1:nfemale) = pack(indiv, .not.sex)
-  tempR(1:nfemale) = raneff(index)%level(tempI(1:nfemale))
-  call sortrx(nfemale, tempR, tempI)
-  i = nfemale - n_fpm * n_m + 1
-  female(1:(n_fpm * n_m)) = tempI(i:nfemale) + nmale !offset indices by nmale
-  
-end subroutine selectbyIntercept
+  fI(1:nfemale) = pack(indiv, .not.sex)
+  fR(1:nfemale) = effects(fI(1:nfemale))
+  call sortrx(nfemale, fR, tempFI)
+  j = n_fpm * n_m
+  i = nfemale - j + 1
+  female(1:j) = fI(tempFI(i:nfemale))
+!  if(verbose) write(STDOUT, *) "best female (ind,val)", female(j), &
+!       fR(tempFI(nfemale)), sex(female(j))
+!  if(verbose) write(STDOUT, *) "2nd best female      ", female(j-1), &
+!       fR(tempFI(nfemale-1)), sex(female(j-1))
 
-
-
-subroutine SelectBySlope(nanim, indiv, sex, n_m, n_fpm, male, female, ranEff)
-  use constants
-  use quickSort
-  implicit none
-  
-  integer, intent(in) :: nanim
-  integer, dimension(nanim), intent(in) :: indiv
-  logical, dimension(:), intent(inout) :: sex
-  type(doublePre_Array), dimension(:), intent(in) :: raneff
-  integer, intent(in) :: n_m, n_fpm
-  integer, dimension(:), intent(out) :: male, female
-
-  integer :: nmale, nfemale, index
-  integer :: i
-  real(KINDR), dimension(:), allocatable :: tempR
-  integer, dimension(:), allocatable :: tempI
-
-  if (size(raneff) .ne. 3) then
-     write(STDERR, *) " ERROR:"
-     write(STDERR, *) " selectBySlope must have size(raneff) = 3"
-     stop 2
-  end if
-  index = 1
-  nmale = count(sex)
-  nfemale = size(sex) - nmale
-  i = max(nmale, nfemale)
-  allocate(tempI(i))
-  allocate(tempR(i))
-  
-  tempI(1:nmale) = pack(indiv, sex)
-  tempR(1:nmale) = raneff(index)%level(tempI(1:nmale))
-  call sortrx(nmale, tempR, tempI)
-  i = nmale - n_m + 1
-  male(1:n_m) = tempI(i:nmale)
-
-  tempI(1:nfemale) = pack(indiv, .not.sex)
-  tempR(1:nfemale) = raneff(index)%level(tempI(1:nfemale))
-  call sortrx(nfemale, tempR, tempI)
-  i = nfemale - n_fpm * n_m + 1
-  female(1:(n_fpm * n_m)) = tempI(i:nfemale) + nmale
-
-end subroutine SelectBySlope
-
-
-
-
+end subroutine selectMates
 
 function makePedigree(n_m, n_fpm, n_opf, male, female, start) result(pedigree)
   use constants

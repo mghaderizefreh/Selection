@@ -42,7 +42,6 @@ subroutine sampleGamete(parent, id, igam, parentGen, nloci, nblock, &
        recombination_bit
   integer :: ipos, i, j, k, g, ihap, frompos, frombit, topos, array_pos, &
        bit_pos
-  integer, parameter :: nbits = 32 !an integer variable has 32 bits
   integer, dimension(:,:,:), pointer :: OffGen
 
   real(KINDR) :: startpos, endpos, interval, rpos
@@ -244,7 +243,7 @@ subroutine sampleGamete(parent, id, igam, parentGen, nloci, nblock, &
      if (istore == 1) then
         do i = 1, ichiasma
            topos = recombination_points(i)
-           call getposition(topos,nbits,array_pos,bit_pos)
+           call getposition(topos,NBITS,array_pos,bit_pos)
            recombination_block(i) = array_pos
            recombination_bit(i) = bit_pos
         end do
@@ -301,7 +300,7 @@ subroutine sampleGamete(parent, id, igam, parentGen, nloci, nblock, &
   else
 
      frompos = 1  !next segment starts in first block (as it is the first loci)
-     frombit = nbits-1 !next segment starts in first bit (as it is the first loci)
+     frombit = NBITS-1 !next segment starts in first bit (as it is the first loci)
      call random_number(rand)
      ihap = 1                   ! start from paternal haplotype
      if (rand > HALF) ihap = 2  ! start from maternal haplotype
@@ -316,7 +315,7 @@ subroutine sampleGamete(parent, id, igam, parentGen, nloci, nblock, &
            bit_pos = recombination_bit(i)
         else
            topos = nloci
-           call getPosition(topos,nbits,array_pos,bit_pos)
+           call getPosition(topos,NBITS,array_pos,bit_pos)
         end if
 
         !    copying the block where the recombination happen
@@ -352,7 +351,7 @@ subroutine sampleGamete(parent, id, igam, parentGen, nloci, nblock, &
         ! if the next loci is in a different block (reset the indices)
         if (bit_pos < 0) then
            array_pos = array_pos + 1 ! next posi is in next block
-           bit_pos = nbits - 1     ! next posi starts in first bit of next block
+           bit_pos = NBITS - 1     ! next posi starts in first bit of next block
         end if
         frompos = array_pos
         frombit = bit_pos
