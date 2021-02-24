@@ -1,8 +1,9 @@
 subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      geneposfile, chrL, mu, ncomp, vars, nQTL, nSNP, MAF, baseNameFreq,&
-     randomQTL, interval, locations, X, nlox, nFarm, farms, farmRange,&
-     allocation, selectionType, nobs, means, analysisType, theta, n_m,&
-     n_fpm, n_opf, ngen, doreml, nfix, nvar, output)
+     randomQTL, interval, locations, X, nlox, nFarm, farmBounds, &
+     farmInd, farmRange, allocation, selectionType, nobs, means, &
+     analysisType, theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
+     nfix, nvar, output)
   use constants
   implicit none
   character(len=*), intent(in) :: inputfile ! list of all inputs
@@ -26,7 +27,8 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   real(KINDR), allocatable, dimension(:,:), intent(out) :: X
   integer, intent(out) :: nlox
   integer, intent(out) :: nFarm
-  real(KINDR), allocatable, dimension(:,:), intent(out) :: farms
+  real(KINDR), allocatable, dimension(:,:), intent(out) :: farmBounds
+  integer, allocatable, dimension(:), intent(out) :: farmInd
   real(KINDR), intent(out) :: farmRange
   integer, intent(out) :: allocation ! allocation scenario
   ! 1 = random, 
@@ -41,8 +43,9 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   integer, intent(out) :: n_opf ! number of offsprings per female
   integer, intent(out) :: ngen ! number of generations
   logical, intent(out) :: doreml ! whether to do a reml or only a blup
-  integer, intent(out) :: nfix
-  integer, intent(out) :: nvar
+  logical, intent(out) :: reactionNorm ! whether to estimate farm effects
+  integer, intent(out) :: nfix ! number of fixed effects
+  integer, intent(out) :: nvar ! number of variance components
   character(len=100), intent(out) :: output
 
   character(len = 200) :: line, formato
@@ -255,7 +258,7 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   read(line, *, iostat = stat) iinput
   call assert(stat.eq.0, "failed to read number of farms", lno)
   nFarm = iinput
-  allocate(farms(nfarm, 2))
+  allocate(farmBounds(nfarm, 2))
   write(STDOUT, 34) "number of farms", nFarm
 
   ! farm range
@@ -356,6 +359,18 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   doreml = iinput == 1
   write(STDOUT, 33) "reml required?" , doreml
 
+  ! reactionNorm
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to understand wether to do reaction norm", lno)
+  reactionNorm = iinput == 1
+  if ((selectionType .eq. 1).or.(selectionType .eq. 4).or.(selectionType == 5)&
+       .or.(selectionType .eq. 6)) then
+     write(STDOUT, 33) "estimating farm eff (is ignored)?", reactionNorm
+  elseif ((selectionType.eq.2).or.(selectionType.eq.3)) then
+     write(STDOUT, 33) "estimating farm effects?", reactionNorm
+  end if
+
   ! means
   allocate(means(ncomp))
   do i = 1, nComp
@@ -403,6 +418,9 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   ! dealing with X
   allocate(X(nobs, nfix))
   X(1:nobs, 1:nfix) = ZERO
+
+  ! farm ind
+  allocate(farmInd(nobs))
 
   write(STDOUT, '(a,i4,a)') "all inputs read in", lno, " lines"
   close(iun)

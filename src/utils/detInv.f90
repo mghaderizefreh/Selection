@@ -43,20 +43,20 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
 
   integer :: k, i,ipos, ipos1
 
-  logDet    = 0.D0
+  logDet    = ZERO
   signDet = -1
   info=-1
   if ( BLASuplo ( 1 : 1 ) == 'U' .or. BLASuplo ( 1 : 1 ) == 'u' ) then
 
-     logDet = 0.D0
+     logDet = ZERO
      k = 0
      ipos1 = 0
      do i = 1, N
         ipos = ipos1 + i
         if ( ipiv ( i ) > 0 ) then
-           if ( AP ( ipos ) == 0.D0 ) then
+           if ( AP ( ipos ) == ZERO ) then
               info = i
-              logDet = 0.D0
+              logDet = ZERO
               signDet = - 1
               return
            else
@@ -66,9 +66,9 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
         else if ( i > 1 ) then
            if (ipiv ( i ) < 0 .AND. ipiv ( i - 1 ) .EQ. ipiv ( i ) ) then
               val1 = AP( ipos1 ) * AP( ipos ) - AP( ipos - 1 ) * AP( ipos - 1 )
-              if ( val1 == 0.D0 ) then
+              if ( val1 == ZERO ) then
                  info = i
-                 logDet = 0.D0
+                 logDet = ZERO
                  signDet = - 1
                  return
               else
@@ -86,10 +86,11 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
 
      info=0
   else
-     write(stdout,*)' so far subroutine has been implemeneted only using the (blas) Col-Upper stored packed matrix'
-     stop
+     write(STDERR, '(a)') "Error:"
+     write(STDERR,*) " so far subroutine has been implemeneted only using&
+          &the (blas) Col-Upper stored packed matrix"
+     stop 3
   endif
-
 
 end subroutine dspdrf_Ldet
 
@@ -97,15 +98,15 @@ end subroutine dspdrf_Ldet
 subroutine detInv(nobs, V, detV, ipiv, work, verbose)
   use constants
   implicit none
-  logical, intent(in)                                                 :: verbose
-  integer, intent(in)                                                 :: nobs
-  integer, dimension(:), intent(in)                                   :: ipiv
-  real(KINDR), dimension(:), intent(in)                          :: work
-  real(KINDR), dimension(:), intent(inout)                       :: V
-  real(KINDR), intent(out)                                       :: detV
+  logical, intent(in) :: verbose
+  integer, intent(in) :: nobs
+  integer, dimension(:), intent(in) :: ipiv
+  real(KINDR), dimension(:), intent(in) :: work
+  real(KINDR), dimension(:), intent(inout) :: V
+  real(KINDR), intent(out) :: detV
 
-  integer                                                             :: ifail, ineg, info
-  external                                                            :: dsptri, dsptrf, dspdrf_Ldet
+  integer :: ifail, ineg, info
+  external :: dsptri, dsptrf, dspdrf_Ldet
 
   if (verbose) write(stdout,*) "  In the subroutine detinv"
   call dsptrf('u', nobs, V, ipiv, info)

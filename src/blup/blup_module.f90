@@ -8,5 +8,6 @@ contains
   include "getEffects.f90"
   include "blup.f90"
   include "BSRibsCalc.f90"
+  include "leastSquare.f90"
   include "relationMatrix.f90"
 end module blup_module

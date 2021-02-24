@@ -23,11 +23,12 @@ program selection
   logical, dimension(:), pointer :: sex !true = male, false = female
   integer, dimension(:,:,:), pointer :: parentGen, offGen!, this
 
-  logical :: doreml, randomQTL
+  logical :: doreml, randomQTL, reactionNorm
 
   real(KINDR), dimension(2) :: interval
   real(KINDR) :: farmRange, maf
-  real(KINDR), dimension(:,:), allocatable :: locations, farms, X !incidence matrix
+  real(KINDR), dimension(:,:), allocatable :: locations, farmBounds, X !incidence matrix
+  integer, dimension(:), allocatable :: farmInd
   integer :: nlox, nfarm, allocation
 
   !ncomp is the number of traits by a QTL (slope, intercept --> 2, otherwise 1)
@@ -37,21 +38,21 @@ program selection
 
   real(KINDR), allocatable, dimension(:,:) :: TBV, CTE
   real(KINDR), allocatable, dimension(:) :: Amat, means, phenotypes, theta, fixeff
-  real(KINDR), allocatable, dimension(:) :: chiasmaCumP
-  real(KINDR), allocatable, dimension(:) :: mutationCumP
+  real(KINDR), allocatable, dimension(:) :: chiasmaCumP, mutationCumP
+  real(KINDR), allocatable, dimension(:) :: farmIndReal, farmEffects
   real(KINDR) :: mutationCumP0, chiasmaCumP0
   type(doublePre_Array), dimension(:), allocatable :: raneff
   integer, allocatable, dimension(:) :: ids
   integer, allocatable, dimension(:) :: totalChiasma, totalMutation
   integer, allocatable, dimension(:,:) :: pedigree
-  integer :: ivar, iscaled, nobs, maxid, nfix, nvar
+  integer :: ivar, iscaled, nobs, maxid, nfix, nvar, nran
   type(variances) :: vars
   integer :: n_m, n_fpm, n_opf, ngen
   integer :: selectionType, analysisType
   integer :: maxchiasma, maxmutations
   ! counters
   integer :: i, j, k, iChr, iGam, id, igen
-  real(KINDR) :: val1
+  real(KINDR) :: val1, val2
   character(len=30) :: status, estatus
 
   startfile = "inicio.dat"
@@ -71,14 +72,15 @@ program selection
 
   call readInput(inputfile, verbose, nanim, nchr, filename1, filename2,&
        chrL, mutationRate, ncomp, vars, nQTL, nSNP, MAF, baseNameFreq,&
-       randomQTL, interval, locations, X, nlox, nFarm, farms, farmRange, &
-       allocation, selectionType, nobs, means, analysisType, theta, n_m, &
-       n_fpm, n_opf, ngen, doreml, nfix, nvar, outputfile)
-  call defineFarms(interval, nfarm, farmRange, farms)
+       randomQTL, interval, locations, X, nlox, nFarm, farmBounds,&
+       farmInd, farmRange, allocation, selectionType, nobs, means,&
+       analysisType,theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
+       nfix, nvar, outputfile)
+  call defineFarms(interval, nfarm, farmRange, farmBounds)
 
   open(1, file = 'farms.txt')
   do i = 1, nfarm
-     write(1, *) farms(i, 1:2)
+     write(1, *) farmBounds(i, 1:2)
   end do
   close(1)
 
@@ -179,7 +181,8 @@ program selection
   ! Simulating Phenotypes
   ! ================================================================
   if (verbose) write(STDOUT, '(a)') "allocating individuals"
-  call allocateInd(nAnim, nlox, nfarm, allocation, interval, farms, locations)
+  call allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, farmRange,&
+       farmInd, locations)
   if (verbose) write(STDOUT, '(a)') "individuals allocated"
 
   if (verbose) write(STDOUT, '(a)') "simulating phenotypes"
@@ -188,9 +191,10 @@ program selection
   if (verbose) write(STDOUT, '(a)') "Phenotypes simulated"
 
   ! only for the first generation
+  ! a very simple guestimate for theta
   if (nfix == 1) then
-     theta(1) = variance(phenotypes, nobs) / 5._KINDR
-     theta(2) = variance(phenotypes, nobs)*4._KINDR / 5._KINDR
+     theta(1) = variance(phenotypes, nobs) / 10._KINDR
+     theta(2) = variance(phenotypes, nobs)*9._KINDR / 10._KINDR
   end if
   
   ParentGenome => genome1
@@ -225,7 +229,24 @@ program selection
         ! selectByIntercept needs raneff of size 1 (or size 2 but then effects must be on the second)
         write(iunoutput, '(4(1x,a15))') "NaN", "NaN", "NaN", "NaN"
      case (2, 3, 6) ! slope ebv or interceept ebv
-        write(6, *) 'selectionType :' , selectionType
+        ! reaction norm means x must be re-written
+        if (reactionNorm.and.&
+             ((selectionType.eq.2).or.(selectionType.eq.3))) then
+           if (.not.allocated(farmIndReal)) &
+                allocate(FarmIndReal(nobs), farmEffects(nfarm))
+           ! converting to double as leastSquare takes double
+           farmIndReal(1:nobs) = dble(farmInd(1:nobs))
+           call leastSquare(verbose, nobs, nfarm, ids, farmIndReal,&
+                phenotypes, farmEffects)
+           ! scaling farmeffects to [xmin, xmax]
+           val1 = minval(farmEffects)
+           val2 = maxval(farmEffects)
+           farmEffects(1:nfarm) = (val2 - farmEffects(1:nfarm)) / (val2 -&
+                val1) * (interval(2) - interval(1)) + interval(1)
+           ! replacing scaled farmeffects with challenge levels
+           X(1:nobs, 1) = farmEffects(farmInd(1:nobs))
+        end if
+
         ! making Gmatrix
         iscaled = 1 !(0:no, 1:yes)
         ivar  = 1 !(0:sample, 1:2pq, 2:2p'q')
@@ -389,7 +410,8 @@ program selection
 !     close(1)
 
      if (verbose) write(STDOUT, '(a)') "allocating individuals"
-     call allocateInd(nAnim, nlox, nfarm, allocation, interval, farms, locations)
+     call allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
+          farmRange, farmInd, locations)
      if (verbose) write(STDOUT, '(a)') "individuals allocated"
 
      ! getting phenotypes
@@ -398,12 +420,12 @@ program selection
           vars, means, nobs, locations, ids, phenotypes, "cov", X)
      if (verbose) write(STDOUT, '(a)') "Phenotypes simulated"
 
- !    write(filename1, '(a,i2.2)') "phen.G", igen
- !    open(1, file = trim(filename1))
- !    do i = 1, nobs
- !       write(1, *) ids(i), X(i, 1), phenotypes(i)
- !    end do
- !    close(1)
+!     write(filename1, '(a,i2.2)') "phen", igen
+!     open(1, file = trim(filename1))
+!     do i = 1, nobs
+!        write(1, *) ids(i), X(i, 1), farmind(i), phenotypes(i)
+!     end do
+!     close(1)
      write(6, 68) sum(tbv(1:nanim,1))/nanim,sum(tbv(1:nanim,2))/nanim
 68   format("slope: ", g25.14, "; intercept: ", g25.14)
      

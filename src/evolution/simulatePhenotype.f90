@@ -68,23 +68,39 @@ end subroutine SimulatePhenotype
 
 
 !!!! ============================================================ !!!!
-subroutine allocateInd(nAnim, nlox, nfarm, allocation, interval, farms, &
-     locations)
+subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
+     farmRange, farmInd, locations)
   use constants
   implicit none
   integer, intent(in) :: nAnim, nLox, nFarm
   integer, intent(in) :: allocation
-  real(KINDR), dimension(2), intent(in) :: interval
-  real(KINDR), dimension(nfarm, 2), intent(in) :: farms
+  real(KINDR), dimension(1:nfarm, 2), intent(in) :: farmBounds
+  real(KINDR) :: farmRange
+  integer, dimension(1:(nAnim*nLox)), intent(out) :: farmInd
   real(KINDR), dimension(nAnim, nLox), intent(out) :: locations
 
+  integer :: nobs 
+  integer :: i, j, k
+  real(KINDR) :: val
+  real(KINDR), dimension(nlox) :: temp
+  nobs = nlox * nAnim
   select case (allocation)
   case(1) ! random
-     call random_number(locations)
-     ! shifting and scaling to match interval
-     ! random_number is in [0,1] so no need to shift by 0 and divide by 1
-     locations(1:nAnim, 1:nLox) = locations(1:nAnim, 1:nLox) * &
-          (interval(2) - interval(1)) + interval(1)
+     ! each individual is assigned to (only) one random farm
+     do i = 1, nAnim
+        call random_number(val)
+        do while(val.eq.ONE)
+           call random_number(val)
+        end do
+        j = int(val * nfarm) + 1
+        k = nlox * (i - 1) + 1
+        farmInd(k:(nlox*i)) = j
+        call random_number(temp)
+        ! shifting and scaling to match interval
+        temp(1:nlox) = temp(1:nlox) * farmRange + farmBounds(j, 1)
+        locations(i, 1:nlox) = temp(1:nlox)
+        ! random_number is in [0,1] so no need to shift by 0 and divide by 1
+     end do
   case(2:)
   end select
   
