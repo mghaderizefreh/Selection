@@ -3,7 +3,7 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      randomQTL, interval, locations, X, nlox, nFarm, farmBounds, &
      farmInd, farmRange, allocation, selectionType, nobs, means, &
      analysisType, theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
-     nfix, nvar, output)
+     nfix, nvar, nran, output)
   use constants
   implicit none
   character(len=*), intent(in) :: inputfile ! list of all inputs
@@ -46,6 +46,7 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   logical, intent(out) :: reactionNorm ! whether to estimate farm effects
   integer, intent(out) :: nfix ! number of fixed effects
   integer, intent(out) :: nvar ! number of variance components
+  integer, intent(out) :: nran ! number of random effects
   character(len=100), intent(out) :: output
 
   character(len = 200) :: line, formato
@@ -199,7 +200,7 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   read(line, *, iostat = stat) iinput
   call assert(stat.eq.0, "failed to read input for randomQTL", lno)
   randomQTL = iinput .eq. 1
-  write(STDOUT, 33) "Are QTLs random?", verbose
+  write(STDOUT, 33) "Are QTLs random?", randomQTL
 
   ! baseNameFreq
   call nextInput(iun, line, lno)
@@ -362,13 +363,16 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   ! reactionNorm
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to understand wether to do reaction norm", lno)
+  call assert(stat.eq.0, "failed to understand wether to estimate farm &
+       &effects", lno)
   reactionNorm = iinput == 1
-  if ((selectionType .eq. 1).or.(selectionType .eq. 4).or.(selectionType == 5)&
-       .or.(selectionType .eq. 6)) then
+  if ( (selectionType .eq. 1).or.(selectionType .eq. 4).or.&
+       (selectionType .eq. 5)) then
      write(STDOUT, 33) "estimating farm eff (is ignored)?", reactionNorm
   elseif ((selectionType.eq.2).or.(selectionType.eq.3)) then
-     write(STDOUT, 33) "estimating farm effects?", reactionNorm
+     write(STDOUT, 33) "estimating farm effects (RN)?", reactionNorm
+  elseif ((selectionType .eq. 6)) then
+     write(STDOUT, 33) "estimating farm effects (ST)?", reactionNorm
   end if
 
   ! means
@@ -392,15 +396,21 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      allocate(theta(2))
      theta(1:2) = ZERO
      nvar = 1
-     nfix = 1
+     nran = 1
+     if (reactionNorm) then
+        nfix = nfarm ! +1 (for mu) - 1 (for stability)
+     else
+        nfix = 1 ! mu
+     end if
   elseif (analysisType .eq. 1) then
-     nfix = 2
+     nran = 3 ! Ai, As, Es
+     nfix = 2 ! mu_i, mu_s
      if (vars%corr(1,2) .eq. ZERO) then
         allocate(theta(4))
-        nvar = 3
+        nvar = 3 ! var_Ai, var_As, var_Es, (excl. var_Ei)
      else
         allocate(theta(5))
-        nvar = 4
+        nvar = 4 ! var_Ai, var_As, var_Es, cov, (excl. var_Ei)
         theta(4) = vars%cov(1,2)
      end if
      theta(1:2) = vars%A(1:2)

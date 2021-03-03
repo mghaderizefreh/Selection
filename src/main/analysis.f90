@@ -18,18 +18,21 @@ program analysis
   character(len=30) :: status, eStatus, formato
   logical :: verbose
   integer :: ifail, doreml
-  integer :: i, j, k, maxid, nvar, nobs, nfix
+  integer :: i, j, k, maxid, nvar, nobs, nfix, nran
   integer :: phenFileID, AmatFileID, iunFix, iunRan, iunVar
   integer :: lines, empties, emiteration, maxIter
   integer, dimension(:), allocatable :: id ! real(KINDR) id of animals
+  integer, dimension(:), allocatable :: levels
 
   real(KINDR) :: val1, val2
   real(KINDR), dimension(:), allocatable :: y ! phenotypes
+  integer, dimension(:,:), allocatable :: xtemp
   real(KINDR), dimension(:,:), allocatable :: x !incid. matrix for fixed effects
   real(KINDR), dimension(:), allocatable :: temAmat
   real(KINDR), dimension(:), allocatable :: theta, oldtheta
   type (doublePre_Array), dimension(:), allocatable :: raneff
   real(KINDR), allocatable, dimension(:) :: fixEff
+
   !! ================ No defintion after this line ================ !!
 
   call askYesNoInteger(i, " should the program be verbose? (0:No, 1:Yes) ", 0)
@@ -43,37 +46,78 @@ program analysis
      stop 1
   end if
 
-  call askInteger(nfix, "Number of fix effects")
-  if ((nfix .ne. 1) .and. (nfix .ne. 2)) then
-     write(STDERR, '(a)') "sorry, currently nfix <= 2 is possible only"
-     stop 2
+  call askInteger(nran, "Number of random effects (3 if covariate analysis)")
+  if (nran .eq. 3) then
+     call askInteger(nfix, "Number of fix effects (atm only 2 is accepted)")
+  elseif (nran .eq. 1) then
+     call askInteger(nfix, "Number of fix effects (excluding mean)")
+     if (nfix > 0) then
+        allocate(levels(nfix))
+        j = 0
+        do i = 1, nfix
+           write(msg, '(a,1x,i2)') "Number of levels for effect", i
+           call askInteger(k, trim(msg))
+           levels(i) = k
+           j = j + k
+        end do
+     end if
+     nfix = nfix + 1
+  else
+     write(STDERR, '(a)') "Error"
+     write(STDERR, *) "not implemented for nran = ", nran
+     stop 3
+  end if
+  if ((nran .eq. 3) .and. (nfix .ne. 2)) then
+     write(STDERR, '(a)') "Error"
+     write(STDERR, *) " unexpected config for nfix and nran"
+     stop 3
   end if
 
   ! counting number of lines
   j = 0 ! number of skipped lines
-  empties=1
+  empties = 1
   call countNumberLines(phenFile, j, lines, empties, ifail)
   if (ifail .ne. 0) stop 1
-  nobs=lines-empties
+  nobs = lines - empties
 
   ! allocating y (phenotypes) and id (real(KINDR) id of animals) and incidience matrix
-  allocate(y(nobs), id(nobs), X(nobs,nfix))
+  allocate(y(nobs), id(nobs), Xtemp(nobs, (nfix-1)))
 
   ! reading the data
   open(newUnit = phenFileID, file = phenFile, status = 'old')
   maxid = 0
-  if (nfix == 1) then
+  if ((nran == 1).and.(nfix == 1)) then
+     allocate(X(nobs,nfix))
      do i = 1, nobs
         read(phenFileID, *) id(i), y(i)
-        X(i, 1) = 1.d0
         if (maxid < id(i)) maxid = id(i)
      end do
-  elseif (nfix == 2) then
+     X(1:nobs, 1) = ONE
+  elseif ((nran == 1).and.(nfix > 1)) then
+     j = sum(levels)
+     allocate(X(nobs, j))
+     do i = 1, nobs
+        read(phenFileID, *) id(i), Xtemp(i, 1:(nfix-1)), y(i)
+        k = 0
+        do j = 1, (nfix-1)
+           if (xtemp(i,j) .eq. 1) cycle
+           X(i, Xtemp(i, j) + k - 1) = ONE
+           k = k + levels(j)
+        end do
+        if (maxid < id(i)) maxid = id(i)
+     end do
+     nfix = sum(levels)
+     X(1:nobs, nfix) = ONE
+  elseif (nran == 3) then
+     allocate(X(nobs,nfix))
      do i = 1, nobs
         read(phenFileID,*) id(i), X(i,1), y(i)
-        X(i, 2) = 1.d0
+        X(i, nfix) = ONE
         if (maxid < id(i)) maxid = id(i)
      end do
+  else
+     write(6, *) 'error'
+     stop
   end if
   close(phenFileID)
 
@@ -105,7 +149,7 @@ program analysis
   call trsmReadMat(AmatFile, temAmat, maxid, k, ifail, j)
   if (verbose) write(STDOUT, *) " end reading files"
 
-  THETACOND: if (nfix .eq. 2) then
+  THETACOND: if (nran .eq. 3) then
      allocate(oldtheta(5))
      write(STDOUT, '(a27)') "initial guess for variances"
      write(STDOUT, '(3x, a23)', advance = 'no') "genetic part of slope: "
@@ -145,7 +189,7 @@ program analysis
         theta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1))
         write(STDOUT, '(2x,a30)') "correlation taken into account"
      end if
-  elseif (nfix == 1) then
+  elseif (nran == 1) then
      allocate(oldtheta(2), theta(2))
      val1 = sum(y) / size(y)
      val2 = sum((y - val1) ** 2) / (size(y) - 1)
@@ -173,11 +217,11 @@ program analysis
   end if
 
   if (doreml == 1) then
-     call Reml(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
+     call Reml(id, X, y, nfix, nobs, maxid, temAmat, nvar, nran, theta, &
           fixEff, ranEff, verbose, emIterations = emIteration, &
           maxIters = maxIter)
   else
-     call Blup(id, X, y, nfix, nobs, maxid, temAmat, nvar, theta, &
+     call Blup(id, X, y, nfix, nobs, maxid, temAmat, nvar, nran, theta, &
           fixEff, ranEff, verbose)
   end if
 
@@ -190,13 +234,8 @@ program analysis
 272 format(i12, 1x, g24.15)
   open(newUnit = iunfix, file = fixEffFile)
   open(newUnit = iunvar, file = varFile)
-  if (nfix == 2) then
-     write(iunfix, '(2a24)') "slope", "intercept"
-     write(iunfix, trim(formato)) fixeff(1 : nfix)
-  else
-     write(iunfix, '(a24)') "population average"
-     write(iunfix, *) fixeff(1 : nfix)
-  end if
+  write(iunfix, '(2a24)') "fixed effects"
+  write(iunfix, trim(formato)) fixeff(1 : nfix)
   close(iunfix)
 
   write(formato, 271) "(", (nvar+1), "a24)"
@@ -220,8 +259,6 @@ program analysis
   end if
   close(iunvar)
 
-
-
   open(newUnit = iunran, file = raneffFile)
   do i = 1, maxid
      write(iunran, 272) i, raneff(1)%level(i)
@@ -231,7 +268,7 @@ program analysis
         write(iunran, 272) i, raneff(2)%level(i)
      end do
      do i = 1, nobs
-        write(iunran, 272) i, raneff(3)%level(i)
+         write(iunran, 272) i, raneff(3)%level(i)
      end do
   end if
   close(iunran)

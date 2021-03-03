@@ -1,13 +1,13 @@
 !This subroutine calculates the fixed and random effects based on the given variances (theta). 
 ! In writing the random effects First comes slope effects; then intercept effects; then individual slope residual
 !written by Masoud Ghaderi
-subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
-     id, fixeff, raneff, verbose)
+subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
+     Py, y, X, id, fixeff, raneff, verbose)
   use constants
   use global_module
   implicit none
   logical :: verbose
-  integer, intent(in) :: nobs, nfix, nvar, maxid
+  integer, intent(in) :: nobs, nfix, nvar, maxid, nran
   real(KINDR), dimension(1:(maxid*(maxid+1))), intent(in) :: Gmatrix
   integer, dimension(1:nobs), intent(in) :: id
   real(KINDR), dimension(1:(nvar+1)), intent(in) :: theta
@@ -29,8 +29,8 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
   call dgemm('n', 'n', nfix, 1, nobs, ONE, Vhat, nfix, y, nobs, ZERO, fixeff, nfix)
   if (verbose) write(STDOUT, *) "  Fixed effects estimated"
   
-  if (nvar == 1) then
-     allocate(theZPy(1))
+  if (nran == 1) then
+     allocate(theZPy(nran))
      allocate(theZPy(1)%level(maxid))
      theZPy(1)%level(1:maxid) = ZERO
      raneff(1)%level(1:maxid) = ZERO
@@ -52,7 +52,7 @@ subroutine getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
   end if
 
   ! allocation
-  allocate(theZPy(3))
+  allocate(theZPy(nran))
   allocate(theZPy(1)%level(maxid)) ! slope effect (genetic)
   allocate(theZPy(2)%level(maxid)) ! intercept effect (genetic)
   allocate(theZPy(3)%level(nobs))   ! environment slope effect (diagonal)

@@ -75,12 +75,13 @@ program selection
        randomQTL, interval, locations, X, nlox, nFarm, farmBounds,&
        farmInd, farmRange, allocation, selectionType, nobs, means,&
        analysisType,theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
-       nfix, nvar, outputfile)
+       nfix, nvar, nran, outputfile)
+
   call defineFarms(interval, nfarm, farmRange, farmBounds)
 
   open(1, file = 'farms.txt')
   do i = 1, nfarm
-     write(1, *) farmBounds(i, 1:2)
+     write(1, *) farmBounds(i, 1), farmBounds(i, 2)
   end do
   close(1)
 
@@ -186,9 +187,16 @@ program selection
   if (verbose) write(STDOUT, '(a)') "individuals allocated"
 
   if (verbose) write(STDOUT, '(a)') "simulating phenotypes"
-  call SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, indiv, TBV, &
-       vars, means, nobs, locations, ids, phenotypes, "cov", X)
+  call SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, nran, indiv,&
+       TBV, vars, means, nobs, locations, ids, phenotypes, "cov", X)
   if (verbose) write(STDOUT, '(a)') "Phenotypes simulated"
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !write(formato, '(a,i2.2)') "phen", 0
+  !open(1, file = trim(formato))
+  !do i = 1, nobs
+  !   write(1, *) ids(i), X(i, 1), farmind(i), phenotypes(i)
+  !end do
+  !close(1)
 
   ! only for the first generation
   ! a very simple guestimate for theta
@@ -201,17 +209,18 @@ program selection
   Offgenome    => genome2
 
   if (verbose) write(STDOUT, '(a,i3)') "generation ", 0 ! must be zero
-  write(6, 68) sum(tbv(1:nanim,1))/nanim,sum(tbv(1:nanim,2))/nanim
+  val1 = sum(tbv(1:nanim, 1)) / nanim
+  val2 = sum(tbv(1:nanim, 2)) / nanim
+  write(STDOUT, 68) val1, val2
   write(iunoutput, 200) "gen", "mean(TBVs)", "mean(TBVi)", "var(TBVs)", &
        "var(TBVi)", "Est(mu_i)", "Est(mu_s)", "acc(EBVs)", "acc(EBVi)"
 200 format(a3,8(1x,a15))
 201 format(i3,4(1x,f15.7))
-  write(iunoutput, 201, advance = 'no') 0, sum(tbv(1:nanim,1))/nanim, &
-       sum(tbv(1:nanim,2))/nanim, variance(tbv(1:nanim, 1), nanim), &
-       variance(tbv(1:nanim, 2), nanim)
+  write(iunoutput, 201, advance = 'no') 0, val1, val2, &
+       variance(tbv(1:nanim, 1), nanim), variance(tbv(1:nanim, 2), nanim)
   ! initialising first generation individuals
   gen: do igen = 1, ngen
-     write(STDOUT, '(a, i2)') 'generation ', igen
+     write(STDOUT, '(a, i2)') "generation ", igen
      ! ================================================================
      ! Genomic Evaluation
      ! TODO: This block (genSel) should eventually be one single
@@ -219,7 +228,7 @@ program selection
      ! ================================================================
      genSel: select case (selectionType)
      case (1) ! random
-        write(6, *) 'selectionType :' , selectionType
+        write(6, *) "selectionType :" , selectionType
         if (igen == 1) then
            allocate(raneff(1))
            allocate(raneff(1)%level(nanim))
@@ -230,21 +239,35 @@ program selection
         write(iunoutput, '(4(1x,a15))') "NaN", "NaN", "NaN", "NaN"
      case (2, 3, 6) ! slope ebv or interceept ebv
         ! reaction norm means x must be re-written
-        if (reactionNorm.and.&
-             ((selectionType.eq.2).or.(selectionType.eq.3))) then
-           if (.not.allocated(farmIndReal)) &
-                allocate(FarmIndReal(nobs), farmEffects(nfarm))
-           ! converting to double as leastSquare takes double
-           farmIndReal(1:nobs) = dble(farmInd(1:nobs))
-           call leastSquare(verbose, nobs, nfarm, ids, farmIndReal,&
-                phenotypes, farmEffects)
-           ! scaling farmeffects to [xmin, xmax]
-           val1 = minval(farmEffects)
-           val2 = maxval(farmEffects)
-           farmEffects(1:nfarm) = (val2 - farmEffects(1:nfarm)) / (val2 -&
-                val1) * (interval(2) - interval(1)) + interval(1)
-           ! replacing scaled farmeffects with challenge levels
-           X(1:nobs, 1) = farmEffects(farmInd(1:nobs))
+        if (reactionNorm) then
+           if ((selectionType.eq.2).or.(selectionType.eq.3)) then
+              if (.not.allocated(farmIndReal)) &
+                   allocate(FarmIndReal(nobs), farmEffects(nfarm))
+              ! converting to double as leastSquare takes double
+              farmIndReal(1:nobs) = dble(farmInd(1:nobs))
+              call leastSquare(verbose, nobs, nfarm, ids, farmIndReal,&
+                   phenotypes, farmEffects)
+              ! scaling farmeffects to [xmin, xmax]
+              val1 = minval(farmEffects)
+              val2 = maxval(farmEffects)
+              farmEffects(1:nfarm) = (val2 - farmEffects(1:nfarm)) /&
+                   (val2 - val1)*(interval(2) - interval(1)) + interval(1)
+              ! replacing scaled farmeffects with challenge levels
+              X(1:nobs, 1) = farmEffects(farmInd(1:nobs))
+           elseif (selectionType.eq.6) then
+              do i = 1, nobs
+                 if (farmInd(i) .eq. 1) cycle
+                 X(i, farmInd(i) - 1) = ONE
+              end do
+              !!!!!!!!!!
+              !write(formato, '(a,i2.2)') "incidence", igen - 1
+              !open(1, file = trim(formato))
+              !333 format(14(f3.1,1x), f3.1)
+              !do i = 1, nobs
+              !   write(1, 333) X(i,1:nfix) 
+              !end do
+              !close(1)
+           end if
         end if
 
         ! making Gmatrix
@@ -288,11 +311,11 @@ program selection
         !=========================================
         
         if (doreml) then
-           call reml(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar, &
-                theta, fixEff, ranEff, verbose, 3, 10)
+           call reml(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar,&
+                nran, theta, fixEff, ranEff, verbose, 3, 10)
         else
-           call blup(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar, &
-                theta, fixEff, ranEff, verbose)
+           call blup(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar,&
+                nran, theta, fixEff, ranEff, verbose)
         end if
         if (verbose) write(STDOUT, '(a)') "Genomic evaluation done"
         ! -----------------------------------
@@ -416,16 +439,16 @@ program selection
 
      ! getting phenotypes
      if (verbose) write(STDOUT, '(a)') "simulating phenotypes"
-     call SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, indiv, TBV, &
-          vars, means, nobs, locations, ids, phenotypes, "cov", X)
+     call SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, nran, indiv,&
+          TBV, vars, means, nobs, locations, ids, phenotypes, "cov", X)
      if (verbose) write(STDOUT, '(a)') "Phenotypes simulated"
 
-!     write(filename1, '(a,i2.2)') "phen", igen
-!     open(1, file = trim(filename1))
-!     do i = 1, nobs
-!        write(1, *) ids(i), X(i, 1), farmind(i), phenotypes(i)
-!     end do
-!     close(1)
+     !write(filename1, '(a,i2.2)') "phen", igen
+     !open(1, file = trim(filename1))
+     !do i = 1, nobs
+     !   write(1, *) ids(i), X(i, 1), farmind(i), phenotypes(i)
+     !end do
+     !close(1)
      write(6, 68) sum(tbv(1:nanim,1))/nanim,sum(tbv(1:nanim,2))/nanim
 68   format("slope: ", g25.14, "; intercept: ", g25.14)
      

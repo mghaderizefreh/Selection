@@ -23,7 +23,7 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
      allocate(Vinvfull(nobs,nobs), ipiv2(nfix), work2(I), temp(nfix,nobs))
   end if
 
-  if (verbose) write(STDOUT,'(3x,a6,i1,a34)') "using ", nfix, "-dimensional matrix for X"
+  if (verbose) write(STDOUT,'(3x,a6,i2,a34)') "using ", nfix, "-dimensional matrix for X"
   if (.not.allocated(mat)) allocate(mat(nfix, nfix), vec((nfix+1)*nfix/2))
   call dunpack('u', nobs, Vinv, Vinvfull, nobs, info)
   if (verbose) write(STDOUT, *) "  info after DUNPACK", info

@@ -1,5 +1,5 @@
-subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, indiv, &
-     TBV, vars, means, nobs, locations, ids, phen, proc, X)
+subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, nran,&
+     indiv, TBV, vars, means, nobs, locations, ids, phen, proc, X)
 ! note that nfix and ncomp are different. nComp refers to number of components
 ! in simulation: for intercept and slope ncomp = 2. However, nfix depends on the
 ! type of analysis: if a single trait is desired nfix = 1, if random regression
@@ -9,7 +9,7 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, indiv, &
   implicit none
 
   logical, intent(in) :: verbose
-  integer, intent(in) :: nAnim, nComp, nLox, nFix
+  integer, intent(in) :: nAnim, nComp, nLox, nFix, nran
   integer, dimension(nanim), intent(in) :: indiv
   real(KINDR), dimension(nAnim, nComp), intent(in) :: TBV
   type(variances), intent(in) :: vars
@@ -28,6 +28,7 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, indiv, &
 
   external :: covariate
 
+  X(1:nobs, 1:nfix) = ZERO
   if (.not.allocated(temp2)) then
      allocate(temp2(nComp, nComp), tempr(nComp))
      ! covariance structure for E (covariances are zero)
@@ -37,7 +38,7 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, indiv, &
      end do
      tempr(1:nComp) = ZERO
   end if
-  if (nFix .eq. 2) then
+  if (nRan .eq. 3) then
      do k = 1, nlox
         X(k:nobs:nLox, 1) = locations(1:nAnim, k) ! for mu_slo if nfix == 2
      end do

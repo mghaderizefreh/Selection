@@ -18,8 +18,10 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects)
   integer, dimension(:), allocatable, save :: tempInd
   real(KINDR), dimension(:,:), allocatable, save :: x , XtX
   real(KINDR), dimension(:), allocatable, save :: Xty
-  real(KINDR), dimension(:), allocatable, save :: temp!, ipiv
-
+  real(KINDR), dimension(:), allocatable, save :: temp, ipiv
+  
+  real(KINDR), dimension(:), allocatable :: work
+  integer :: lwork
   if (.not.allocated(tempInd)) allocate(tempInd(nobs), temp(nobs))
 
   ! counting distinct values in the environment (nfix)
@@ -65,6 +67,11 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects)
   val2 = ZERO
   call dsyrk(uplo, trans, nfix, nobs, val1, X, nobs, val2, XtX, nfix)
   if (verbose) write(STDOUT, *) " dsyrk done building x'x"
+  do i = 1, nfix
+     do j = 1, (i - 1)
+        XtX(i, j) = XtX(j, i)
+     end do
+  end do
 
   ! todo: again sparse matrices must be used here
   i = 1
@@ -80,7 +87,9 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects)
   val1 = ONE
   val2 = ZERO
   i = 1
-  call dposv(uplo, nfix, i, XtX, nfix, xty, nfix, j)
+  lwork = (nfix * nfix + nfix) * int(nfix  /2)
+  allocate(work(lwork), ipiv(nfix))
+  call dsysv(uplo, nfix, i, XtX, nfix, ipiv, xty, nfix, work, lwork, info)
   if (info .ne. 0) then
      write(STDERR, '(a)') "Error:"
      if (info .lt. 0) then
@@ -90,7 +99,10 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects)
      end if
      stop 2
   else
-     if (verbose) write(STDOUT, *) " dposv solved the system"
+     if (verbose) then
+        write(STDOUT, *) " dsysv solved the system"
+        write(STDOUT, *) " work(1), lwork:", work(1), lwork
+     end if
   end if
   
   effects(1:nfix) = xty(1:nfix)

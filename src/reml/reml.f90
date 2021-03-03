@@ -7,7 +7,7 @@
 !   6     ZiZi        perm. env. effect intercept
 !   7     ZsZi+ZiZs   perm. env. effect slope-intercept covariance
 ! (last)  Identity    env. intercept (NOT COUNTED IN theZGZ and it is LAST one)
-subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
+subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
      fixEffects, ranEffects, verbose, EmIterations, maxIters)
 
   use constants
@@ -16,7 +16,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   implicit none
   !! ================ variable definitions  ================ !!
   logical, intent(in)                            :: verbose
-  integer, intent(in)                            :: nobs, nvar, nfix, maxid
+  integer, intent(in)                            :: nobs, nvar, nfix, maxid, nran
   integer, dimension(:), intent(in)              :: id ! real(KINDR) id of animals
   real(KINDR), dimension(:), intent(in)     :: y ! phenotypes
   real(KINDR), dimension(:,:), intent(in)   :: x ! incid. mat fixed effects
@@ -66,17 +66,15 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   end if
 
   allocate(fixEffects(nfix))
-  if (nfix == 2) then
-     allocate(raneffects(3))
-     allocate(raneffects(1)%level(maxid)) ! slope effect (genetic)
+  allocate(raneffects(nran))
+  allocate(raneffects(1)%level(maxid)) ! slope effect (genetic)
+  if (nran == 3) then
      allocate(raneffects(2)%level(maxid)) ! intercept effect (genetic)
      allocate(raneffects(3)%level(nobs))   ! environment slope effect (diagonal)
-  elseif (nfix == 1) then
-     allocate(raneffects(1))
-     allocate(raneffects(1)%level(maxid)) ! genetic
+  elseif (nran == 1) then
   else
-     WRITE(STDERR, *) " ERROR"
-     WRITE(STDERR, *) " not implemented for nfix > 2"
+     write(STDERR, *) " ERROR"
+     write(STDERR, *) " not implemented for nran != 1 or 3"
      stop 2
   end if
 
@@ -87,14 +85,16 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
   ! depending on the given correlation, we may need 3 or 4 ZGZ matrices.
   ! So better to check that because one matrix makes a lot of difference
   ! in using the amount of memory
-  if (nvar == 3) then
-     if (any ( theta < 0 )) then
-        write(STDERR, *) "n_var and initial guess not consistent"
-        stop 2
+  if (nran == 3) then
+     if (nvar == 3) then
+        if (any ( theta < 0 )) then
+           write(STDERR, *) "n_var and initial guess not consistent"
+           stop 2
+        end if
+        if (verbose) write(STDOUT, '(2x,a22)') "no correlation assumed"
+     elseif (nvar > 3) then
+        if (verbose) write(STDOUT, '(2x,a30)') "correlation taken into account"
      end if
-     if (verbose) write(STDOUT, '(2x,a22)') "no correlation assumed"
-  elseif (nvar > 3) then
-     if (verbose) write(STDOUT, '(2x,a30)') "correlation taken into account"
   end if
 
   ! making G* matrices
@@ -206,8 +206,8 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, theta, &
      oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
   end do
 
-  call getEffects(nobs, maxid, nfix, nvar, theta, Gmatrix, Vhat, Py, y, X,&
-       id, fixEffects, ranEffects, verbose)
+  call getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
+       Py, y, X, id, fixEffects, ranEffects, verbose)
 
 end subroutine reml
 
