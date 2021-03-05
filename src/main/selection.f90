@@ -74,7 +74,7 @@ program selection
        chrL, mutationRate, ncomp, vars, nQTL, nSNP, MAF, baseNameFreq,&
        randomQTL, interval, locations, X, nlox, nFarm, farmBounds,&
        farmInd, farmRange, allocation, selectionType, nobs, means,&
-       analysisType,theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
+       analysisType, theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
        nfix, nvar, nran, outputfile)
 
   call defineFarms(interval, nfarm, farmRange, farmBounds)
@@ -182,8 +182,12 @@ program selection
   ! Simulating Phenotypes
   ! ================================================================
   if (verbose) write(STDOUT, '(a)') "allocating individuals"
+  i = allocation
+  allocation = 1 ! temporary allocation is set to 1 because in the first
+  ! generation we do not know the pedigree therefore we can do only random
   call allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, farmRange,&
        farmInd, locations)
+  allocation = i
   if (verbose) write(STDOUT, '(a)') "individuals allocated"
 
   if (verbose) write(STDOUT, '(a)') "simulating phenotypes"
@@ -200,9 +204,16 @@ program selection
 
   ! only for the first generation
   ! a very simple guestimate for theta
-  if (nfix == 1) then
-     theta(1) = variance(phenotypes, nobs) / 10._KINDR
-     theta(2) = variance(phenotypes, nobs)*9._KINDR / 10._KINDR
+  if (nran == 1) then
+     val1 = (interval(1) + interval(2)) / 2 ! x=x_middle
+     ! nominator
+     val2 = val1 * val1 * vars%A(1) + vars%A(2) + 2 * val1 * vars%cov(1,2)
+     ! denominator
+     val1 = val2 + val1 * val1 * vars%E(1) + vars%E(2)
+     val1 = val2 / val1
+     write(6, *) 'estimated heritability', val1
+     theta(1) = variance(phenotypes, nobs) * val1
+     theta(2) = variance(phenotypes, nobs) * (ONE - val1)
   end if
   
   ParentGenome => genome1
@@ -213,7 +224,7 @@ program selection
   val2 = sum(tbv(1:nanim, 2)) / nanim
   write(STDOUT, 68) val1, val2
   write(iunoutput, 200) "gen", "mean(TBVs)", "mean(TBVi)", "var(TBVs)", &
-       "var(TBVi)", "Est(mu_i)", "Est(mu_s)", "acc(EBVs)", "acc(EBVi)"
+       "var(TBVi)", "Est(mu_s)", "Est(mu_i)", "acc(EBVs)", "acc(EBVi)"
 200 format(a3,8(1x,a15))
 201 format(i3,4(1x,f15.7))
   write(iunoutput, 201, advance = 'no') 0, val1, val2, &
@@ -312,7 +323,7 @@ program selection
         
         if (doreml) then
            call reml(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar,&
-                nran, theta, fixEff, ranEff, verbose, 3, 10)
+                nran, theta, fixEff, ranEff, verbose, 0, 20)
         else
            call blup(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar,&
                 nran, theta, fixEff, ranEff, verbose)
@@ -354,13 +365,13 @@ program selection
      
      ! making pedigree for next generation based on selected parents
      pedigree = makePedigree(n_m, n_fpm, n_opf, male, female, nanim)
-!     write(filename1, '(a, i2.2)') "ped.G", igen
-!     open(1, file = trim(filename1))
-!     write(1, '(4x,a2,2x,a4,3x,a3)') "id","sire","dam"
-!     do i = 1, nanim
-!        write(1, '(3i6)') (pedigree(i,j), j = 1, 3)
-!     end do
-!     close(1)
+     !write(filename1, '(a, i2.2)') "ped.G", igen
+     !open(1, file = trim(filename1))
+     !write(1, '(4x,a2,2x,a4,3x,a3)') "id","sire","dam"
+     !do i = 1, nanim
+     !   write(1, '(3i6)') (pedigree(i,j), j = 1, 3)
+     !end do
+     !close(1)
 
      ! ========================
      ! mating
@@ -434,7 +445,8 @@ program selection
 
      if (verbose) write(STDOUT, '(a)') "allocating individuals"
      call allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
-          farmRange, farmInd, locations)
+          farmRange, farmInd, locations, pedigree = pedigree, nm = n_m,&
+          male = male)
      if (verbose) write(STDOUT, '(a)') "individuals allocated"
 
      ! getting phenotypes
@@ -449,6 +461,7 @@ program selection
      !   write(1, *) ids(i), X(i, 1), farmind(i), phenotypes(i)
      !end do
      !close(1)
+
      write(6, 68) sum(tbv(1:nanim,1))/nanim,sum(tbv(1:nanim,2))/nanim
 68   format("slope: ", g25.14, "; intercept: ", g25.14)
      

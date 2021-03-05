@@ -20,7 +20,7 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects)
   real(KINDR), dimension(:), allocatable, save :: Xty
   real(KINDR), dimension(:), allocatable, save :: temp, ipiv
   
-  real(KINDR), dimension(:), allocatable :: work
+  real(KINDR), dimension(:), allocatable, save :: work
   integer :: lwork
   if (.not.allocated(tempInd)) allocate(tempInd(nobs), temp(nobs))
 
@@ -88,7 +88,7 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects)
   val2 = ZERO
   i = 1
   lwork = (nfix * nfix + nfix) * int(nfix  /2)
-  allocate(work(lwork), ipiv(nfix))
+  if (.not.allocated(work)) allocate(work(lwork), ipiv(nfix))
   call dsysv(uplo, nfix, i, XtX, nfix, ipiv, xty, nfix, work, lwork, info)
   if (info .ne. 0) then
      write(STDERR, '(a)') "Error:"

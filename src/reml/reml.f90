@@ -200,7 +200,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
         write(STDOUT, '(a10)') "converged!"
         exit
      elseif (iter > maxiter) then
-        write(STDOUT, '(a16)') "did not converge"
+        write(STDERR, '(a)') "reml did not converge"
         stop 1
      end if
      oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))

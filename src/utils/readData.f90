@@ -275,7 +275,8 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
   call assert(stat.eq.0, "failed to read allocation scenario", lno)
-  call assert(iinput.eq.1, "so far only random allocation is allowed", lno)
+  call assert((iinput.eq.1).or.(iinput.eq.2), "so far only random and &
+       &clustered allocation are allowed", lno)
   allocation = iinput
   write(STDOUT, 34, advance = 'no') "allocation scenario", allocation
   select case(allocation)
@@ -350,7 +351,9 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      call assert((selectionType.eq.1).or.(selectionType.eq.6), &
        "For single trait analysis, only selection type 1(random) and 6 (o&
        &verall performace) is allowed", lno)
-  else     
+  elseif (analysisType .eq. 1) then 
+     call assert((selectionType.ne.6), "Cannot do local selection with&
+          & random regression analysis", lno)
   end if
 
   ! reml

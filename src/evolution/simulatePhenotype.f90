@@ -70,8 +70,9 @@ end subroutine SimulatePhenotype
 
 !!!! ============================================================ !!!!
 subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
-     farmRange, farmInd, locations)
+     farmRange, farmInd, locations, pedigree, nm, male)
   use constants
+  use rng_module
   implicit none
   integer, intent(in) :: nAnim, nLox, nFarm
   integer, intent(in) :: allocation
@@ -79,8 +80,13 @@ subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
   real(KINDR) :: farmRange
   integer, dimension(1:(nAnim*nLox)), intent(out) :: farmInd
   real(KINDR), dimension(nAnim, nLox), intent(out) :: locations
+  integer, dimension(1:nAnim, 3), optional :: pedigree
+  integer, optional, intent(in) :: nm
+  integer, optional, intent(in) :: male(:)
 
-  integer :: nobs 
+  integer, dimension(:), allocatable :: temp1, temp2
+  integer, parameter :: spf  = 2 ! each farm has spf sires
+  integer :: nobs, isire
   integer :: i, j, k
   real(KINDR) :: val
   real(KINDR), dimension(nlox) :: temp
@@ -102,7 +108,69 @@ subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
         locations(i, 1:nlox) = temp(1:nlox)
         ! random_number is in [0,1] so no need to shift by 0 and divide by 1
      end do
-  case(2:)
+  case(2) ! some sort of clustering:
+     !one farm/sire & two sires/farm & farms and sires random
+     ! requires pedigree
+     if (.not.present(pedigree)) then
+        write(STDERR, '(a)') "Error:"
+        write(STDERR, *) " pedigree is required for allocation = 2"
+        stop 2
+     elseif (.not.present(nm)) then
+        write(STDERR, '(a)') "Error:"
+        write(STDERR, *) " number of sires is required for allocation = 2"
+        stop 2
+     elseif (.not.present(male)) then
+        write(STDERR, '(a)') "Error:"
+        write(STDERR, *) " male array is required for allocation = 2"
+        stop 2
+     elseif (nm < nfarm) then
+        write(STDERR, '(a)') "Error:"
+        write(STDERR, *) " number of farms is more than number of sires"
+        stop 2
+     end if
+     allocate(temp1(nm), temp2(nm))
+     do i = 1, spf
+        j = (i-1)*nfarm + 1
+        k = i * nfarm
+        temp1(j:k) = (/(nobs, nobs = 1, nfarm)/)
+     end do
+     call choice(temp1, nm, nm, nm, temp2, nm) ! temp2 contains farms
+     ! could do smarter way, but would require 2 more arrays
+     nobs = nlox * nanim
+     ! for the first individual, take the sire
+     i = 1
+     isire = pedigree(i,2)
+     ! find its index in male array
+     do j = 1, nm
+        if (isire == male(j)) exit
+     end do
+     ! assign the farm to that individual
+     k = temp2(j)
+     farmind(((i-1)*nlox+1):(i*nlox)) = k
+     call random_number(temp)
+     locations(i, 1:nlox) = temp(1:nlox) * farmRange + farmBounds(k, 1)
+     do i = 2, nAnim
+        !for all other individual, get the sire
+        isire = pedigree(i,2)
+        ! if its another offspring of the same sire, just assign the same
+        if (isire == pedigree(i-1, 2)) then
+           k = temp2(j)
+           farmind(((i-1)*nlox + 1):(i*nlox)) = k
+           call random_number(temp)
+           locations(i, 1:nlox) = temp(1:nlox) * farmRange + farmBounds(k, 1)
+           cycle ! and go to the next individual
+        end if
+        ! otherwise, find the index and do the rest
+        do j = 1, nm
+           if (isire == male(j)) exit
+        end do
+        k = temp2(j)
+        farmind(((i-1)*nlox + 1):(i*nlox)) = k
+        call random_number(temp)
+        locations(i, 1:nlox) = temp(1:nlox) * farmRange + farmBounds(k, 1)
+     end do
+     
+  case(3:) ! later
   end select
   
 end subroutine allocateInd
