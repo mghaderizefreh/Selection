@@ -126,13 +126,22 @@ program selection
   call getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomQTL, genome1,&
        QTLlist, SNPlist, vars%cov, baseNameFreq, maf)
   if (verbose) write(STDOUT, '(a)') "QTL and SNP list simulated"
-!  open(1, file = "QTLlist.txt")
-!  do ichr = 1, nchr
-!     do i = 1, nQTL
-!        write(1, *) QTLlist%values(ichr, i, 1:2)
-!     end do
-!  end do
-!  close(1)
+  !! saving QTL list
+  !open(1, file = "QTLlist.txt")
+  !do ichr = 1, nchr
+  !   do i = 1, nQTL
+  !      write(1, *) QTLlist%values(ichr, i, 1:2)
+  !   end do
+  !end do
+  !close(1)
+  !! saving SNP list
+  !open(1, file = "SNPlist.txt")
+  !do ichr = 1, nchr
+  !   do i = 1, nSNP
+  !      write(1, '(2i8)') ichr, SNPlist(ichr, i)
+  !   end do
+  !end do
+  !close(1)
   ! ================================================================
   ! Simulating TBV
   ! ================================================================
@@ -169,7 +178,7 @@ program selection
 !     end do
 !  end do
 !  close(1)
-
+!! calling simtbv again to check if this scaling was correct
 !  call SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome1,&
 !       QTLlist, SNPlist, TBV, verbose)
 !  open(1,file = 'tbvinitial3')
@@ -211,7 +220,7 @@ program selection
      ! denominator
      val1 = val2 + val1 * val1 * vars%E(1) + vars%E(2)
      val1 = val2 / val1
-     write(6, *) 'estimated heritability', val1
+     if (verbose) write(STDOUT, '(a,f15.7)') 'estimated heritability: ', val1
      theta(1) = variance(phenotypes, nobs) * val1
      theta(2) = variance(phenotypes, nobs) * (ONE - val1)
   end if
@@ -239,7 +248,6 @@ program selection
      ! ================================================================
      genSel: select case (selectionType)
      case (1) ! random
-        write(6, *) "selectionType :" , selectionType
         if (igen == 1) then
            allocate(raneff(1))
            allocate(raneff(1)%level(nanim))
@@ -247,15 +255,19 @@ program selection
         i = 1
         call random_number(raneff(i)%level(1:nanim))
         ! selectByIntercept needs raneff of size 1 (or size 2 but then effects must be on the second)
-        write(iunoutput, '(4(1x,a15))') "NaN", "NaN", "NaN", "NaN"
+        write(iunoutput, '(2(1x,a15),2(1x,f15.7))') "NaN", "NaN", &
+             correlation(raneff(1)%level, TBV(:,1), nanim),&
+             correlation(raneff(1)%level, TBV(:,2), nanim)
      case (2, 3, 6) ! slope ebv or interceept ebv
         ! reaction norm means x must be re-written
-        if (reactionNorm) then
+        RN: if (reactionNorm) then
            if ((selectionType.eq.2).or.(selectionType.eq.3)) then
+              ! for covariate analysis, 2 step RN is required
               if (.not.allocated(farmIndReal)) &
                    allocate(FarmIndReal(nobs), farmEffects(nfarm))
               ! converting to double as leastSquare takes double
               farmIndReal(1:nobs) = dble(farmInd(1:nobs))
+              ! step 1: farm effects
               call leastSquare(verbose, nobs, nfarm, ids, farmIndReal,&
                    phenotypes, farmEffects)
               ! scaling farmeffects to [xmin, xmax]
@@ -266,7 +278,7 @@ program selection
               ! replacing scaled farmeffects with challenge levels
               X(1:nobs, 1) = farmEffects(farmInd(1:nobs))
            elseif (selectionType.eq.6) then
-              do i = 1, nobs
+              do i = 1, nobs ! removing the first farm
                  if (farmInd(i) .eq. 1) cycle
                  X(i, farmInd(i) - 1) = ONE
               end do
@@ -279,7 +291,21 @@ program selection
               !end do
               !close(1)
            end if
-        end if
+        end if RN
+
+        !! writing all chromosomes
+        !do ichr = 1, nchr
+        !   write(filename1, '(a,i2.2,a1,i3.3)') "genchr", igen, '.', iChr
+        !   open(1, file = trim(filename1))
+        !   write(formato, '(a1, i10, a6)' ) '(', parentGenome(ichr)%nblock, 'i12)'
+        !   write(1, *) nanim, parentGenome(ichr)%nloci, parentGenome(ichr)%nblock, 0
+        !   do id =1 , nanim
+        !      do igam = 1, 2
+        !         write(1, formato) parentGenome(ichr)%genotypes(id, igam, 1:parentGenome(ichr)%nblock)
+        !      end do
+        !   end do
+        !   close(1)
+        !end do
 
         ! making Gmatrix
         iscaled = 1 !(0:no, 1:yes)
@@ -288,37 +314,27 @@ program selection
         i = 1 ! addDom (1:additive, 2:dominance)
         call getGmatrix(nanim, nChr, nSNP, indiv, ParentGenome, SNPlist, &
              iscaled, ivar, j, i, Amat, verbose)
-        ! writing AMAT to disk
-        !  i = maxval(indiv)
-        !  k = 1
-        !  do while (i >= 10)
-        !     i = i / 10
-        !     k = k + 1
-        !  end do
-        !  open( 1, FILE = "AMAT.txt", STATUS = 'unknown' )
-        !  i = nanim * ( nanim + 1 ) / 2
-        !  write(formato,'(a2,i1,a5,i1,a22)')'(i',k,',1x,i',k,&
+        !!!writing AMAT to disk
+        !i = maxval(indiv)
+        !k = 1
+        !do while (i >= 10)
+        !   i = i / 10
+        !   k = k + 1
+        !end do
+        !open( 1, FILE = "AMAT.txt", STATUS = 'unknown' )
+        !i = nanim * ( nanim + 1 ) / 2
+        !write(formato,'(a2,i1,a5,i1,a22)')'(i',k,',1x,i',k,&
         !     ',1x,g24.15,i9,g24.15)'
-        !  write(6,*) " formato= ", trim(formato)
-        !  k = 0
-        !  do i = 1, nanim
-        !     do j = 1, i
-        !        k = k + 1
-        !        write(1, formato) indiv(i), indiv(j), amat(k)
-        !     end do
-        !  end do
-        !  close(1)
-        ! reading amat if required
-        !  open(1, file = 'AMAT.txt')
-        !  i = nanim * ( nanim + 1 ) / 2
-        !  k = 0
-        !  do i = 1, nanim
-        !     do j = 1, i
-        !        k = k +1
-        !        read(1, *) nfix, nobs, amat(k)
-        !     end do
-        !  end do
-        !  close(1)
+        !write(6,*) " formato= ", trim(formato)
+        !k = 0
+        !do i = 1, nanim
+        !   do j = 1, i
+        !      k = k + 1
+        !      write(1, formato) indiv(i), indiv(j), amat(k)
+        !   end do
+        !end do
+        !close(1)
+
         !=========================================
         
         if (doreml) then
@@ -328,27 +344,31 @@ program selection
            call blup(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar,&
                 nran, theta, fixEff, ranEff, verbose)
         end if
+
         if (verbose) write(STDOUT, '(a)') "Genomic evaluation done"
+        
         ! -----------------------------------
         ! getting ebv accuracy
         ! ----------------------------------
         if ((selectionType.eq.2).or.(selectionType.eq.3)) then
            write(iunoutput, '(2(1x,f15.7))', advance = 'no') fixEff(1:nfix)
-           do i = 1, nFix
-              val1 = correlation(raneff(i)%level, TBV(:,i), nanim)
-              write(6, *) 'accuracy', i, val1
-              write(iunoutput, '(1x,f15.7)', advance = 'no') val1
-           end do
-           write(iunoutput, *) 
         elseif (selectionType.eq.6) then
-           write(iunoutput, '(1x,f15.7,3(1x,a15))') fixEff(nfix), "NaN", "NaN", "NaN"
+           write(iunoutput, '(a15,1x,f15.7)', advance= 'no') "NaN", fixEff(nfix)
         end if
+        do i = 1, 2
+           j = i
+           if ((i == 2) .and. (selectionType == 6)) j = 1
+           val1 = correlation(raneff(j)%level, TBV(:,i), nanim)
+           write(6, *) 'accuracy', i, val1
+           write(iunoutput, '(1x,f15.7)', advance = 'no') val1
+        end do
+        write(iunoutput, *) 
         !====================================
         ! selection
         !====================================
+        ! i is used in selectMates, if st==2|6 -> i=1, if st==3 -> i=2
         i = merge(selectionType - 1, 1, selectionType .ne. 6)
      case (4, 5)
-        write(6, *) 'selectionType :' , selectionType
         if (igen == 1) then
            allocate(raneff(3))
            allocate(raneff(1)%level(nanim), raneff(2)%level(nanim), raneff(3)%level(nobs))
@@ -359,7 +379,7 @@ program selection
         i = selectionType - 3
         write(iunoutput, '(4(1x,a15))') "NaN", "NaN", "NaN", "NaN"
      end select genSel
-     call selectMates(nanim, indiv, sex, n_m, n_fpm, male, female,&
+     call selectParents(nanim, indiv, sex, n_m, n_fpm, male, female,&
           ranEff(i)%level, verbose)
      if (verbose) write(STDOUT, '(a)') "selection done"
      
@@ -396,26 +416,13 @@ program selection
               !===========================================
               !totalmutation(imu) = totalmutation(imu) + 1
               !totalchiasma(ich) = totalchiasma(ich) + 1
-              !mutotal = mutotal + imu
+               !mutotal = mutotal + imu
               !chtotal = chtotal + ich
               !===========================================
            end do
         end do
      end do
-     
-     ! writing all chromosomes
-!     do ichr = 1, nchr
-!        write(filename1, '(a,i3.3,a1,i2.2)') "chr", iChr, '.', igen
-!        open(1, file = trim(filename1))
-!        write(formato, '(a1, i10, a6)' ) '(', parentGenome(ichr)%nblock, 'i12)'
-!        do id =1 , nanim
-!           do igam = 1, 2
-!              write(1, formato) offGenome(ichr)%genotypes(id, igam, 1:offGenome(ichr)%nblock)
-!           end do
-!        end do
-!        close(1)
-!     end do
- 
+
      ! ===========================================
      ! swapping pointers for offspring and parents
      ! ===========================================    

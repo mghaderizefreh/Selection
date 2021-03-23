@@ -12,7 +12,7 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, iscaled, &
   integer, intent(in) :: ivar !(0:sample, 1:2pq, 2:2p'q')
   integer, intent(in) :: imiss !(0:mean, 1:ignore)
   integer, intent(in) :: addDom !(1:additive, 2:dominance)
-  real(KINDR), dimension(:), allocatable :: Amat
+  real(KINDR), dimension(:), allocatable, intent(out) :: Amat
 
   integer :: totalSNP!, maxLength = 1
   integer :: i, k

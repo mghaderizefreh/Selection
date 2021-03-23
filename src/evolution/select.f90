@@ -1,4 +1,5 @@
-subroutine selectMates(nanim, indiv, sex, n_m, n_fpm, male, female, effects, verbose)
+subroutine selectParents(nanim, indiv, sex, n_m, n_fpm, male, female,&
+     effects, verbose)
   use constants
   use quickSort
   implicit none
@@ -8,7 +9,8 @@ subroutine selectMates(nanim, indiv, sex, n_m, n_fpm, male, female, effects, ver
   logical, dimension(1:nAnim), intent(inout) :: sex
   real(KINDR), dimension(1:nAnim), intent(in) :: effects ! breeding values
   integer, intent(in) :: n_m, n_fpm
-  integer, dimension(:), intent(out) :: male, female
+  integer, dimension(1:(n_m*n_fpm)), intent(out) :: female
+  integer, dimension(1:n_m), intent(out) :: male
   logical, intent(in) :: verbose
 
   integer :: nmale, nfemale
@@ -21,17 +23,18 @@ subroutine selectMates(nanim, indiv, sex, n_m, n_fpm, male, female, effects, ver
   if (.not.allocated(mI)) allocate(mI(nmale), fI(nfemale), &
        mR(nmale), fR(nfemale), tempMI(nmale), tempFI(nfemale))
   
-  mI(1:nmale) = pack(indiv, sex) ! true is male
-  mR(1:nmale) = effects(mI(1:nmale))
-  call sortrx(nmale, mR, tempMI)
+  mI(1:nmale) = pack(indiv, sex) ! true is male, mI holds index of males
+  mR(1:nmale) = effects(mI(1:nmale))! mR holds the bv of males
+  call sortrx(nmale, mR, tempMI) ! bv are sorted (ascending)
   i = nmale - n_m + 1
+  ! male holds the index of best males
   male(1:n_m) = mI(tempMI(i:nmale)) ! sort is ascending
 !  if(verbose) write(STDOUT, *) "best male (ind,val)", male(n_m), &
 !       mR(tempMI(nmale)), sex(male(n_m))
 !  if(verbose) write(STDOUT, *) "2nd best male      ", male(n_m-1),&
 !       mR(tempMI(nmale-1)), sex(male(n_m-1))
 
-  fI(1:nfemale) = pack(indiv, .not.sex)
+  fI(1:nfemale) = pack(indiv, (.not.sex))
   fR(1:nfemale) = effects(fI(1:nfemale))
   call sortrx(nfemale, fR, tempFI)
   j = n_fpm * n_m
@@ -42,7 +45,7 @@ subroutine selectMates(nanim, indiv, sex, n_m, n_fpm, male, female, effects, ver
 !  if(verbose) write(STDOUT, *) "2nd best female      ", female(j-1), &
 !       fR(tempFI(nfemale-1)), sex(female(j-1))
 
-end subroutine selectMates
+end subroutine selectParents
 
 function makePedigree(n_m, n_fpm, n_opf, male, female, start) result(pedigree)
   use constants
