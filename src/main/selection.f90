@@ -41,6 +41,7 @@ program selection
   real(KINDR), allocatable, dimension(:) :: chiasmaCumP, mutationCumP
   real(KINDR), allocatable, dimension(:) :: farmIndReal, farmEffects
   real(KINDR) :: mutationCumP0, chiasmaCumP0
+  real(KINDR), allocatable, dimension(:) :: weight
   type(doublePre_Array), dimension(:), allocatable :: raneff
   integer, allocatable, dimension(:) :: ids
   integer, allocatable, dimension(:) :: totalChiasma, totalMutation
@@ -73,7 +74,7 @@ program selection
   call readInput(inputfile, verbose, nanim, nchr, filename1, filename2,&
        chrL, mutationRate, ncomp, vars, nQTL, nSNP, MAF, baseNameFreq,&
        randomQTL, interval, locations, X, nlox, nFarm, farmBounds,&
-       farmInd, farmRange, allocation, selectionType, nobs, means,&
+       farmInd, farmRange, allocation, selectionType, weight, nobs, means,&
        analysisType, theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
        nfix, nvar, nran, outputfile)
 
@@ -258,10 +259,11 @@ program selection
         write(iunoutput, '(2(1x,a15),2(1x,f15.7))') "NaN", "NaN", &
              correlation(raneff(1)%level, TBV(:,1), nanim),&
              correlation(raneff(1)%level, TBV(:,2), nanim)
-     case (2, 3, 6) ! slope ebv or interceept ebv
+     case (2, 3, 6, 7) ! slope ebv or interceept ebv
         ! reaction norm means x must be re-written
         RN: if (reactionNorm) then
-           if ((selectionType.eq.2).or.(selectionType.eq.3)) then
+           if ((selectionType.eq.2).or.(selectionType.eq.3).or.&
+                (selectionType.eq.7)) then
               ! for covariate analysis, 2 step RN is required
               if (.not.allocated(farmIndReal)) &
                    allocate(FarmIndReal(nobs), farmEffects(nfarm))
@@ -350,7 +352,7 @@ program selection
         ! -----------------------------------
         ! getting ebv accuracy
         ! ----------------------------------
-        if ((selectionType.eq.2).or.(selectionType.eq.3)) then
+        if ((selectionType.eq.2).or.(selectionType.eq.3).or.(selectionType.eq.7)) then
            write(iunoutput, '(2(1x,f15.7))', advance = 'no') fixEff(1:nfix)
         elseif (selectionType.eq.6) then
            write(iunoutput, '(a15,1x,f15.7)', advance= 'no') "NaN", fixEff(nfix)
@@ -362,12 +364,17 @@ program selection
            write(6, *) 'accuracy', i, val1
            write(iunoutput, '(1x,f15.7)', advance = 'no') val1
         end do
-        write(iunoutput, *) 
+        write(iunoutput, *)
         !====================================
         ! selection
         !====================================
         ! i is used in selectMates, if st==2|6 -> i=1, if st==3 -> i=2
         i = merge(selectionType - 1, 1, selectionType .ne. 6)
+        if (selectionType.eq.7) then
+           i = 1
+           ranEff(1)%level(1:nanim) = weight(1) * ranEff(1)%level(1:nanim) +&
+                weight(2) * ranEff(2)%level(1:nanim)
+        end if
      case (4, 5)
         if (igen == 1) then
            allocate(raneff(3))

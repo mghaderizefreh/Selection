@@ -1,7 +1,7 @@
 subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      geneposfile, chrL, mu, ncomp, vars, nQTL, nSNP, MAF, baseNameFreq,&
      randomQTL, interval, locations, X, nlox, nFarm, farmBounds, &
-     farmInd, farmRange, allocation, selectionType, nobs, means, &
+     farmInd, farmRange, allocation, selectionType, weight, nobs, means,&
      analysisType, theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
      nfix, nvar, nran, output)
   use constants
@@ -33,6 +33,7 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   integer, intent(out) :: allocation ! allocation scenario
   ! 1 = random, 
   integer, intent(out) :: selectionType 
+  real(KINDR), allocatable, dimension(:), intent(out) :: weight
   integer, intent(out) :: nobs
   real(KINDR), allocatable, dimension(:), intent(out) :: means
   integer, intent(out) :: analysisType ! 1 = rr, 2 = single location
@@ -288,8 +289,8 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
   call assert(stat.eq.0, "failed to read selection type", lno)
-  call assert((iinput.gt.0).and.(iinput.lt.7), &
-       "selection type must be an integer from 1 to 6 incl.", lno)
+  call assert((iinput.gt.0).and.(iinput.le.7), &
+       "selection type must be an integer from 1 to 7 incl.", lno)
   selectionType = iinput
   write(STDOUT, 34, advance = 'no') "selection type", selectionType
   select case (selectionType)
@@ -305,6 +306,18 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      write(STDOUT, *) "(TBV intercept)"
   case(6)
      write(STDOUT, *) "(overall performance)"
+  case(7)
+     write(STDOUT, *) "(manual index)"
+     ! weight
+     allocate(weight(ncomp))
+     do i = 1, ncomp
+        call nextInput(iun, line, lno) ! for slope
+        read(line, *, iostat = stat) rinput
+        call assert(stat.eq.0, "failed to read weight", lno)
+        weight(i) = rinput
+        write(formato, '(a, i1)') "weight for comp ", i
+        write(STDOUT, 35) trim(formato), weight(i)
+     end do
   end select
 
   ! nobs
@@ -338,23 +351,16 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   write(STDOUT, 34) "number of generations", ngen
 
   ! analysis type
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read analysis type", lno)
-  call assert(iinput.eq.1.or.iinput.eq.2, &
-       "analysis type may be 1 or 2 only", lno)
-  analysisType = iinput
+  if ((selectionType.eq.1) .or. (selectionType.eq.6)) then
+     analysisType = 2 ! single trait
+  elseif ((selectionType .eq. 2) .or. (selectionType .eq. 3) .or. &
+       (selectionType .eq. 4) .or. (selectionType .eq. 5) .or. &
+       (selectionType .eq. 7)) then
+     analysisType = 1 ! covariate
+  end if
   write(STDOUT, 34, advance = 'no') "analysis type", analysisType
   if (analysisType .eq. 1) write(STDOUT, *) "(random regression)"
   if (analysisType .eq. 2) write(STDOUT, *) "(single trait)"
-  if (analysisType .eq. 2) then
-     call assert((selectionType.eq.1).or.(selectionType.eq.6), &
-       "For single trait analysis, only selection type 1(random) and 6 (o&
-       &verall performace) is allowed", lno)
-  elseif (analysisType .eq. 1) then 
-     call assert((selectionType.ne.6), "Cannot do local selection with&
-          & random regression analysis", lno)
-  end if
 
   ! reml
   call nextInput(iun, line, lno)
