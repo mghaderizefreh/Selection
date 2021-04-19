@@ -302,19 +302,19 @@ program selection
            end if
         end if RN
         !! writing all chromosomes
-        do ichr = 1, nchr
-           write(filename1, '(a,i2.2,a1,i3.3)') "genchr", igen, '.', iChr
-           open(1, file = trim(filename1))
-           write(formato, '(a1, i10, a6)' ) '(', parentGenome(ichr)%nblock, 'i12)'
-           write(1, *) nanim, parentGenome(ichr)%nloci, parentGenome(ichr)%nblock, 0
-           do id =1 , nanim
-              do igam = 1, 2
-                 write(1, formato) (parentGenome(ichr)%genotypes(id, igam, i), &
-                      i = 1, parentGenome(ichr)%nblock)
-              end do
-           end do
-           close(1)
-        end do
+        !do ichr = 1, nchr
+        !   write(filename1, '(a,i2.2,a1,i3.3)') "genchr", igen, '.', iChr
+        !   open(1, file = trim(filename1))
+        !   write(formato, '(a1, i10, a6)' ) '(', parentGenome(ichr)%nblock, 'i12)'
+        !   write(1, *) nanim, parentGenome(ichr)%nloci, parentGenome(ichr)%nblock, 0
+        !   do id =1 , nanim
+        !      do igam = 1, 2
+        !         write(1, formato) (parentGenome(ichr)%genotypes(id, igam, i), &
+        !              i = 1, parentGenome(ichr)%nblock)
+        !      end do
+        !   end do
+        !   close(1)
+        !end do
 
         ! making Gmatrix
         iscaled = 1 !(0:no, 1:yes)
