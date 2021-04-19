@@ -7,8 +7,8 @@
 !   6     ZiZi        perm. env. effect intercept
 !   7     ZsZi+ZiZs   perm. env. effect slope-intercept covariance
 ! (last)  Identity    env. intercept (NOT COUNTED IN theZGZ and it is LAST one)
-subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
-     fixEffects, ranEffects, verbose, EmIterations, maxIters)
+subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
+     theta, verbose, ipiv, Py, P, V, Vhat, temp, EmIterations, maxIters)
 
   use constants
   use global_module
@@ -16,40 +16,38 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
   implicit none
   !! ================ variable definitions  ================ !!
   logical, intent(in)                            :: verbose
-  integer, intent(in)                            :: nobs, nvar, nfix, maxid, nran
-  integer, dimension(:), intent(in)              :: id ! real(KINDR) id of animals
-  real(KINDR), dimension(:), intent(in)     :: y ! phenotypes
-  real(KINDR), dimension(:,:), intent(in)   :: x ! incid. mat fixed effects
-  real(KINDR), dimension(:), intent(inout)  :: theta
-  real(KINDR), dimension(:), intent(in)     :: Gmatrix
-  integer, intent(in), optional                  :: EmIterations, maxIters
+  integer, intent(in) :: nobs, nvar, nfix, maxid, nran, nelement
+  integer, dimension(:), intent(in) :: id ! real(KINDR) id of animals
+  real(KINDR), dimension(:), intent(in) :: y ! phenotypes
+  real(KINDR), dimension(:,:), intent(in) :: x ! incid. mat fixed effects
+  real(KINDR), dimension(:), intent(inout) :: theta ! main output (variance component)
+  real(KINDR), dimension((maxid*(maxid+1)/2)), intent(in) :: Gmatrix
+  ! working arrays
+  integer, dimension(1:nobs), intent(inout) :: ipiv
+  real(KINDR), dimension(1:nobs), intent(inout) :: Py
+  real(KINDR), dimension(1:nelement), intent(inout) :: P
+  real(KINDR), dimension(1:nelement), intent(inout) :: V
+  real(KINDR), dimension(1:nfix,1:nobs), intent(inout) :: Vhat
+  real(KINDR), dimension(1:nobs,1:nfix), intent(inout) :: temp
+  integer, intent(in), optional :: EmIterations, maxIters
 
-  real(KINDR), dimension(:), allocatable, intent(out)    :: fixEffects
-  type(doublePre_Array),dimension(:), allocatable, intent(out) :: ranEffects
-
-  type(doublePre_Array),dimension(:),allocatable :: theZGZ
-  type(JArr), dimension(:), allocatable      :: f
-  real(KINDR), dimension(:), allocatable    :: oldtheta, Py, P, V, AI, rhs, work
-  real(KINDR)                               :: logl, epsilon = 1.d-6
-  real(KINDR)                               :: val1, val2
-  real(KINDR)                               :: detV, det_xt_vinv_x, yPy
-  integer, dimension(:), allocatable             :: ipiv
-  real(KINDR), dimension(:,:), allocatable  :: Vhat
-  integer                                        :: i, j, emIteration
-  integer                                        :: ifail, iter, maxIter
-  real(KINDR), external                     :: dnrm2, ddot, dasum
+  type(doublePre_Array), dimension(nvar) :: theZGZ
+  type(JArr), dimension((nvar+1)) :: f
+  real(KINDR), dimension((nvar+1)) :: oldtheta
+  real(KINDR), dimension(((nvar+1)*(nvar+2)/2)) :: AI
+  real(KINDR), dimension((nvar+1)) :: rhs
+  real(KINDR), dimension(:), allocatable :: work
+  real(KINDR) :: logl, epsilon = 1.d-6
+  real(KINDR) :: val1, val2
+  real(KINDR) :: detV, det_xt_vinv_x, yPy
+  integer :: i, j, emIteration
+  integer :: ifail, iter, maxIter
+  real(KINDR), external :: dnrm2, ddot, dasum
   !! ================ No defintion after this line ================ !!
-
-  allocate(Py(nobs), Vhat(nfix, nobs))
-  allocate(oldtheta(nvar+1))
-  I = nobs * (nobs + 1) / 2
-  allocate(P(I),V(I))
-  I = (nvar + 1) * (nvar + 2) / 2
-  allocate(AI(I), rhs(nvar + 1))
   I = nobs * nobs
-  allocate(work(I),ipiv(nobs))
+  allocate(work(I))
+  
   ! f is going to contain P*ZGZ_i
-  allocate(f(nvar+1))
   do i = 1, nvar + 1
      allocate(f(i)%array(nobs))
   end do
@@ -64,20 +62,6 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
   else
      maxIter = maxIters
   end if
-
-  allocate(fixEffects(nfix))
-  allocate(raneffects(nran))
-  allocate(raneffects(1)%level(maxid)) ! slope effect (genetic)
-  if (nran == 3) then
-     allocate(raneffects(2)%level(maxid)) ! intercept effect (genetic)
-     allocate(raneffects(3)%level(nobs))   ! environment slope effect (diagonal)
-  elseif (nran == 1) then
-  else
-     write(STDERR, *) " ERROR"
-     write(STDERR, *) " not implemented for nran != 1 or 3"
-     stop 2
-  end if
-
 
   ! order of variances: (As, Ai, Es, Cov, Ei) 
   oldtheta(1:(nvar + 1)) = theta(1:(nvar + 1))
@@ -98,7 +82,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
   end if
 
   ! making G* matrices
-  allocate(theZGZ(nvar))
+!  allocate(theZGZ(nvar))
   i = nobs * (nobs + 1) / 2
   do j = 1, nvar 
      if (j .eq. 3) then
@@ -145,14 +129,14 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
      call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
      if (verbose) write(STDOUT, *) " V is calculated"
 
-     call detInv(nobs, V, detV, ipiv, work, verbose)
+     call detInv(nobs, V, detV, ipiv, Py, verbose) !Py is work array here
      if (verbose) write(STDOUT, *) " V is replaced by its inverse"
 
-     call calculateP(nobs, nfix, V, X, P, det_xt_vinv_x, Vhat, verbose)
+     call calculateP(nobs, nfix, V, X, P, det_xt_vinv_x, Vhat, work, temp, verbose)
      if (verbose) write(STDOUT, *) " P is calcuated"
 
      call calculateLogL(nobs, detV,det_xt_vinv_x,P, y, LogL,Py, yPy, verbose)
-     if (verbose) write(STDOUT, *) " LogL is calculated"
+     if (verbose) write(STDOUT, *) " LogL, Py and yPy are calculated"
      write(STDOUT, '(1x,a8,g25.16)') " LogL = ", logl
 
      call calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, f, verbose)
@@ -171,7 +155,6 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
         call updatetheta(nvar, AI, rhs, theta, verbose)
         if (verbose) write(STDOUT, *) " theta is updated"
      end if
-
      write(STDOUT, *) " variance vector:"
      if (nvar .eq. 1) then
         write(STDOUT, '(a11,2x,a11)') "A", "E"
@@ -205,9 +188,5 @@ subroutine reml(id, X, y, nfix, nobs, maxid, Gmatrix, nvar, nran, theta,&
      end if
      oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
   end do
-
-  call getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
-       Py, y, X, id, fixEffects, ranEffects, verbose)
-
+  deallocate(work)
 end subroutine reml
-

@@ -54,6 +54,3 @@ subroutine poissonProb(mu,k,prob)
   end if
 
 end subroutine poissonProb
-
-
-

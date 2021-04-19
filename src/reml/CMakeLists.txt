@@ -8,6 +8,7 @@ SET(REML_src ${SRCREML}/calculateAImat.f90
 )
 ADD_LIBRARY(${REMLLIB} STATIC ${REML_src})
 
-TARGET_LINK_LIBRARIES(${REMLLIB} ${BLAS_LIBRARIES}
+TARGET_LINK_LIBRARIES(${REMLLIB} ${BLUPLIB}
+				 ${BLAS_LIBRARIES}
                                  ${LAPACK_LIBRARIES}
                                  ${CMAKE_THREAD_LIBS_INIT})

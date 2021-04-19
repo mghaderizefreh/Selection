@@ -19,7 +19,6 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   !             additive effect needs two genotypes
   !             dominance       needs the heterozygote and at least one homozygote
   !========================================================================
-  ! use precision_types
   use constants
   implicit none
 
@@ -108,9 +107,6 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   usedSNP = 0
 
   do isnp = 1, nSNP
-     !if(mod(isnp, k) == 1) write( *, '(a4,4i9,f25.8 )') 'at ', isnp, usedSNP, nSNP,&
-!          k, sumvar
-
      !   counting number of individuals in each genotype class
      do i = 0, 3
         ngen(i) = count(genotypes(1:nanim, isnp) == i)
@@ -200,7 +196,6 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
 
   end do
 
-
   !------------------------------------------------------------------------------
   ! now divide the matrix by a denominator
   ! denominator is sum(genscore var)
@@ -235,7 +230,7 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim, nobs, nSNP,effect,iscaled, ivar,&
   !
   !  IBS for a given pair are calculated only with know genotyped 
   !
-  !!
+  !
   !
   !
   ! ifail  = 0    matrix was calculated without problems
@@ -245,7 +240,6 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim, nobs, nSNP,effect,iscaled, ivar,&
   !             additive effect needs two genotypes
   !             dominance       needs the heterozygote and at least one homozygote
   !========================================================================
-!  use precision_types
   use constants
   implicit none
 
@@ -271,7 +265,6 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim, nobs, nSNP,effect,iscaled, ivar,&
 
   character(len=3) :: theeffect
   integer :: n, usedSNP, igen, ieffect
-  !!,isHomozygote(0:3)
   integer, dimension(0:3) :: ngen
   real(KINDR), dimension(0:3) :: genscore
   real(KINDR), dimension(0:3,0:3) :: IBSstatus

@@ -1,61 +1,59 @@
-subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
-     geneposfile, chrL, mu, ncomp, vars, nQTL, nSNP, MAF, baseNameFreq,&
-     randomQTL, interval, locations, X, nlox, nFarm, farmBounds, &
-     farmInd, farmRange, allocation, selectionType, weight, nobs, means,&
-     analysisType, theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
+subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
+     chrL, mu, nQTL, nSNP, randomQTL, MAF, baseNameFreq, ncomp, vars, nanim,&
+     n_m, n_fpm, n_opf, interval, nlox, nFarm, farmRange, allocation, means,&
+     nobs, selectionType, weight, ngen, VarEst, reactionNorm, analysisType,&
      nfix, nvar, nran, output)
   use constants
   implicit none
   character(len=*), intent(in) :: inputfile ! list of all inputs
-
   logical, intent(out) :: verbose
-  integer, intent(out) :: nanim
+  !!!!!!!!!!!!!!!!!!!! genomic !!!!!!!!!!!!!!!!!!!!
   integer, intent(out) :: nchr
   character(len=100), intent(out) :: genepoolfile
   character(len=100), intent(out) :: geneposfile
   real(KINDR), intent(out) :: chrL
   real(KINDR), intent(out) :: mu
-  integer, intent(out) :: nComp
-  type(variances), intent(out) :: vars
   integer, intent(out) :: nQTL
   integer, intent(out) :: nSNP
+  logical, intent(out) :: randomQTL
   real(KINDR), intent(out) :: MAF
   character(len=100), intent(out) :: baseNameFreq
-  logical, intent(out) :: randomQTL
-  real(KINDR), dimension(2), intent(out) :: interval
-  real(KINDR), allocatable, dimension(:,:), intent(out) :: locations
-  real(KINDR), allocatable, dimension(:,:), intent(out) :: X
-  integer, intent(out) :: nlox
-  integer, intent(out) :: nFarm
-  real(KINDR), allocatable, dimension(:,:), intent(out) :: farmBounds
-  integer, allocatable, dimension(:), intent(out) :: farmInd
-  real(KINDR), intent(out) :: farmRange
-  integer, intent(out) :: allocation ! allocation scenario
-  ! 1 = random, 
-  integer, intent(out) :: selectionType 
-  real(KINDR), allocatable, dimension(:), intent(out) :: weight
-  integer, intent(out) :: nobs
-  real(KINDR), allocatable, dimension(:), intent(out) :: means
-  integer, intent(out) :: analysisType ! 1 = rr, 2 = single location
-  real(KINDR), allocatable, dimension(:), intent(out) :: theta ! for analysis
-  ! 1 = random, 2 = slopeEBV, 3 = interceptEBV, 4 = slopeTBV, 5 = interceptTBV
+  !!!!!!!!!!!!!!!!!!!! genetic !!!!!!!!!!!!!!!!!!!!
+  integer, intent(out) :: nComp
+  type(variances), intent(out) :: vars
+  !!!!!!!!!!!!!!!!!!!! population !!!!!!!!!!!!!!!!!!!!
+  integer, intent(out) :: nanim
   integer, intent(out) :: n_m ! number of males
   integer, intent(out) :: n_fpm ! number of females per male
   integer, intent(out) :: n_opf ! number of offsprings per female
+  !!!!!!!!!!!!!!!!!!!! phenotypic !!!!!!!!!!!!!!!!!!!!
+  real(KINDR), dimension(2), intent(out) :: interval
+  integer, intent(out) :: nlox
+  integer, intent(out) :: nFarm
+  real(KINDR), intent(out) :: farmRange
+  integer, intent(out) :: allocation ! allocation scenario 1,random;2,clust
+  real(KINDR), allocatable, dimension(:), intent(out) :: means
+  integer, intent(out) :: nobs
+  !!!!!!!!!!!!!!!!!!!! selection !!!!!!!!!!!!!!!!!!!!
+  integer, intent(out) :: selectionType !1 = random, 2 = local, 3 = index
+  real(KINDR), allocatable, dimension(:), intent(out) :: weight
   integer, intent(out) :: ngen ! number of generations
-  logical, intent(out) :: doreml ! whether to do a reml or only a blup
+  !!!!!!!!!!!!!!!!!!!! analysis !!!!!!!!!!!!!!!!!!!!
+  integer, intent(out) :: VarEst !how vars are est.(1=reml,2=gen0,3=true)
   logical, intent(out) :: reactionNorm ! whether to estimate farm effects
+  integer, intent(out) :: analysisType !
   integer, intent(out) :: nfix ! number of fixed effects
   integer, intent(out) :: nvar ! number of variance components
   integer, intent(out) :: nran ! number of random effects
+  !!!!!!!!!!!!!!!!!!!! output !!!!!!!!!!!!!!!!!!!!
   character(len=100), intent(out) :: output
-
+  !!!!!!!!!!!!!!!!!!!! dummy variables !!!!!!!!!!!!!!!!!!!!
   character(len = 200) :: line, formato
   integer :: iinput, stat, iun, lno, j, i
   real(KINDR) :: rinput
   logical :: bool
-  lno = 0
 
+  lno = 0
   open(newUnit = iun, file = trim(inputfile))
 
 33 format(a34,": ", l1)
@@ -70,13 +68,7 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   verbose = iinput .eq. 1
   write(STDOUT, 33) "verbose?", verbose
 
-  ! nanim
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read input for nanim", lno)
-  nanim = iinput
-  write(STDOUT, 34) "number of animals/gen", nanim  
-
+  !!!!!!!!!!!!!!!!!!!! genomic !!!!!!!!!!!!!!!!!!!!
   ! number of chrosomomes
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
@@ -123,6 +115,59 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   mu = rinput
   write(STDOUT, 35) "mutation rate", mu
 
+  ! nQTL
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to read number of QTLs", lno)
+  call assert(iinput.gt.0, "nQTL must be > 0", lno)
+  nQTL = iinput
+  write(STDOUT, 34) "number of QTL/chromosome", nQTL
+
+  ! nSNP
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to read number of SNPs", lno)
+  call assert(iinput.gt.0, "number of SNP cannot be < 0", lno)
+  nSNP = iinput
+  write(STDOUT, 34) "number of SNP/chromosome", nSNP
+
+  ! randomQTL
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to read input for randomQTL", lno)
+  randomQTL = iinput .eq. 1
+  write(STDOUT, 33) "Are QTLs random?", randomQTL
+
+  ! MAF
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) rinput
+  call assert(stat.eq.0, "failed to read MAF for finding QTLs", lno)
+  if (.not.randomQTL) then
+     call assert((rinput.ge.ZERO).and.(rinput.lt.HALF), "maf must be &
+          &between 0.0 and 0.5 (incl,excl., respecitvely)",lno)
+     maf = rinput
+     write(STDOUT, 35) "MAF cutoff for QTL", MAF
+  else
+     maf = rinput
+     write(STDOUT, 35) "MAF cutoff for QTL (is ignored)", MAF
+  end if
+
+  ! baseNameFreq
+  call nextInput(iun, line, lno)
+  baseNameFreq = trim(line)
+  if (.not.randomQTL) then
+     do i = 1, nchr
+        write(line, '(a,i3.3)') trim(baseNameFreq),i
+        inquire(file=line, exist = bool)
+        call assert(bool, "error in finding a file for frequenecies with&
+             &as many as chromosomes", lno)
+     end do
+     write(STDOUT, 36) "file for frequnecy", baseNameFreq
+  else
+     write(STDOUT, 36) "file for frequency (is ignored)", baseNameFreq
+  end if
+
+  !!!!!!!!!!!!!!!!!!!! genetic !!!!!!!!!!!!!!!!!!!!
   ! nComp
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
@@ -180,58 +225,40 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      end do
   end do
 
-  ! nQTL
+  !!!!!!!!!!!!!!!!!!!! population !!!!!!!!!!!!!!!!!!!!
+  ! nanim
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read number of QTLs", lno)
-  call assert(iinput.gt.0, "nQTL must be > 0", lno)
-  nQTL = iinput
-  write(STDOUT, 34) "number of QTL/chromosome", nQTL
+  call assert(stat.eq.0, "failed to read input for nanim", lno)
+  nanim = iinput
+  write(STDOUT, 34) "number of animals/gen", nanim  
 
-  ! nSNP
+  ! number of males (n_m)
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read number of SNPs", lno)
-  call assert(iinput.gt.0, "number of SNP cannot be < 0", lno)
-  nSNP = iinput
-  write(STDOUT, 34) "number of SNP/chromosome", nSNP
+  call assert(stat.eq.0, "failed to read n_m", lno)
+  n_m = iinput
+  write(STDOUT, 34) "number of males", n_m
 
-  ! randomQTL
+  ! number of females per males (n_fpm)
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read input for randomQTL", lno)
-  randomQTL = iinput .eq. 1
-  write(STDOUT, 33) "Are QTLs random?", randomQTL
-
-  ! baseNameFreq
+  call assert(stat.eq.0, "failed to read n_fpm", lno)
+  n_fpm = iinput
+  write(STDOUT, 34) "number of females per male", n_fpm
   call nextInput(iun, line, lno)
-  baseNameFreq = trim(line)
-  if (.not.randomQTL) then
-     do i = 1, nchr
-        write(line, '(a,i3.3)') trim(baseNameFreq),i
-        inquire(file=line, exist = bool)
-        call assert(bool, "error in finding a file for frequenecies with&
-             &as many as chromosomes", lno)
-     end do
-     write(STDOUT, 36) "file for frequnecy", baseNameFreq
-  else
-     write(STDOUT, 36) "file for frequency (is ignored)", baseNameFreq
-  end if
 
-  ! MAF
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) rinput
-  call assert(stat.eq.0, "failed to read MAF for finding QTLs", lno)
-  if (.not.randomQTL) then
-     call assert((rinput.ge.ZERO).and.(rinput.lt.HALF), "maf must be &
-          &between 0.0 and 0.5 (incl,excl., respecitvely)",lno)
-     maf = rinput
-     write(STDOUT, 35) "MAF cutoff for QTL", MAF
-  else
-     maf = rinput
-     write(STDOUT, 35) "MAF cutoff for QTL (is ignored)", MAF
-  end if
+  ! number of offspring fer female (n_opf)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to read n_opf", lno)
+  n_opf = iinput
+  write(STDOUT, 34) "number of offspring per female", n_opf
 
+  ! sanity check
+  call assert(n_m*n_fpm*n_opf.eq.nanim, &
+       "n_m x n_fpm x n_opf != nanim", lno)
+
+  !!!!!!!!!!!!!!!!!!!! phenotypic !!!!!!!!!!!!!!!!!!!!
   ! interval (boundaries of X; xmin, xmax)
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) rinput
@@ -245,31 +272,29 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   write(STDOUT, 35) "xmin", interval(1)
   write(STDOUT, 35) "xmax", interval(2)
 
-  ! nlox
+  ! nlox (number of locations or records per individual)
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
   call assert(stat.eq.0, "failed to read number of locations per indiv", lno)
   call assert((iinput.gt.0).and.(iinput.lt.nanim)&
        , "number of locations must be > 0 and < nanim", lno)
   nlox = iinput
-  allocate(locations(nanim, nlox))
   write(STDOUT, 34) "number of locations per individual", nlox
 
-  ! number of farms  
+  ! number of farms
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) iinput
   call assert(stat.eq.0, "failed to read number of farms", lno)
   nFarm = iinput
-  allocate(farmBounds(nfarm, 2))
   write(STDOUT, 34) "number of farms", nFarm
 
-  ! farm range
+  ! farm range (input as proportion)
   call nextInput(iun, line, lno)
   read(line, *, iostat = stat) rinput
   call assert(stat.eq.0, "failed to read range of each farm", lno)
   call assert((rinput.gt.ZERO).and.(rinput.lt.ONE), &
        "farm range must be betwen 0.0 and 1.0 (excl.)", lno)
-  farmRange = rinput
+  farmRange = rinput * (interval(2) - interval(1))
   write(STDOUT, 35) "range of each farm", farmRange
 
   ! allocation scenario
@@ -283,106 +308,11 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
   select case(allocation)
   case(1)
      write(STDOUT, *) "(random)"
+  case(2)
+     write(STDOUT, *) "(clustered)"
+  case default
+     write(STDOUT, *) "UNSPECIFIED!!"
   end select
-
-  ! selection type
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read selection type", lno)
-  call assert((iinput.gt.0).and.(iinput.le.7), &
-       "selection type must be an integer from 1 to 7 incl.", lno)
-  selectionType = iinput
-  write(STDOUT, 34, advance = 'no') "selection type", selectionType
-  select case (selectionType)
-  case(1) 
-     write(STDOUT, *) "(random)"
-  case(2) 
-     write(STDOUT, *) "(EBV slope)"
-  case(3) 
-     write(STDOUT, *) "(EBV intercept)"
-  case(4) 
-     write(STDOUT, *) "(TBV slope)"
-  case(5) 
-     write(STDOUT, *) "(TBV intercept)"
-  case(6)
-     write(STDOUT, *) "(overall performance)"
-  case(7)
-     write(STDOUT, *) "(manual index)"
-     ! weight
-     allocate(weight(ncomp))
-     do i = 1, ncomp
-        call nextInput(iun, line, lno) ! for slope
-        read(line, *, iostat = stat) rinput
-        call assert(stat.eq.0, "failed to read weight", lno)
-        weight(i) = rinput
-        write(formato, '(a, i1)') "weight for comp ", i
-        write(STDOUT, 35) trim(formato), weight(i)
-     end do
-  end select
-
-  ! nobs
-  nobs = size(locations, 2) * nanim
-  write(STDOUT, 34) "number of records", nobs
-
-  ! number of m, fpm, and opf
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read n_m", lno)
-  n_m = iinput
-  write(STDOUT, 34) "number of males", n_m
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read n_fpm", lno)
-  n_fpm = iinput
-  write(STDOUT, 34) "number of females per male", n_fpm
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read n_opf", lno)
-  n_opf = iinput
-  write(STDOUT, 34) "number of offspring per female", n_opf
-  call assert(n_m*n_fpm*n_opf.eq.nanim, &
-       "n_m x n_fpm x n_opf != nanim", lno)
-
-  ! number of generations
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to read number of generations", lno)
-  ngen = iinput
-  write(STDOUT, 34) "number of generations", ngen
-
-  ! analysis type
-  if ((selectionType.eq.1) .or. (selectionType.eq.6)) then
-     analysisType = 2 ! single trait
-  elseif ((selectionType .eq. 2) .or. (selectionType .eq. 3) .or. &
-       (selectionType .eq. 4) .or. (selectionType .eq. 5) .or. &
-       (selectionType .eq. 7)) then
-     analysisType = 1 ! covariate
-  end if
-  write(STDOUT, 34, advance = 'no') "analysis type", analysisType
-  if (analysisType .eq. 1) write(STDOUT, *) "(random regression)"
-  if (analysisType .eq. 2) write(STDOUT, *) "(single trait)"
-
-  ! reml
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to understand wether to do reml", lno)
-  doreml = iinput == 1
-  write(STDOUT, 33) "reml required?" , doreml
-
-  ! reactionNorm
-  call nextInput(iun, line, lno)
-  read(line, *, iostat = stat) iinput
-  call assert(stat.eq.0, "failed to understand wether to estimate farm &
-       &effects", lno)
-  reactionNorm = iinput == 1
-  if ( (selectionType .eq. 1).or.(selectionType .eq. 4).or.&
-       (selectionType .eq. 5)) then
-     write(STDOUT, 33) "estimating farm eff (is ignored)?", reactionNorm
-  elseif ((selectionType.eq.2).or.(selectionType.eq.3)) then
-     write(STDOUT, 33) "estimating farm effects (RN)?", reactionNorm
-  elseif ((selectionType .eq. 6)) then
-     write(STDOUT, 33) "estimating farm effects (ST)?", reactionNorm
-  end if
 
   ! means
   allocate(means(ncomp))
@@ -394,16 +324,90 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      write(formato, '(a6, i1, a1)') "means(",i,")=" 
      write(STDOUT, 35) trim(formato), means(i)
   end do
+  
+  ! nobs
+  nobs = nlox * nanim
+  write(STDOUT, 34) "number of records", nobs
 
-  ! outputfile
+  !!!!!!!!!!!!!!!!!!!! selection !!!!!!!!!!!!!!!!!!!!
+  ! selection type
   call nextInput(iun, line, lno)
-  output = trim(line)
-  write(STDOUT, 36) "output file", trim(output)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to read selection type", lno)
+  call assert((iinput.gt.0).and.(iinput.le.3), &
+       "selection type must be an integer from 1 to 3 incl.", lno)
+  selectionType = iinput
+  write(STDOUT, 34, advance = 'no') "selection type", selectionType
+  select case (selectionType)
+  case(1) 
+     write(STDOUT, *) "(random)"
+  case(2) 
+     write(STDOUT, *) "(overall performance)"
+  case(3)
+     write(STDOUT, *) "(manual index)"
+  case(4)
+     write(STDOUT, *) "(UNSPECIFIED!!)"
+  end select
+     ! weight
+  allocate(weight(ncomp))
+  do i = 1, ncomp
+     call nextInput(iun, line, lno) ! for slope
+     read(line, *, iostat = stat) rinput
+     call assert(stat.eq.0, "failed to read weight", lno)
+     weight(i) = rinput
+     write(formato, '(a, i1)') "weight for comp ", i
+     if (selectionType.ne.3) &
+          write(formato, '(a,a)') trim(formato), "(is ignored)"
+     write(STDOUT, 35) trim(formato), weight(i)
+  end do
 
-  ! making theta
+  ! number of generations
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to read number of generations", lno)
+  ngen = iinput
+  write(STDOUT, 34) "number of generations", ngen
+
+  !!!!!!!!!!!!!!!!!!!! analysis !!!!!!!!!!!!!!!!!!!!
+  ! varEst
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to understand how to compute variances",&
+       lno)
+  call assert(((iinput.ge.1).and.(iinput.le.3)), &
+       "varEst can be 1, 2, 3", lno)
+  varEst = iinput
+  write(STDOUT, 34, advance = 'no') "variance estimate", varEst
+  if (varEst.eq.1) write(STDOUT, *) "(reml)"
+  if (varEst.eq.2) write(STDOUT, *) "(generation 0)"
+  if (varEst.eq.3) write(STDOUT, *) "(true value)"
+
+  ! reactionNorm
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) iinput
+  call assert(stat.eq.0, "failed to understand wether to estimate farm &
+       &effects", lno)
+  reactionNorm = iinput == 1
+  if (selectionType .eq. 1) then
+     write(STDOUT, 33) "estimating farm eff (is ignored)?", reactionNorm
+  elseif (selectionType.eq.2) then
+     write(STDOUT, 33) "estimating farm effects (ST)?", reactionNorm
+  elseif (selectionType .eq.3) then
+     write(STDOUT, 33) "estimating farm effects (RN)?", reactionNorm
+  end if
+
+  ! analysis type
+  if ((selectionType.eq.1) .or. (selectionType.eq.2)) then
+     analysisType = 2 ! single trait
+  elseif (selectionType .eq. 3) then
+     analysisType = 1 ! covariate
+  end if
+  write(STDOUT, 34, advance = 'no') "analysis type", analysisType
+  if (analysisType .eq. 1) write(STDOUT, *) "(random regression)"
+  if (analysisType .eq. 2) write(STDOUT, *) "(single trait)"
+
+  ! setting number of fixed and random effects and variance compoentns
   if (analysisType .eq. 2) then
-     allocate(theta(2))
-     theta(1:2) = ZERO
      nvar = 1
      nran = 1
      if (reactionNorm) then
@@ -415,32 +419,23 @@ subroutine readInput(inputfile, verbose, nanim, nchr, genepoolfile, &
      nran = 3 ! Ai, As, Es
      nfix = 2 ! mu_i, mu_s
      if (vars%corr(1,2) .eq. ZERO) then
-        allocate(theta(4))
         nvar = 3 ! var_Ai, var_As, var_Es, (excl. var_Ei)
      else
-        allocate(theta(5))
         nvar = 4 ! var_Ai, var_As, var_Es, cov, (excl. var_Ei)
-        theta(4) = vars%cov(1,2)
      end if
-     theta(1:2) = vars%A(1:2)
-     theta(3) = vars%E(1)
-     theta(nvar+1) = vars%E(2)
   else
   end if
   write(STDOUT, 34) "number of fix effects", nfix
   write(STDOUT, 34) "number of variance components", nvar
-  do i = 1, nvar + 1
-     write(formato, '(a6, i1,a1)') "theta(", i,")"
-     write(STDOUT, 35) trim(formato), theta(i)
-  end do
+  write(STDOUT, 34) "number of random effects", nran
 
-  ! dealing with X
-  allocate(X(nobs, nfix))
-  X(1:nobs, 1:nfix) = ZERO
+  !!!!!!!!!!!!!!!!!!!! output !!!!!!!!!!!!!!!!!!!!
+  ! outputfile
+  call nextInput(iun, line, lno)
+  output = trim(line)
+  write(STDOUT, 36) "output file", trim(output)
 
-  ! farm ind
-  allocate(farmInd(nobs))
-
+  !!!!!!!!!!!!!!!!!!!! FINISHED !!!!!!!!!!!!!!!!!!!!
   write(STDOUT, '(a,i4,a)') "all inputs read in", lno, " lines"
   close(iun)
 end subroutine readInput

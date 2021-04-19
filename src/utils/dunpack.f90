@@ -3,14 +3,14 @@ subroutine dunpack(uplo, n, ap, a, lda, info)
   implicit none
   ! unpacks a real(KINDR) vector to a full matrix. The difference with the lapack method is
   ! that here I pack both upper and lower part of the matrix
-  character(len = 1), intent(in)                                      :: uplo ! not used just kept for consistency
-  integer, intent(in)                                                 :: n, lda
-  real(KINDR), dimension(:), intent(in)                          :: ap
-  real(KINDR), dimension(:,:), intent(inout)                     :: a
-  integer, intent(out)                                                :: info
-  integer                                                             :: i, j, k
+  character(len = 1), intent(in) :: uplo ! not used just kept for consistency
+  integer, intent(in) :: n, lda
+  real(KINDR), dimension(1:(n*(n+1)/2)), intent(in) :: ap
+  real(KINDR), dimension(1:n,1:n), intent(out) :: a
+  integer, intent(out) :: info
+  integer :: i, j, k
 
-  if (uplo == 'L')then
+  if (uplo == 'L') then
   end if
 
   if (n .ne. lda) then

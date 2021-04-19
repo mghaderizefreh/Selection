@@ -13,26 +13,18 @@ SET(SEL_src ${MAIN}/selection.f90)
 # Define the executable in terms of the source files
 ADD_EXECUTABLE(${analysis} ${analysis_src})
 ADD_EXECUTABLE(${SEL} ${SEL_src})
-#ADD_EXECUTABLE(${SA} ${SA_src})
-#ADD_EXECUTABLE(${SA2} ${SA2_src})
-#ADD_EXECUTABLE(${FE} ${FE_src})
 
 #####################################################
 # Add the needed libraries and special compiler flags
 #####################################################
 
 # This links exes to the their libraries
-TARGET_LINK_LIBRARIES(${analysis} ${UTILLIB} ${BLUPLIB} ${REMLLIB} ${SORTLIB})
-TARGET_LINK_LIBRARIES(${SEL} ${MATHLIB} ${RNGLIB} ${EVOLLIB} ${BLUPLIB} ${REMLLIB} ${SORTLIB} ${UTILLIB})
-#TARGET_LINK_LIBRARIES(${SA} ${UTILLIB} ${SORTLIB} ${RNGLIB})
-#TARGET_LINK_LIBRARIES(${SA2} ${UTILLIB} ${RNGLIB} ${EVOLLIB} ${SORTLIB})
-#TARGET_LINK_LIBRARIES(${FE} ${UTILLIB} ${SORTLIB} ${REMLLIB} ${BLUPLIB})
+TARGET_LINK_LIBRARIES(${analysis} ${REMLLIB})
+TARGET_LINK_LIBRARIES(${SEL} ${EVOLLIB} ${REMLLIB})
 
 # Uncomment if you need to link to BLAS and LAPACK
 TARGET_LINK_LIBRARIES(${analysis} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 TARGET_LINK_LIBRARIES(${SEL} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-#TARGET_LINK_LIBRARIES(${SA} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-#TARGET_LINK_LIBRARIES(${SA2} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 # Uncomment if you have parallization
 #IF(USE_OPENMP)

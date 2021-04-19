@@ -18,11 +18,13 @@ program analysis
   character(len=30) :: status, eStatus, formato
   logical :: verbose
   integer :: ifail, doreml
-  integer :: i, j, k, maxid, nvar, nobs, nfix, nran
+  integer :: i, j, k, maxid, nvar, nobs, nfix, nran, nelement
   integer :: phenFileID, AmatFileID, iunFix, iunRan, iunVar
   integer :: lines, empties, emiteration, maxIter
   integer, dimension(:), allocatable :: id ! real(KINDR) id of animals
   integer, dimension(:), allocatable :: levels
+  integer, allocatable, dimension(:) :: ipiv
+  real(KINDR), allocatable, dimension(:) :: Py
 
   real(KINDR) :: val1, val2
   real(KINDR), dimension(:), allocatable :: y ! phenotypes
@@ -32,7 +34,8 @@ program analysis
   real(KINDR), dimension(:), allocatable :: theta, oldtheta
   type (doublePre_Array), dimension(:), allocatable :: raneff
   real(KINDR), allocatable, dimension(:) :: fixEff
-
+  real(KINDR), allocatable, dimension(:) :: P, V
+  real(KINDR), allocatable, dimension(:,:) :: Vhat, temp
   !! ================ No defintion after this line ================ !!
 
   call askYesNoInteger(i, " should the program be verbose? (0:No, 1:Yes) ", 0)
@@ -116,10 +119,24 @@ program analysis
         if (maxid < id(i)) maxid = id(i)
      end do
   else
-     write(6, *) 'error'
-     stop
+     write(STDERR, '(a)') 'Error:'
+     write(STDERR, *) "Not implemented"
+     stop 2
   end if
   close(phenFileID)
+
+  allocate(fixeff(nfix))
+  allocate(raneff(nran))
+  allocate(raneff(1)%level(maxid)) ! slope effect (genetic)
+  if (nran == 3) then
+     allocate(raneff(2)%level(maxid)) ! intercept effect (genetic)
+     allocate(raneff(3)%level(nobs))   ! environment slope effect (diagonal)
+  elseif (nran == 1) then
+  else
+     write(STDERR, *) " ERROR"
+     write(STDERR, *) " not implemented for nran != 1 or 3"
+     stop 2
+  end if
 
   write(msg, '(a28)') "file for relationship matrix"
   eStatus = "old"
@@ -141,8 +158,11 @@ program analysis
 74 continue
   close(AmatFileID)
 
-  i = (maxid + 1) * maxid / 2 
+  i = (maxid + 1) * maxid / 2
   allocate(temAmat(i))
+
+  nelement = (nobs + 1) * nobs / 2
+  allocate(P(nelement), V(nelement))
 
   j = 0 ! file is not binary
   k = 0 ! number of lines to skip
@@ -210,6 +230,11 @@ program analysis
 
   call askYesNoInteger(doreml, " is a reml required (1:Yes, 0:No)?", 1)
 
+  allocate(Vhat(nfix, nobs))
+  allocate(temp(nobs, nfix))
+  allocate(ipiv(nobs))
+  allocate(py(nobs))
+
   if (doreml == 1) then
      call askInteger(emiteration, " number of EM iterations (in case reml): ")
      call askInteger(maxIter, &
@@ -217,13 +242,13 @@ program analysis
   end if
 
   if (doreml == 1) then
-     call Reml(id, X, y, nfix, nobs, maxid, temAmat, nvar, nran, theta, &
-          fixEff, ranEff, verbose, emIterations = emIteration, &
-          maxIters = maxIter)
-  else
-     call Blup(id, X, y, nfix, nobs, maxid, temAmat, nvar, nran, theta, &
-          fixEff, ranEff, verbose)
+     call Reml(id, X, y, nfix, nobs, maxid, nelement, temAmat, nvar, nran,&
+          theta, verbose, ipiv, Py, P, V, Vhat, temp, &
+          emIterations = emIteration, maxIters = maxIter)
   end if
+  call Blup(id, X, y, nfix, nobs, maxid, nelement, temAmat, nvar, nran,&
+       theta, fixEff, ranEff, verbose, ipiv, Py, P, V, Vhat, temp)
+
 
   if (verbose) write(STDOUT, *) 'fixed effects: ' , fixeff(1 : nfix)
 

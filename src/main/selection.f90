@@ -10,7 +10,7 @@ program selection
   implicit none
 
   logical :: verbose
-  integer :: nanim, nloci, nblock, maxloci, maxblock, ifail, nChr
+  integer :: nanim, nloci, nblock, maxloci, maxblock, ifail, nChr, nelement
   character(len=100) :: startFile, filename1, filename2, inputfile
   character(len=100) :: baseNameFreq, outputfile
   integer :: iunoutput
@@ -23,8 +23,10 @@ program selection
   logical, dimension(:), pointer :: sex !true = male, false = female
   integer, dimension(:,:,:), pointer :: parentGen, offGen!, this
 
-  logical :: doreml, randomQTL, reactionNorm
-
+  logical :: randomQTL, reactionNorm
+  integer :: varEst
+  real(KINDR), allocatable, dimension(:) :: P, V
+  real(KINDR), allocatable, dimension(:,:) :: Vhat, temp
   real(KINDR), dimension(2) :: interval
   real(KINDR) :: farmRange, maf
   real(KINDR), dimension(:,:), allocatable :: locations, farmBounds, X !incidence matrix
@@ -35,6 +37,9 @@ program selection
   integer :: nSNP, nQTL, nComp
   integer, dimension(:,:), allocatable :: SNPlist
   type(QTL_Array) :: QTLlist
+
+  integer, allocatable, dimension(:) :: chr_nlocibefore, ipiv
+  real(KINDR), allocatable, dimension(:) :: Py
 
   real(KINDR), allocatable, dimension(:,:) :: TBV, CTE
   real(KINDR), allocatable, dimension(:) :: Amat, means, phenotypes, theta, fixeff
@@ -53,7 +58,7 @@ program selection
   integer :: maxchiasma, maxmutations
   ! counters
   integer :: i, j, k, iChr, iGam, id, igen
-  real(KINDR) :: val1, val2
+  real(KINDR) :: val1, val2, val3, val4
   character(len=30) :: status, estatus
 
   startfile = "inicio.dat"
@@ -71,22 +76,21 @@ program selection
      stop 2
   end if
 
-  call readInput(inputfile, verbose, nanim, nchr, filename1, filename2,&
-       chrL, mutationRate, ncomp, vars, nQTL, nSNP, MAF, baseNameFreq,&
-       randomQTL, interval, locations, X, nlox, nFarm, farmBounds,&
-       farmInd, farmRange, allocation, selectionType, weight, nobs, means,&
-       analysisType, theta, n_m, n_fpm, n_opf, ngen, doreml, reactionNorm,&
-       nfix, nvar, nran, outputfile)
+  call readInput(inputfile, verbose, nchr, filename1, filename2,&
+       chrL, mutationRate, nQTL, nSNP, randomQTL, MAF, baseNameFreq, ncomp, &
+       vars, nanim, n_m, n_fpm, n_opf, interval, nlox, nFarm, farmRange, &
+       allocation, means, nobs, selectionType, weight, ngen, VarEst, &
+       reactionNorm, analysisType, nfix, nvar, nran, outputfile)
 
-  call defineFarms(interval, nfarm, farmRange, farmBounds)
-
-  open(1, file = 'farms.txt')
-  do i = 1, nfarm
-     write(1, *) farmBounds(i, 1), farmBounds(i, 2)
-  end do
-  close(1)
-
-  open(newUnit = iunoutput, file = outputfile)
+  ! the rest of allocations
+  allocate(farmBounds(nfarm, 2))
+  farmBounds(1:nfarm, 2) = ZERO
+  allocate(locations(nanim, nlox))
+  locations(1:nanim, 1:nlox) = ZERO
+  allocate(X(nobs, nfix))
+  X(1:nobs, 1:nfix) = ZERO
+  allocate(farmInd(nobs))
+  farmInd(1:nobs) = 0
   allocate(indiv(nanim), sex(nanim), CTE(nComp, 2))
   indiv= (/( i, i = 1, nanim )/)
   ! the array sex corresponds to the new generation (before selection)
@@ -98,8 +102,42 @@ program selection
   allocate(ids(nobs), phenotypes(nobs))
   allocate(genome1(nChr))
   allocate(genome2(nChr))
+  allocate(SNPlist(nChr, nSNP))
+  allocate(QTLlist%indices(nChr, nQTL), QTLlist%values(nChr, nQTL, nComp))
   allocate(TBV(nanim, ncomp))
+  i = nAnim * (nAnim + 1) / 2 
+  allocate(AMat(i))
+  allocate(fixeff(nfix))
+  allocate(raneff(nran))
   maxid = nanim ! maxval(indiv)
+  allocate(raneff(1)%level(maxid)) ! slope effect (genetic)
+  if (nran == 3) then
+     allocate(raneff(2)%level(maxid)) ! intercept effect (genetic)
+     allocate(raneff(3)%level(nobs))   ! environment slope effect (diagonal)
+  elseif (nran == 1) then
+  else
+     write(STDERR, *) " ERROR"
+     write(STDERR, *) " not implemented for nran != 1 or 3"
+     stop 2
+  end if
+  allocate(chr_nlocibefore(nchr))
+  allocate(ipiv(nobs),Py(nobs))
+  nelement = nObs * (nObs + 1) / 2 ! size V matrix, P, etc.
+  allocate(P(nelement), V(nelement))
+  allocate(Vhat(nfix, nobs))
+  allocate(temp(nobs, nfix))
+  ! for covariate analysis, 2 step RN is required
+  allocate(FarmIndReal(nobs), farmEffects(nfarm))
+  allocate(theta(nvar+1))
+     
+  call defineFarms(interval, nfarm, farmRange, farmBounds)
+  open(1, file = 'farms.txt')
+  do i = 1, nfarm
+     write(1, *) farmBounds(i, 1), farmBounds(i, 2)
+  end do
+  close(1)
+
+  open(newUnit = iunoutput, file = outputfile)
   ! ==============================================
   ! simulating first individuals from genepool
   ! ==============================================
@@ -127,7 +165,7 @@ program selection
   call getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomQTL, genome1,&
        QTLlist, SNPlist, vars%cov, baseNameFreq, maf)
   if (verbose) write(STDOUT, '(a)') "QTL and SNP list simulated"
-  !! saving QTL list
+  ! saving QTL list
   !open(1, file = "QTLlist.txt")
   !do ichr = 1, nchr
   !   do i = 1, nQTL
@@ -147,15 +185,9 @@ program selection
   ! Simulating TBV
   ! ================================================================
   if (verbose) write(STDOUT, '(a,i2)') "simulating BV for generation", 0
-  call SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome1,&
-       QTLlist, SNPlist, TBV, verbose)
+  call SimulateTBV(nAnim, nChr, nComp, indiv, genome1, chr_nlocibefore,&
+       QTLlist, TBV, verbose)
   if (verbose) write(STDOUT, '(a)') "breeding values simulated"
-!  open(1,file = 'tbvinitial1')
-!  do i = 1, nanim
-!     write(1, *) (tbv(i,j), j = 1, ncomp)
-!  end do
-!  close(1)
- 
   ! getting scaling factor for QTL 
   ! col 1 is scaling, col 2 is shifting
   do i = 1, nComp
@@ -166,27 +198,20 @@ program selection
      CTE(i, 2) = sum(TBV(1:nAnim, i)) / nAnim
      TBV(1:nAnim, i) = TBV(1:nAnim, i) - CTE(i, 2)
   end do
-  ! saving first TBV and the QTLlist
-!  open(1,file = 'tbvinitial2')
-!  do i = 1, nanim
-!     write(1, *) (tbv(i,j), j = 1, ncomp)
-!  end do
-!  close(1)
-!  open(1, file = 'qtllist')
-!  do i = 1, nchr
-!    do j = 1, nqtl
-!        write(1, *) (qtlList%values(i,j,k), k = 1, ncomp)
-!     end do
-!  end do
-!  close(1)
-!! calling simtbv again to check if this scaling was correct
-!  call SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome1,&
-!       QTLlist, SNPlist, TBV, verbose)
-!  open(1,file = 'tbvinitial3')
-!  do i = 1, nanim
-!     write(1, *) (tbv(i,j) - cte(j,2), j = 1, ncomp)
-!  end do
-!  close(1)
+  !! saving first TBV and the QTLlist
+  !open(1,file = 'tbvinitial')
+  !do i = 1, nanim
+  !   write(1, *) (tbv(i,j), j = 1, ncomp)
+  !end do
+  !close(1)
+  !open(1, file = 'qtllist')
+  !do i = 1, nchr
+  !  do j = 1, nqtl
+  !      write(1, *) i,qtlList%indices(i,j),(qtlList%values(i,j,k), &
+  !           k = 1, ncomp)
+  !   end do
+  !end do
+  !close(1)
 
   ! ================================================================
   ! Simulating Phenotypes
@@ -195,8 +220,8 @@ program selection
   i = allocation
   allocation = 1 ! temporary allocation is set to 1 because in the first
   ! generation we do not know the pedigree therefore we can do only random
-  call allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, farmRange,&
-       farmInd, locations)
+  call allocateInd(nAnim, nlox, nobs, nfarm, allocation, farmBounds, &
+       farmRange, farmInd, locations)
   allocation = i
   if (verbose) write(STDOUT, '(a)') "individuals allocated"
 
@@ -214,17 +239,8 @@ program selection
 
   ! only for the first generation
   ! a very simple guestimate for theta
-  if (nran == 1) then
-     val1 = (interval(1) + interval(2)) / 2 ! x=x_middle
-     ! nominator
-     val2 = val1 * val1 * vars%A(1) + vars%A(2) + 2 * val1 * vars%cov(1,2)
-     ! denominator
-     val1 = val2 + val1 * val1 * vars%E(1) + vars%E(2)
-     val1 = val2 / val1
-     if (verbose) write(STDOUT, '(a,f15.7)') 'estimated heritability: ', val1
-     theta(1) = variance(phenotypes, nobs) * val1
-     theta(2) = variance(phenotypes, nobs) * (ONE - val1)
-  end if
+  call getGen0Variance(nvar, nran, nanim, nobs, interval, &
+       vars, phenotypes, theta)
   
   ParentGenome => genome1
   Offgenome    => genome2
@@ -249,29 +265,19 @@ program selection
      ! ================================================================
      genSel: select case (selectionType)
      case (1) ! random
-        if (igen == 1) then
-           allocate(raneff(1))
-           allocate(raneff(1)%level(nanim))
-        end if
-        i = 1
-        call random_number(raneff(i)%level(1:nanim))
+        call random_number(raneff(1)%level(1:nanim))
         ! selectByIntercept needs raneff of size 1 (or size 2 but then effects must be on the second)
         write(iunoutput, '(2(1x,a15),2(1x,f15.7))') "NaN", "NaN", &
              correlation(raneff(1)%level, TBV(:,1), nanim),&
              correlation(raneff(1)%level, TBV(:,2), nanim)
-     case (2, 3, 6, 7) ! slope ebv or interceept ebv
-        ! reaction norm means x must be re-written
+     case (2,3) ! requires analysis
         RN: if (reactionNorm) then
-           if ((selectionType.eq.2).or.(selectionType.eq.3).or.&
-                (selectionType.eq.7)) then
-              ! for covariate analysis, 2 step RN is required
-              if (.not.allocated(farmIndReal)) &
-                   allocate(FarmIndReal(nobs), farmEffects(nfarm))
+           if (selectionType.eq.3) then
               ! converting to double as leastSquare takes double
               farmIndReal(1:nobs) = dble(farmInd(1:nobs))
               ! step 1: farm effects
               call leastSquare(verbose, nobs, nfarm, ids, farmIndReal,&
-                   phenotypes, farmEffects)
+                   phenotypes, farmEffects, ipiv, Py)
               ! scaling farmeffects to [xmin, xmax]
               val1 = minval(farmEffects)
               val2 = maxval(farmEffects)
@@ -279,12 +285,13 @@ program selection
                    (val2 - val1)*(interval(2) - interval(1)) + interval(1)
               ! replacing scaled farmeffects with challenge levels
               X(1:nobs, 1) = farmEffects(farmInd(1:nobs))
-           elseif (selectionType.eq.6) then
+           elseif (selectionType.eq.2) then
               do i = 1, nobs ! removing the first farm
                  if (farmInd(i) .eq. 1) cycle
                  X(i, farmInd(i) - 1) = ONE
               end do
               !!!!!!!!!!
+              !! writing the incidence matrix
               !write(formato, '(a,i2.2)') "incidence", igen - 1
               !open(1, file = trim(formato))
               !333 format(14(f3.1,1x), f3.1)
@@ -294,36 +301,37 @@ program selection
               !close(1)
            end if
         end if RN
-
         !! writing all chromosomes
-        !do ichr = 1, nchr
-        !   write(filename1, '(a,i2.2,a1,i3.3)') "genchr", igen, '.', iChr
-        !   open(1, file = trim(filename1))
-        !   write(formato, '(a1, i10, a6)' ) '(', parentGenome(ichr)%nblock, 'i12)'
-        !   write(1, *) nanim, parentGenome(ichr)%nloci, parentGenome(ichr)%nblock, 0
-        !   do id =1 , nanim
-        !      do igam = 1, 2
-        !         write(1, formato) parentGenome(ichr)%genotypes(id, igam, 1:parentGenome(ichr)%nblock)
-        !      end do
-        !   end do
-        !   close(1)
-        !end do
+        do ichr = 1, nchr
+           write(filename1, '(a,i2.2,a1,i3.3)') "genchr", igen, '.', iChr
+           open(1, file = trim(filename1))
+           write(formato, '(a1, i10, a6)' ) '(', parentGenome(ichr)%nblock, 'i12)'
+           write(1, *) nanim, parentGenome(ichr)%nloci, parentGenome(ichr)%nblock, 0
+           do id =1 , nanim
+              do igam = 1, 2
+                 write(1, formato) (parentGenome(ichr)%genotypes(id, igam, i), &
+                      i = 1, parentGenome(ichr)%nblock)
+              end do
+           end do
+           close(1)
+        end do
 
         ! making Gmatrix
         iscaled = 1 !(0:no, 1:yes)
         ivar  = 1 !(0:sample, 1:2pq, 2:2p'q')
         j = 0 ! imiss (0:mean, 1:ignore)
         i = 1 ! addDom (1:additive, 2:dominance)
-        call getGmatrix(nanim, nChr, nSNP, indiv, ParentGenome, SNPlist, &
-             iscaled, ivar, j, i, Amat, verbose)
-        !!!writing AMAT to disk
+        call getGmatrix(nanim, nChr, nSNP, indiv, ParentGenome, SNPlist,&
+             chr_nlocibefore, iscaled, ivar, j, i, Amat, verbose)
+        !writing AMAT to disk
         !i = maxval(indiv)
         !k = 1
         !do while (i >= 10)
         !   i = i / 10
         !   k = k + 1
         !end do
-        !open( 1, FILE = "AMAT.txt", STATUS = 'unknown' )
+        !write(formato, '(a4,i2.2,a4)') "AMAT", igen - 1, ".txt"
+        !open( 1, FILE = trim(formato), STATUS = 'unknown' )
         !i = nanim * ( nanim + 1 ) / 2
         !write(formato,'(a2,i1,a5,i1,a22)')'(i',k,',1x,i',k,&
         !     ',1x,g24.15,i9,g24.15)'
@@ -336,30 +344,56 @@ program selection
         !   end do
         !end do
         !close(1)
-
         !=========================================
+        varianceEstimation: select case(varEst)
+        case(1) ! do reml
+           i = 0 ! number of em iterations
+           j = 20 ! number of ai iterations
+           call reml(ids, X, phenotypes, nfix, nobs, maxid, nelement, Amat,&
+                nvar, nran, theta, verbose, ipiv, Py, P, V, Vhat, temp, i, j)
+           ! reml may fail however
+           i = nvar +1
+           if ( any(theta(1:2)<0) .or. ( (nran==3) .and. &
+                ( (theta(3)<0) .or. (theta(i)<0) ) ) ) then
+              write(STDERR, '(a)') "Error:"
+              write(STDERR, *) "REML failed to obtain variance components"
+              stop 2
+           end if
+        case(2) ! use from generation 0
+           call getGen0Variance(nvar, nran, nanim, nobs, interval, vars, &
+                phenotypes, theta)
+        case(3) ! use true values
+           call getTrueVariance(nvar, nran, nanim, ncomp, nobs, interval, &
+                vars, tbv, phenotypes, theta)
+        end select varianceEstimation
         
-        if (doreml) then
-           call reml(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar,&
-                nran, theta, fixEff, ranEff, verbose, 0, 20)
-        else
-           call blup(ids, X, phenotypes, nfix, nobs, maxid, Amat, nvar,&
-                nran, theta, fixEff, ranEff, verbose)
-        end if
+        ! now calculating effects
+        call blup(ids, X, phenotypes, nfix, nobs, maxid, nelement, Amat,&
+             nvar, nran, theta, fixeff, raneff, verbose, ipiv, Py, P, V, &
+             temp, Vhat)
 
+        !! write ebvs
+        !write(formato, '(a3,i2.2)') 'ebv', igen
+        !open(1, file = trim(formato))
+        !k = 1
+        !if (nran == 3) k = k + 1
+        !do i = 1, nanim
+        !   write(1, *) (raneff(j)%level(i), j = 1, k)
+        !end do
+        !close(1)
         if (verbose) write(STDOUT, '(a)') "Genomic evaluation done"
         
         ! -----------------------------------
         ! getting ebv accuracy
         ! ----------------------------------
-        if ((selectionType.eq.2).or.(selectionType.eq.3).or.(selectionType.eq.7)) then
+        if (selectionType.eq.3) then
            write(iunoutput, '(2(1x,f15.7))', advance = 'no') fixEff(1:nfix)
-        elseif (selectionType.eq.6) then
+        elseif (selectionType.eq.2) then
            write(iunoutput, '(a15,1x,f15.7)', advance= 'no') "NaN", fixEff(nfix)
         end if
         do i = 1, 2
            j = i
-           if ((i == 2) .and. (selectionType == 6)) j = 1
+           if ((i == 2) .and. (selectionType == 2)) j = 1
            val1 = correlation(raneff(j)%level, TBV(:,i), nanim)
            write(6, *) 'accuracy', i, val1
            write(iunoutput, '(1x,f15.7)', advance = 'no') val1
@@ -368,26 +402,15 @@ program selection
         !====================================
         ! selection
         !====================================
-        ! i is used in selectMates, if st==2|6 -> i=1, if st==3 -> i=2
-        i = merge(selectionType - 1, 1, selectionType .ne. 6)
-        if (selectionType.eq.7) then
-           i = 1
+        ! i is used in selectMates, (new implementation ==> i = 1 always)
+        if (selectionType.eq.3) then
            ranEff(1)%level(1:nanim) = weight(1) * ranEff(1)%level(1:nanim) +&
                 weight(2) * ranEff(2)%level(1:nanim)
         end if
-     case (4, 5)
-        if (igen == 1) then
-           allocate(raneff(3))
-           allocate(raneff(1)%level(nanim), raneff(2)%level(nanim), raneff(3)%level(nobs))
-        end if
-        raneff(1)%level(1:nanim) = TBV(1:nanim, 1)! random effects are true values
-        raneff(2)%level(1:nanim) = TBV(1:nanim, 2)! random effects are true values
-        raneff(3)%level(1:nobs) = ZERO
-        i = selectionType - 3
-        write(iunoutput, '(4(1x,a15))') "NaN", "NaN", "NaN", "NaN"
      end select genSel
+     i = 1 ! new implementation i = 1 always, (todo: use Py instead)
      call selectParents(nanim, indiv, sex, n_m, n_fpm, male, female,&
-          ranEff(i)%level, verbose)
+          ranEff(i)%level)
      if (verbose) write(STDOUT, '(a)') "selection done"
      
      ! making pedigree for next generation based on selected parents
@@ -442,23 +465,24 @@ program selection
      ! ===========================================
      ! getting breeding values
      if (verbose) write(STDOUT, '(a,i2)') "simulating BV for generation", igen
-     call SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, ParentGenome,&
-          QTLlist, SNPlist, TBV, verbose)
+     call SimulateTBV(nAnim, nChr, nComp, indiv, ParentGenome, &
+          chr_nlocibefore, QTLlist, TBV, verbose)
      if (verbose) write(STDOUT, '(a)') "breeding values simulated"
 
      ! shifting true breeding values
      do i = 1, nComp
         TBV(1:nAnim, i) = TBV(1:nAnim, i) - CTE(i, 2)
      end do
-!     write(filename1, '(a,i2.2)') "TBV.G", igen
-!     open(1, file = trim(filename1))
-!     do i = 1, nanim
-!        write(1, *) (tbv(i,j), j = 1, ncomp)
-!     end do
-!     close(1)
+     !! writing tbv
+     !write(filename1, '(a,i2.2)') "TBV.G", igen
+     !open(1, file = trim(filename1))
+     !do i = 1, nanim
+     !   write(1, *) (tbv(i,j), j = 1, ncomp)
+     !end do
+     !close(1)
 
      if (verbose) write(STDOUT, '(a)') "allocating individuals"
-     call allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
+     call allocateInd(nAnim, nlox, nobs,nfarm, allocation, farmBounds, &
           farmRange, farmInd, locations, pedigree = pedigree, nm = n_m,&
           male = male)
      if (verbose) write(STDOUT, '(a)') "individuals allocated"
@@ -469,6 +493,7 @@ program selection
           TBV, vars, means, nobs, locations, ids, phenotypes, "cov", X)
      if (verbose) write(STDOUT, '(a)') "Phenotypes simulated"
 
+     !! phenotyp file
      !write(filename1, '(a,i2.2)') "phen", igen
      !open(1, file = trim(filename1))
      !do i = 1, nobs
@@ -476,12 +501,16 @@ program selection
      !end do
      !close(1)
 
-     write(6, 68) sum(tbv(1:nanim,1))/nanim,sum(tbv(1:nanim,2))/nanim
+     val1 = sum(tbv(1:nanim,1))/nanim
+     val2 = sum(tbv(1:nanim,2))/nanim
+     val3 = variance(tbv(1:nanim,1), nanim)
+     val4 = variance(tbv(1:nanim,2), nanim)
+     !write(6, 68) val1, val2
+
 68   format("slope: ", g25.14, "; intercept: ", g25.14)
-     
+
      write(iunoutput, '(i3,4(1x,f15.7))', advance = 'no') igen, &
-          sum(tbv(1:nanim,1))/nanim, sum(tbv(1:nanim,2))/nanim, &
-          variance(tbv(1:nanim,1), nanim), variance(tbv(1:nanim,2), nanim)
+          val1, val2, val3, val4
 
   end do gen
   write(iunoutput, '(4(1x,a15))') "NaN",  "NaN",  "NaN",  "NaN"

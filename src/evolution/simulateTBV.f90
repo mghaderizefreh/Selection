@@ -1,61 +1,49 @@
 ! Written by Masoud Ghaderi. Documented on 4 Nov, 2019
-subroutine SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome, QTLlist, SNPlist,&
-     TBV, verbose)
+subroutine SimulateTBV(nAnim, nChr, nComp, indiv, genome, chr_nlocibefore,&
+     QTLlist, TBV, verbose)
 
   use constants
   implicit none
 
-  integer, intent(in) :: nAnim, nChr, nComp, nSNP
+  integer, intent(in) :: nAnim, nChr, nComp
   integer, dimension(nanim), intent(in) :: indiv
   type(chromosome), dimension(nChr), intent(in) :: genome
+  integer, dimension(nchr), intent(inout) :: chr_nlocibefore
   type(QTL_Array), intent(in) :: QTLlist
-  integer, dimension(nChr, nSNP) :: SNPlist
   real(KINDR), dimension(1:nAnim, 1:nComp), intent(out) :: TBV
   logical, intent(in) :: verbose
 
-  integer, dimension (:), allocatable, save :: haplotype1, haplotype2
-  integer, dimension (:), allocatable, save :: chr_nlocibefore, pruningSNP
-  real(KINDR), dimension(:,:), allocatable, save :: effect
-  integer, save :: totLoci, totQTL
+  integer, dimension(:), allocatable :: haplotype1, haplotype2
+  real(KINDR), dimension(:,:), allocatable :: effect
+  integer, save :: totLoci = 0, maxBlock = 0
   integer :: i, j, k, id, iloci, a1, a2, nloci, nblock
   integer :: iblck1, ibit1
   integer :: ichr
 
-  j = 0
-  k = 0
-  
-  ! eval totLoci, totQTL, chr_nlocibefore, pruningSNP and effect
-  if (.not.allocated(chr_nlocibefore)) then
-     allocate(chr_nlocibefore(nChr))
-     i = 0
-     totLoci = 0
+  if (totLoci .eq. 0) then
+     ! eval totLoci, totQTL, chr_nlocibefore
      do ichr = 1, nchr
-        if ( genome(ichr)%nblock > i ) i = genome(ichr)%nblock !i=maxblock
+        if (genome(ichr)%nblock > maxBlock) maxBlock = genome(ichr)%nblock
         chr_nlocibefore(ichr) = totLoci
         totLoci               = totLoci + genome(ichr)%nloci
      end do
-     allocate(effect(totLoci, nComp), pruningSNP(totLoci))
-     effect(1:totLoci, 1:nComp) = ZERO
-     pruningSNP(1:totLoci) = 0
-     ! reading SNP effects and list of SNP chip (different lists)
-     do iChr = 1, nChr
-        pruningSNP(SNPlist(iChr,1:nSNP) + chr_nlocibefore(ichr)) = 1
-     end do
-     totQTL = nChr * QTLlist%nQTL
   end if
 
+  allocate(haplotype1(maxBlock), haplotype2(maxBlock))
+  allocate(effect(totLoci, nComp))
+  effect(1:totLoci, 1:nComp) = ZERO
+
+  ! reading effects
   do iChr = 1, nChr
      effect(QTLlist%indices(iChr, 1:QTLlist%nQTL) +&
           chr_nlocibefore(ichr), 1:nComp) = QTLlist%values(iChr, &
           1:QTLlist%nQTL, 1:nComp)
   end do
 
-  if (.not.allocated(haplotype1)) allocate(haplotype1(i), haplotype2(i))
-
   tbv(1:nAnim, 1:nComp) = ZERO
 
   !================================================
-  !now reading the genotype and and calc tbv (if needed)
+  !now reading the genotype and and calc tbv
   !================================================
   id = 0
   do j = 1, nanim
@@ -91,5 +79,8 @@ subroutine SimulateTBV(nAnim, nChr, nComp, nSNP, indiv, genome, QTLlist, SNPlist
   if (verbose) then
   end if
 
-end subroutine SimulateTBV
+  deallocate(haplotype1)
+  deallocate(haplotype2)
+  deallocate(effect)
 
+end subroutine SimulateTBV

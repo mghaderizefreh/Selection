@@ -1,5 +1,5 @@
 subroutine selectParents(nanim, indiv, sex, n_m, n_fpm, male, female,&
-     effects, verbose)
+     effects)
   use constants
   use quickSort
   implicit none
@@ -11,7 +11,6 @@ subroutine selectParents(nanim, indiv, sex, n_m, n_fpm, male, female,&
   integer, intent(in) :: n_m, n_fpm
   integer, dimension(1:(n_m*n_fpm)), intent(out) :: female
   integer, dimension(1:n_m), intent(out) :: male
-  logical, intent(in) :: verbose
 
   integer :: nmale, nfemale
   integer :: i, j

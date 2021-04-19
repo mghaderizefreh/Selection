@@ -9,8 +9,8 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
   integer, intent(in) :: nChr, nQTL, nSNP, nComp
   logical, intent(in) :: randomMAF
   type(chromosome), dimension(1:nChr), intent(in) :: genome
-  type(QTL_Array), intent(out) :: QTLlist
-  integer, dimension(:,:), allocatable, intent(out) :: SNPlist
+  type(QTL_Array), intent(inout) :: QTLlist
+  integer, dimension(nChr,nSNP), intent(out) :: SNPlist
   real(KINDR), dimension(nComp, nComp), intent(in) :: covMat
   character (len=10), intent(in), optional :: baseNameFreq
   real(KINDR), intent(in), optional :: MAF
@@ -21,7 +21,7 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
   character(len = 256):: fileName
   integer, dimension(:), allocatable :: iReq, temp
   real(KINDR), dimension(:,:), allocatable  :: values_1D
-  real(KINDR), dimension(:), allocatable :: means
+  real(KINDR), dimension(ncomp) :: means
   type(JArr) , dimension(:) , allocatable:: MAFArray
   real(KINDR) :: rand, freq
   if (.not.randomMAF) then
@@ -45,9 +45,6 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
      end if
   end if
 
-  allocate(SNPlist(nChr, nSNP))
-  allocate(QTLlist%indices(nChr, nQTL), QTLlist%values(nChr, nQTL, nComp))
-  allocate(means(ncomp))
   means(1:ncomp) = ZERO
   k = nQTL * nChr
   allocate(values_1D(k, nComp))
@@ -114,7 +111,11 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
         SNPlist(ichr, 1:nSNP) = iReq((nQTL+1):nReq)
 
      end do ICHRLOOP
-
+     do ichr = 1, nchr
+        deallocate(MAFArray(iChr)%array)
+     end do
+     deallocate(MAFArray)
+     
   else ! i.e., when the selection is random
 
      ICHRLOOP2: do iChr = 1, nChr
@@ -126,8 +127,12 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
            j = (iChr - 1) * nQTL
            QTLlist%values(iChr, 1:nQTL, i) = values_1D((j+1):(j+nQTL), i)
         end do
-
      end do ICHRLOOP2
   end if
+
+deallocate(iReq)
+deallocate(temp)
+deallocate(values_1D)
+
 end subroutine getQTLandSNP
 

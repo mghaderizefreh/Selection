@@ -97,7 +97,7 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
         output(i,1:DIM) = mean(1:DIM) + output(i,1:DIM)
      end forall
   end if
-
+  deallocate(uniform)
 end subroutine gnormal
 
 subroutine normdev(val)

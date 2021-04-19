@@ -10,4 +10,5 @@ contains
   include "BSRibsCalc.f90"
   include "leastSquare.f90"
   include "relationMatrix.f90"
+  include "getVariance.f90"
 end module blup_module

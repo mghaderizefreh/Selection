@@ -54,7 +54,7 @@ subroutine getMatricesCorrelated(verbose, nobs, nfix, maxid, X, G, id, &
   k = 0
   do i = 1, nobs
      k = k + i
-     !   eye(k) = 1.d0
+     !   eye(k) = ONE
      Z1Z1(i) = X(i,1) * X(i,1)
      do j = 1, i
         ipos = ipos + 1
@@ -64,10 +64,10 @@ subroutine getMatricesCorrelated(verbose, nobs, nfix, maxid, X, G, id, &
         Z1GZ1(ipos) = X(i,1) * G(ipos1) * X(j,1)
         Z2GZ2(ipos) = G(ipos1)
 
-        Z1GZ2(ipos) = X(j,1) * G(ipos1) + X(i,1) * G(ipos2)    ! A + transpose(A) 
-        !      if (IsPeSloPresent) Z1Z1pe(ipos) = do something
-        !      if (IsPeIntPresent) Z2Z2(ipos) = eye(ipos1) ! this is wrong
-        !      if (IsPeCovPresent) Z1Z2(ipos) = X(j,1) * eye(ipos1) + X(i,1) * eye(ipos2) ! A + transpose(A) 
+        Z1GZ2(ipos) = X(j,1) * G(ipos1) + X(i,1) * G(ipos2) ! A + transpose(A)
+        !if (IsPeSloPresent) Z1Z1pe(ipos) = do something
+        !if (IsPeIntPresent) Z2Z2(ipos) = eye(ipos1) ! this is wrong
+        !if (IsPeCovPresent) Z1Z2(ipos)=X(j,1)*eye(ipos1)+X(i,1)*eye(ipos2)!A+transpose(A)
      end do
   end do
 
@@ -101,15 +101,15 @@ subroutine getMatricesUncorrelated(verbose, nobs, nfix, maxid, X, G, id, &
 
   j = nobs
   i = (j + 1) * j / 2
-  Z1Z1(1:j) = 0.d0
-  Z1GZ1(1:i) = 0.d0
-  Z2GZ2(1:i) = 0.d0
+  Z1Z1(1:j) = ZERO
+  Z1GZ1(1:i) = ZERO
+  Z2GZ2(1:i) = ZERO
 
   ipos = 0
   k = 0
   do i = 1, nobs
      k = k + i
-     !   eye(k) = 1.d0
+     !eye(k) = ONE
      Z1Z1(i) = X(i,1) * X(i,1)
      do j = 1, i
         ipos = ipos + 1
@@ -136,16 +136,15 @@ subroutine getMatrices(verbose, nobs, nfix, maxid, X, G, id, ZGZ)
   real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: ZGZ
   integer, external :: lowerpos
   integer :: i, j, id1, ipos, ipos1 !, nrank
-  !  real(KINDR) :: val1
 
   !ZGZt will be size nobs X nobs
   ! so the array to store half diag is: ( nobs+1) *nobs/2
   !
-  if (X(1,1) == 0) then
+  if (X(1,1) == ZERO) then
   end if
 
   i = (nobs + 1) * nobs / 2
-  ZGZ(1:i) = 0.d0      !initialising to be zero
+  ZGZ(1:i) = ZERO  !initialising to be zero
 
   ! calculating ZGZt
   ipos=0
@@ -166,11 +165,11 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   implicit none
   ! written by R. Pong-Wong
   ! edited by M. Ghaderi Zefreh (minor edits for STDOUT/STDERR output)
-  character(len=*)   , intent(IN) :: matfile
-  real(KINDR)   , dimension(:), intent(inout) :: amat
-  integer            , intent(inout) :: nrank
-  integer            , intent(in) :: skip
-  integer            , intent(out) :: ifail
+  character(len=*), intent(IN) :: matfile
+  real(KINDR), dimension(:), intent(inout) :: amat
+  integer, intent(inout) :: nrank
+  integer, intent(in) :: skip
+  integer, intent(out) :: ifail
 
   integer :: irow, icol, ipos,i,ibin,k
   integer :: irank,iun
@@ -206,7 +205,7 @@ subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
   !---------------------------------------------------
   k=0
   i=0
-  amat(1:ipos)= 0.d0
+  amat(1:ipos) = ZERO
   do
      if(ibin==1)then
         read(iun,end=100)irow,icol, val1
@@ -237,11 +236,10 @@ function LowerPos(irow,icol) result(ipos)
   implicit none
   integer, intent(in) :: icol, irow
   integer :: ipos
-  if(icol <= irow) then             ! position enquired in lower diagonal
+  if(icol <= irow) then ! position enquired in lower diagonal
      ipos=(irow-1)*(irow)/2 + icol
   else
-     ipos=(icol-1)*(icol)/2 + irow   ! position enquired in upper diagonal swap row and columns
+     ipos=(icol-1)*(icol)/2 + irow ! position enquired in upper diagonal swap row and columns
   endif
   return
 end function LowerPos
-

@@ -1,4 +1,5 @@
-subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
+subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, Vinvfull,&
+     temp, verbose)
   use constants
   use global_module
   implicit none
@@ -8,23 +9,22 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
   integer, intent(in) :: nobs, nfix
   real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: P
   real(KINDR), intent(out) :: det_xt_vinv_x
-  real(KINDR), dimension(1:nfix,1:nobs), intent(out) :: Vhat
-
+  real(KINDR), dimension(1:nfix,1:nobs), intent(inout) :: Vhat
+  real(KINDR), dimension(1:nobs,1:nobs), intent(inout) :: Vinvfull
+  real(KINDR), dimension(1:nobs,1:nfix), intent(inout) :: temp
   integer :: info, I
-  integer, dimension(:), allocatable, save :: ipiv2
-  real(KINDR), dimension(:,:), allocatable, save :: Vinvfull, mat, temp
-  real(KINDR), dimension(:), allocatable, save :: vec, work2
+  integer, dimension(nfix) :: ipiv2
 
-  external :: dgemm, dtrttp, daxpy 
+  real(KINDR), dimension(nfix,nfix) :: mat
+  real(KINDR), dimension(1:((nfix+1)*nfix/2)) :: vec
+  real(KINDR), dimension((nfix * nfix)) :: work2
+
+  real(KINDR) :: val0, val1
+  external :: dgemm, dtrttp, daxpy
 
   if (verbose) write(STDOUT,*) "  In the subroutine CalculateP"
-  if (.not.allocated(Vinvfull)) then
-     I = nfix * nfix
-     allocate(Vinvfull(nobs,nobs), ipiv2(nfix), work2(I), temp(nfix,nobs))
-  end if
 
   if (verbose) write(STDOUT,'(3x,a6,i2,a34)') "using ", nfix, "-dimensional matrix for X"
-  if (.not.allocated(mat)) allocate(mat(nfix, nfix), vec((nfix+1)*nfix/2))
   call dunpack('u', nobs, Vinv, Vinvfull, nobs, info)
   if (verbose) write(STDOUT, *) "  info after DUNPACK", info
   if (info .ne. 0) then
@@ -34,11 +34,17 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
      if (verbose) write(STDOUT, *) "  DUNPACK finished unpacking vinv to Vinvfull"
   end if
 
-  call dgemm('t', 'n', nfix, nobs, nobs, 1.d0, X, nobs, VinvFull, nobs, 0.d0, temp, nfix)
-  if (verbose) write(STDOUT, *) "  DGEMM finished calculating temp ( = X' * Vinv )"
+  val0 = ZERO
+  val1 = ONE
+  call dgemm('n', 'n', nobs, nfix, nobs, val1, VinvFull, nobs, X, nobs, val0, temp, nobs)
+  if (verbose) write(STDOUT, *) "  DGEMM finished calculating temp ( = Vinv * X )"
+!  call dgemm('t', 'n', nfix, nobs, nobs, val1, X, nobs, VinvFull, nobs, val0, temp, nfix)
+!  if (verbose) write(STDOUT, *) "  DGEMM finished calculating temp ( = X' * Vinv )"
 
-  call dgemm('n', 'n', nfix, nfix, nobs, 1.d0, temp, nfix, X, nobs, 0.d0, mat, nfix)
-  if (verbose) write(STDOUT, *) "  DGEMM finished calculating mat (= X'Vinv * X)"
+  call dgemm('t', 'n', nfix, nfix, nobs, val1, X, nobs, temp, nobs, val0, mat, nfix)
+  if (verbose) write(STDOUT, *) "  DGEMM finished calculating mat (= X' * VinvX )"
+!  call dgemm('n', 'n', nfix, nfix, nobs, val1, temp, nfix, X, nobs, val0, mat, nfix)
+!  if (verbose) write(STDOUT, *) "  DGEMM finished calculating mat (= X'Vinv * X)"
 
   call dtrttp('u', nfix, mat, nfix, vec, info)
   if (verbose) write(STDOUT, *) "  info after DTRTTP", info
@@ -60,11 +66,17 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
      if (verbose) write(STDOUT, *) "  DUNPACK finished unpacking vec to mat"
   end if
 
-  call dgemm('n', 'n', nfix, nobs, nfix, 1.d0, mat, nfix, temp, nfix, 0.d0, Vhat, nfix)
-  if (verbose) write(STDOUT, *) "  DGEMM finished calculating Vhat (= [X'VinvX]inv * X'Vinv )"
+  call dgemm('n', 't', nfix, nobs, nfix, val1, mat, nfix, temp, nobs, val0, Vhat, nfix)
+  if (verbose) write(STDOUT, *) "  DGEMM finished calculating Vhat (= [X'VinvX]inv * (VinvX)' )"
 
-  call dgemm('t', 'n', nobs, nobs, nfix, -1.d0, temp, nfix, Vhat, nfix, 0.d0, Vinvfull, nobs)
-  if (verbose) write(STDOUT, *) "  DGEMM finished calculating Vinvfull (= - VinvX[X'VinvX]inv * X'Vinv )"
+!  call dgemm('n', 'n', nfix, nobs, nfix, val1, mat, nfix, temp, nfix, val0, Vhat, nfix)
+!  if (verbose) write(STDOUT, *) "  DGEMM finished calculating Vhat (= [X'VinvX]inv * X'Vinv )"
+
+  val1 = -ONE
+  call dgemm('n', 'n', nobs, nobs, nfix, val1, temp, nobs, Vhat, nfix, val0, Vinvfull, nobs)
+  if (verbose) write(STDOUT, *) "  DGEMM finished calculating Vinvfull (= - VinvX * ([X'VinvX]inv*X'Vinv))"
+!  call dgemm('t', 'n', nobs, nobs, nfix, val1, temp, nfix, Vhat, nfix, val0, Vinvfull, nobs)
+!  if (verbose) write(STDOUT, *) "  DGEMM finished calculating Vinvfull (= - VinvX * ([X'VinvX]inv*X'Vinv))"
 
   call dtrttp('u', nobs, Vinvfull, nobs, P, info)
   if (verbose) write(STDOUT, *) "  info after DTRTTP", info
@@ -75,7 +87,9 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, verbose)
      if (verbose) write(STDOUT, *) "  Vinvfull packed to P"
   end if
   I = nobs * (nobs + 1) / 2
-  call daxpy(I, 1.d0, vinv, 1, P, 1)
+  val1 = ONE
+  info = 1
+  call daxpy(I, val1, vinv, info, P, info)
   if (verbose) write(STDOUT, *) "  DAXPY finished calculating P (=vinv + P_old)"
 
   if (verbose) write(STDOUT,*) "  calculateP returned successfully"

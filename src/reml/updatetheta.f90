@@ -3,17 +3,15 @@ subroutine updatetheta(nvar, AI, rhs, theta, verbose)
   implicit none
   integer, intent(in) :: nvar
   logical, intent(in) :: verbose
-  real(KINDR), dimension(1:((nvar+1)*(nvar+2)/2)), intent(in) :: AI
-  real(KINDR), dimension(1:(nvar+1)), intent(in) :: rhs
+  real(KINDR), dimension(1:((nvar+1)*(nvar+2)/2)), intent(inout) :: AI
+  real(KINDR), dimension(1:(nvar+1)), intent(inout) :: rhs
   real(KINDR), dimension(1:(nvar+1)), intent(inout) :: theta
   integer :: n, info
-  integer, dimension(:), allocatable, save :: ipiv
+  integer, dimension((nvar + 1)) :: ipiv
 
   external :: dspsv
-
-  if (verbose) write(STDOUT, *) "  In the subroutine solve"
   n = nvar + 1
-  if (.not.allocated(ipiv)) allocate(ipiv(n))
+  if (verbose) write(STDOUT, *) "  In the subroutine solve"
   call dspsv('u', n, 1, AI, ipiv, rhs, n, info)
   if (info.ne.0) then
      write(STDOUT, *) "  error in solving AI*x = rhs"

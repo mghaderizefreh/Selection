@@ -9,13 +9,12 @@ subroutine calculateAImatrix(nobs, nvar, P, AI, f, verbose)
   type (JArr), dimension(1:(nvar+1)), intent(in) :: f
   real(KINDR), external :: ddot
   integer :: i, k, j
-  real(KINDR), dimension(:), allocatable, save :: temp
+  real(KINDR), dimension(:), allocatable :: temp
 
   external :: dspmv
 
   if (verbose) write(STDOUT, *) "  In the subroutine calculateAImatrix"
-  if (.not. allocated(temp))  allocate(temp(nobs))
-
+  allocate(temp(nobs))
   k = 1
   do i = 1, (nvar + 1)
      call dspmv('u', nobs, 1.d0, P, f(i)%array, 1, 0.d0, temp, 1)
@@ -26,7 +25,7 @@ subroutine calculateAImatrix(nobs, nvar, P, AI, f, verbose)
         k = k + 1 
      end do
   end do
-
+  deallocate(temp)
   if (verbose) write(STDOUT, *) "  calculateAImatrix returend successfully"
 end subroutine calculateAImatrix
 

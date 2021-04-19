@@ -19,7 +19,7 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
   integer, intent(in) :: genstart, nanim, nchr, istore
   character(len=*), optional, intent(in) :: prefixfilename1, prefixfilename2
   integer, intent(inout) :: nloci
-  type(chromosome), dimension(:), intent(out) :: genome, genome2
+  type(chromosome), dimension(nChr), intent(out) :: genome, genome2
   real(KINDR), intent(in) :: chrL
   integer, intent(out) :: ifail, nblock
 
@@ -201,5 +201,3 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
   if (verbose) write(STDOUT,'(a)') " end initialising genotypes"
 
 end subroutine initialiseGenotypes
-
-

@@ -1,4 +1,4 @@
-# reml library
+# evolution library
 
 SET(EVOL_src ${SRCEVOL}/initialiseGenotypes.f90
 	     ${SRCEVOL}/prepareMutRec.f90
@@ -14,6 +14,7 @@ SET(EVOL_src ${SRCEVOL}/initialiseGenotypes.f90
 )
 ADD_LIBRARY(${EVOLLIB} STATIC ${EVOL_src})
 
-#TARGET_LINK_LIBRARIES(${EVOLLIB} ${BLAS_LIBRARIES}
+TARGET_LINK_LIBRARIES(${EVOLLIB} ${RNGLIB} ${SORTLIB} ${CMAKE_THREAD_LIBS_INIT})
+#${BLAS_LIBRARIES}
 #                                 ${LAPACK_LIBRARIES}
-#                                 ${CMAKE_THREAD_LIBS_INIT})
+

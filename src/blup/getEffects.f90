@@ -15,22 +15,20 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
   real(KINDR), dimension(1:nfix,1:nobs), intent(in) :: Vhat
   real(KINDR), dimension(1:nobs,1:nfix), intent(in) :: X
   real(KINDR), dimension(1:nfix), intent(out) :: fixeff
-  type (doublePre_Array), dimension(1:merge(3,1,nfix>1)), intent(out) :: raneff
+  type (doublePre_Array), dimension(1:nran), intent(out) :: raneff
 
   real(KINDR), dimension(:), allocatable :: temp
   integer :: i, j
   real(KINDR) :: val1, s1, s2
-  type (doublePre_Array), dimension(:), allocatable, target :: theZPy
+  type (doublePre_Array), dimension(1:nran) :: theZPy
 
   external :: dgemm
-
   if (verbose) write(STDOUT, *) " Inside getEffects"
   ! fixed effects
   call dgemm('n', 'n', nfix, 1, nobs, ONE, Vhat, nfix, y, nobs, ZERO, fixeff, nfix)
   if (verbose) write(STDOUT, *) "  Fixed effects estimated"
   
   if (nran == 1) then
-     allocate(theZPy(nran))
      allocate(theZPy(1)%level(maxid))
      theZPy(1)%level(1:maxid) = ZERO
      raneff(1)%level(1:maxid) = ZERO
@@ -50,9 +48,7 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
      end do
      return
   end if
-
   ! allocation
-  allocate(theZPy(nran))
   allocate(theZPy(1)%level(maxid)) ! slope effect (genetic)
   allocate(theZPy(2)%level(maxid)) ! intercept effect (genetic)
   allocate(theZPy(3)%level(nobs))   ! environment slope effect (diagonal)

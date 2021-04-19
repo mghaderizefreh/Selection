@@ -43,7 +43,8 @@ subroutine istart(seed, startfile, returnVal)
 52 write(STDERR,*) " Error when reading initializing file ",startfile
   write(STDERR,*) " File may be for different purpose"
   returnval = 2
-  return
+  deallocate(initial)
+  deallocate(seed)
 end subroutine istart
 
 !=======================================================================
@@ -77,6 +78,6 @@ subroutine ifinal(seed,startfile)
   endif
   write(iun, fmt = fmto) seed
   close(10)
-
+  deallocate(values)
 end subroutine ifinal
 

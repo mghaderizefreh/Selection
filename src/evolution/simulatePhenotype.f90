@@ -22,22 +22,21 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, nran,&
   real(KINDR), dimension(nobs,nFix), intent(out) :: X
 
   integer :: i, k
-  real(KINDR), dimension(:,:), allocatable, save :: temp2
-  real(KINDR), dimension(:), allocatable, save :: tempr ! to hold mean of zero
-  real(KINDR), allocatable, dimension(:,:), save :: E!, A, PE
+  real(KINDR), dimension(1:ncomp,1:ncomp) :: temp2
+  real(KINDR), dimension(1:ncomp) :: tempr ! to hold mean of zero
+  real(KINDR), allocatable, dimension(:,:) :: E!, A, PE
 
   external :: covariate
 
   X(1:nobs, 1:nfix) = ZERO
-  if (.not.allocated(temp2)) then
-     allocate(temp2(nComp, nComp), tempr(nComp))
-     ! covariance structure for E (covariances are zero)
-     temp2(1:nComp, 1:nComp) = ZERO
-     do i = 1, nComp
-        temp2(i,i) = vars%E(i)
-     end do
-     tempr(1:nComp) = ZERO
-  end if
+  
+  ! covariance structure for E (covariances are zero)
+  temp2(1:nComp, 1:nComp) = ZERO
+  do i = 1, nComp
+     temp2(i,i) = vars%E(i)
+  end do
+  tempr(1:nComp) = ZERO
+  
   if (nRan .eq. 3) then
      do k = 1, nlox
         X(k:nobs:nLox, 1) = locations(1:nAnim, k) ! for mu_slo if nfix == 2
@@ -48,7 +47,7 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, nran,&
   end do
   X(1:nobs, nFix) = ONE ! for mu_int
 
-  if (.not.allocated(E)) allocate(E(nobs,nComp))
+  allocate(E(nobs,nComp))
   call gnormal(tempr, temp2, nComp, nobs, E)
    ! todo: implementation for PE if really it is required
 
@@ -65,20 +64,22 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, nran,&
      stop 2
   end select
 
+  deallocate(E)
+
 end subroutine SimulatePhenotype
 
 
 !!!! ============================================================ !!!!
-subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
+subroutine allocateInd(nAnim, nlox, nobs, nfarm, allocation, farmBounds,&
      farmRange, farmInd, locations, pedigree, nm, male)
   use constants
   use rng_module
   implicit none
-  integer, intent(in) :: nAnim, nLox, nFarm
+  integer, intent(in) :: nAnim, nLox, nobs, nFarm
   integer, intent(in) :: allocation
   real(KINDR), dimension(1:nfarm, 2), intent(in) :: farmBounds
   real(KINDR) :: farmRange
-  integer, dimension(1:(nAnim*nLox)), intent(out) :: farmInd
+  integer, dimension(1:nobs), intent(out) :: farmInd
   real(KINDR), dimension(nAnim, nLox), intent(out) :: locations
   integer, dimension(1:nAnim, 3), optional :: pedigree
   integer, optional, intent(in) :: nm
@@ -86,11 +87,10 @@ subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
 
   integer, dimension(:), allocatable :: temp1, temp2
   integer, parameter :: spf  = 2 ! each farm has spf sires
-  integer :: nobs, isire
+  integer :: isire
   integer :: i, j, k
   real(KINDR) :: val
   real(KINDR), dimension(nlox) :: temp
-  nobs = nlox * nAnim
   select case (allocation)
   case(1) ! random
      ! each individual is assigned to (only) one random farm
@@ -132,11 +132,13 @@ subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
      do i = 1, spf
         j = (i-1)*nfarm + 1
         k = i * nfarm
-        temp1(j:k) = (/(nobs, nobs = 1, nfarm)/)
+        temp1(j:k) = (/(isire, isire = 1, nfarm)/)
      end do
      call choice(temp1, nm, nm, nm, temp2, nm) ! temp2 contains farms
      ! could do smarter way, but would require 2 more arrays
-     nobs = nlox * nanim
+     !
+     ! the method below requires the pedigree to be sorted, as this is the
+     ! case for my simulations, I don't need to make this general.
      ! for the first individual, take the sire
      i = 1
      isire = pedigree(i,2)
@@ -153,6 +155,7 @@ subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
         !for all other individual, get the sire
         isire = pedigree(i,2)
         ! if its another offspring of the same sire, just assign the same
+        ! again, assuming pedigree is sorted, this check is easy
         if (isire == pedigree(i-1, 2)) then
            k = temp2(j)
            farmind(((i-1)*nlox + 1):(i*nlox)) = k
@@ -169,7 +172,8 @@ subroutine allocateInd(nAnim, nlox, nfarm, allocation, farmBounds, &
         call random_number(temp)
         locations(i, 1:nlox) = temp(1:nlox) * farmRange + farmBounds(k, 1)
      end do
-     
+     deallocate(temp1)
+     deallocate(temp2)
   case(3:) ! later
   end select
   

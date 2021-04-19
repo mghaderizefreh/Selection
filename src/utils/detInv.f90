@@ -32,59 +32,57 @@
 subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
   use constants
   implicit none
-  character ( len = * ) :: BLASuplo
-  integer          :: info, N
-  integer          :: ipiv( * )
-  real(KINDR) :: ap( * )
+  character (len = *), intent(in) :: BLASuplo
+  integer, intent(in) :: N
+  real(KINDR), dimension(1:(N*(N+1)/2)), intent(inout) :: AP
+  integer, dimension(1:N), intent(in) :: IPIV
+  real(KINDR), intent(out) :: logDet
+  integer, intent(out) :: signDet
+  integer, intent(out) :: info
 
-  real(KINDR) :: logDet
-  integer          :: signDet
   real(KINDR) :: val1
 
-  integer :: k, i,ipos, ipos1
+  integer :: k, i, ipos, ipos1
 
-  logDet    = ZERO
+  logDet = ZERO
   signDet = -1
-  info=-1
-  if ( BLASuplo ( 1 : 1 ) == 'U' .or. BLASuplo ( 1 : 1 ) == 'u' ) then
+  info = -1
+  if (BLASuplo(1:1) == 'U' .or. BLASuplo(1:1) == 'u') then
 
      logDet = ZERO
      k = 0
      ipos1 = 0
      do i = 1, N
         ipos = ipos1 + i
-        if ( ipiv ( i ) > 0 ) then
-           if ( AP ( ipos ) == ZERO ) then
+        if (ipiv(i) > 0) then
+           if (AP(ipos) == ZERO) then
               info = i
               logDet = ZERO
               signDet = - 1
               return
            else
-              if ( AP( ipos ) < 0 ) k = k + 1
-              logDet = logDet + log( abs( AP( ipos ) ) )
+              if (AP(ipos) < 0) k = k + 1
+              logDet = logDet + log(abs(AP(ipos)))
            end if
-        else if ( i > 1 ) then
-           if (ipiv ( i ) < 0 .AND. ipiv ( i - 1 ) .EQ. ipiv ( i ) ) then
-              val1 = AP( ipos1 ) * AP( ipos ) - AP( ipos - 1 ) * AP( ipos - 1 )
-              if ( val1 == ZERO ) then
+        else if (i > 1) then
+           if (ipiv(i) < 0 .AND. ipiv(i - 1) .EQ. ipiv(i)) then
+              val1 = AP(ipos1) * AP(ipos) - AP(ipos - 1) * AP(ipos - 1)
+              if (val1 == ZERO) then
                  info = i
                  logDet = ZERO
                  signDet = - 1
                  return
               else
-                 if ( val1 < 0 ) k = k + 1
-                 logDet = logDet + log( abs( val1 ) )
+                 if (val1 < 0) k = k + 1
+                 logDet = logDet + log(abs(val1))
               end if
            end if
         end if
         ipos1 = ipos
      end do
      signDet = k
-
-
      !==========================================
-
-     info=0
+     info = 0
   else
      write(STDERR, '(a)') "Error:"
      write(STDERR,*) " so far subroutine has been implemeneted only using&
@@ -100,27 +98,27 @@ subroutine detInv(nobs, V, detV, ipiv, work, verbose)
   implicit none
   logical, intent(in) :: verbose
   integer, intent(in) :: nobs
-  integer, dimension(:), intent(in) :: ipiv
-  real(KINDR), dimension(:), intent(in) :: work
-  real(KINDR), dimension(:), intent(inout) :: V
+  integer, dimension(1:nobs), intent(inout) :: ipiv
+  real(KINDR), dimension(1:nobs), intent(inout) :: work
+  real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(inout) :: V
   real(KINDR), intent(out) :: detV
 
   integer :: ifail, ineg, info
   external :: dsptri, dsptrf, dspdrf_Ldet
 
-  if (verbose) write(stdout,*) "  In the subroutine detinv"
+  if (verbose) write(STDOUT, *) "  In the subroutine detinv"
   call dsptrf('u', nobs, V, ipiv, info)
-  if (verbose) write ( stdout, * ) "  info after DSPTRF", info
+  if (verbose) write (STDOUT, *) "  info after DSPTRF", info
   if ( info == 0 ) then
      call dspdrf_Ldet ( 'u', nobs, V, ipiv, detV, ineg, ifail )
-     if (verbose) write(stdout,*) "  log detV ineg", detV, ineg
+     if (verbose) write(STDOUT, *) "  log detV ineg", detV, ineg
      call dsptri('u', nobs, V, ipiv, work, info)
-     if (verbose) write(stdout,*) "  info after DSPTRI", info
+     if (verbose) write(STDOUT, *) "  info after DSPTRI", info
   else if ( info < 0 ) then
-     write(stderr, *) "  error with input variables (inside detinv)", info
+     write(STDERR, *) "  error with input variables (inside detinv)", info
      stop 1
   end if
-  if (verbose) write(stdout,*) "  detinv return successfully"
+  if (verbose) write(STDOUT, *) "  detinv return successfully"
 end subroutine detInv
 
 
