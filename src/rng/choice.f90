@@ -14,14 +14,14 @@ subroutine Choice(source, sourceDim, sourceSize, number, output, outputDim, seed
   integer, dimension(1:outputDim), intent(out) :: output
   integer, intent(in), dimension(:), optional :: seed
 
-  integer, dimension(1:sourceSize) :: sourceCopy
+  integer, dimension(:), allocatable :: sourceCopy
   integer :: ind, temp, i
   real(KINDR) :: rand
 
   if (present(seed)) then
      call random_seed(put = seed)
   end if
-
+  allocate(sourceCopy(sourceSize))
   ! First take a copy of source because arrays are passed by reference (are they?)
   forall (i = 1:sourceSize)
      sourceCopy(i) = source(i)

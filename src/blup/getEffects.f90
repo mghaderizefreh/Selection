@@ -15,12 +15,12 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
   real(KINDR), dimension(1:nfix,1:nobs), intent(in) :: Vhat
   real(KINDR), dimension(1:nobs,1:nfix), intent(in) :: X
   real(KINDR), dimension(1:nfix), intent(out) :: fixeff
-  type (doublePre_Array), dimension(1:nran), intent(out) :: raneff
+  type (Jarr), dimension(1:nran), intent(inout) :: raneff
 
   real(KINDR), dimension(:), allocatable :: temp
   integer :: i, j
   real(KINDR) :: val1, s1, s2
-  type (doublePre_Array), dimension(1:nran) :: theZPy
+  type (Jarr), dimension(1:nran) :: theZPy
 
   external :: dgemm
   if (verbose) write(STDOUT, *) " Inside getEffects"
@@ -29,34 +29,34 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
   if (verbose) write(STDOUT, *) "  Fixed effects estimated"
   
   if (nran == 1) then
-     allocate(theZPy(1)%level(maxid))
-     theZPy(1)%level(1:maxid) = ZERO
-     raneff(1)%level(1:maxid) = ZERO
+     allocate(theZPy(1)%array(maxid))
+     theZPy(1)%array(1:maxid) = ZERO
+     raneff(1)%array(1:maxid) = ZERO
      do i = 1, nobs
         j = id(i)
-        theZPy(1)%level(j) = theZPy(1)%level(j) + Py(i)
+        theZPy(1)%array(j) = theZPy(1)%array(j) + Py(i)
      end do
-     theZPy(1)%level(1:maxid) = theZPy(1)%level(1:maxid) * theta(1)
+     theZPy(1)%array(1:maxid) = theZPy(1)%array(1:maxid) * theta(1)
      do i = 1, maxid
         do j = 1, i
            val1 = Gmatrix((i * (i - 1)) / 2 + j)
-           raneff(1)%level(i) = raneff(1)%level(i) + theZPy(1)%level(j) * val1
+           raneff(1)%array(i) = raneff(1)%array(i) + theZPy(1)%array(j) * val1
            if (i .ne. j) then
-              raneff(1)%level(j) = raneff(1)%level(j) + theZPy(1)%level(i) * val1
+              raneff(1)%array(j) = raneff(1)%array(j) + theZPy(1)%array(i) * val1
            end if
         end do
      end do
      return
   end if
   ! allocation
-  allocate(theZPy(1)%level(maxid)) ! slope effect (genetic)
-  allocate(theZPy(2)%level(maxid)) ! intercept effect (genetic)
-  allocate(theZPy(3)%level(nobs))   ! environment slope effect (diagonal)
+  allocate(theZPy(1)%array(maxid)) ! slope effect (genetic)
+  allocate(theZPy(2)%array(maxid)) ! intercept effect (genetic)
+  allocate(theZPy(3)%array(nobs))   ! environment slope effect (diagonal)
 
   ! initialisation
   do i = 1, 3
-     theZPy(i)%level(:) = ZERO
-     raneff(i)%level(:) = ZERO
+     theZPy(i)%array(:) = ZERO
+     raneff(i)%array(:) = ZERO
   end do
 
   if (verbose) write(STDOUT, *) "  initialisation done for random effects"
@@ -66,30 +66,30 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
   do i = 1, nobs
      j = id(i)
      val1 = Py(i) * X(i,1)
-     theZPy(1)%level(j) = theZPy(1)%level(j) + val1
-     theZPy(2)%level(j) = theZPy(2)%level(j) + Py(i)
-     raneff(3)%level(i) = X(i,1) * Py(i) * theta(3)
+     theZPy(1)%array(j) = theZPy(1)%array(j) + val1
+     theZPy(2)%array(j) = theZPy(2)%array(j) + Py(i)
+     raneff(3)%array(i) = X(i,1) * Py(i) * theta(3)
   end do
   
   if (nvar == 4) then
      s1 = theta(4) / theta(1)
      s2 = theta(4) / theta(2)
-     temp(1:maxid) = theZPy(1)%level(1:maxid)
-     theZPy(1)%level(1:maxid) = theZPy(1)%level(1:maxid) * theta(1) + theZPy(2)%level(1:maxid) * theta(4)
-     theZPy(2)%level(1:maxid) = theZPy(2)%level(1:maxid) * theta(2) + temp(1:maxid)            * theta(4)
+     temp(1:maxid) = theZPy(1)%array(1:maxid)
+     theZPy(1)%array(1:maxid) = theZPy(1)%array(1:maxid) * theta(1) + theZPy(2)%array(1:maxid) * theta(4)
+     theZPy(2)%array(1:maxid) = theZPy(2)%array(1:maxid) * theta(2) + temp(1:maxid)            * theta(4)
   else
-     theZPy(1)%level(1:maxid) = theZPy(1)%level(1:maxid) * theta(1)
-     theZPy(2)%level(1:maxid) = theZPy(2)%level(1:maxid) * theta(2)
+     theZPy(1)%array(1:maxid) = theZPy(1)%array(1:maxid) * theta(1)
+     theZPy(2)%array(1:maxid) = theZPy(2)%array(1:maxid) * theta(2)
   end if
 
   do i = 1, maxid
      do j = 1, i
         val1 = Gmatrix((i * (i - 1)) / 2 + j)
-        raneff(1)%level(i) = raneff(1)%level(i) + theZPy(1)%level(j) * val1
-        raneff(2)%level(i) = raneff(2)%level(i) + theZPy(2)%level(j) * val1
+        raneff(1)%array(i) = raneff(1)%array(i) + theZPy(1)%array(j) * val1
+        raneff(2)%array(i) = raneff(2)%array(i) + theZPy(2)%array(j) * val1
         if (i .ne. j) then
-           raneff(1)%level(j) = raneff(1)%level(j) + theZPy(1)%level(i) * val1
-           raneff(2)%level(j) = raneff(2)%level(j) + theZPy(2)%level(i) * val1
+           raneff(1)%array(j) = raneff(1)%array(j) + theZPy(1)%array(i) * val1
+           raneff(2)%array(j) = raneff(2)%array(j) + theZPy(2)%array(i) * val1
         end if
      end do
   end do

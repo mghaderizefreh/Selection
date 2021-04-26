@@ -5,7 +5,7 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
   logical, intent(in) :: verbose
   integer, intent(in) :: nobs, nvar
   real(KINDR), dimension(1:(nvar+1)), intent(in) :: theta
-  type (doublePre_array), dimension(1:nvar), intent(in) :: theZGZ
+  type(Jarr), dimension(1:nvar), intent(in) :: theZGZ
   integer, intent(out) :: ifail
   real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: V !main output
 
@@ -23,7 +23,7 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
   if (nvar .ge. k) then
      do irow = 1, nobs
         ipos    = ipos + irow   ! the position of this diagonal
-        V(ipos) = val1 + theta(k) * theZGZ(k)%level(irow)
+        V(ipos) = val1 + theta(k) * theZGZ(k)%array(irow)
      end do
   else
      ipos = 0
@@ -35,7 +35,7 @@ subroutine calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
 
   do i = 1, nvar
      if (i .ne. k) then
-        V(1 : isize) = V(1 : isize) + theZGZ(i)%level(1 : isize) * theta(i)
+        V(1 : isize) = V(1 : isize) + theZGZ(i)%array(1 : isize) * theta(i)
      end if
   end do
 

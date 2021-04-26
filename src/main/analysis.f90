@@ -32,7 +32,7 @@ program analysis
   real(KINDR), dimension(:,:), allocatable :: x !incid. matrix for fixed effects
   real(KINDR), dimension(:), allocatable :: temAmat
   real(KINDR), dimension(:), allocatable :: theta, oldtheta
-  type (doublePre_Array), dimension(:), allocatable :: raneff
+  type (Jarr), dimension(:), allocatable :: raneff
   real(KINDR), allocatable, dimension(:) :: fixEff
   real(KINDR), allocatable, dimension(:) :: P, V
   real(KINDR), allocatable, dimension(:,:) :: Vhat, temp
@@ -127,10 +127,10 @@ program analysis
 
   allocate(fixeff(nfix))
   allocate(raneff(nran))
-  allocate(raneff(1)%level(maxid)) ! slope effect (genetic)
+  allocate(raneff(1)%array(maxid)) ! slope effect (genetic)
   if (nran == 3) then
-     allocate(raneff(2)%level(maxid)) ! intercept effect (genetic)
-     allocate(raneff(3)%level(nobs))   ! environment slope effect (diagonal)
+     allocate(raneff(2)%array(maxid)) ! intercept effect (genetic)
+     allocate(raneff(3)%array(nobs))   ! environment slope effect (diagonal)
   elseif (nran == 1) then
   else
      write(STDERR, *) " ERROR"
@@ -286,14 +286,14 @@ program analysis
 
   open(newUnit = iunran, file = raneffFile)
   do i = 1, maxid
-     write(iunran, 272) i, raneff(1)%level(i)
+     write(iunran, 272) i, raneff(1)%array(i)
   end do
   if (nfix == 2) then
      do i = 1, maxid
-        write(iunran, 272) i, raneff(2)%level(i)
+        write(iunran, 272) i, raneff(2)%array(i)
      end do
      do i = 1, nobs
-         write(iunran, 272) i, raneff(3)%level(i)
+         write(iunran, 272) i, raneff(3)%array(i)
      end do
   end if
   close(iunran)

@@ -7,11 +7,8 @@ module constants
   ! integer representation of alleles
   integer, parameter :: NBITS = 32
 
-  ! derived types
-  type doublePre_Array
-     real(KINDR), dimension(:), pointer :: level(:)
-  end type doublePre_Array
-
+  !! derived types
+  ! can make jagged arrays
   type JArr
      real(KINDR), dimension(:), allocatable :: array
   end type JArr

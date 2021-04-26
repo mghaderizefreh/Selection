@@ -20,6 +20,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   !             dominance       needs the heterozygote and at least one homozygote
   !========================================================================
   use constants
+  use omp_lib
   implicit none
 
   character(len=*), intent(in) :: effect
@@ -38,6 +39,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   real(KINDR) :: val1, val4
   integer :: k
 
+  real(KINDR), dimension(1:nobs) :: temp
   character(len=3) :: theeffect
   integer :: n, usedSNP, igen, ieffect
   !isHomozygote(0:3)
@@ -45,8 +47,6 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   real(KINDR), dimension(0:3) :: genscore
   real(KINDR), dimension(0:3, 0:3) :: IBSstatus
   real(KINDR) :: sumvar, mean, vari
-
-  integer, dimension(nanim), automatic :: idused
 
   !------------------------------------------------------------------------------
   ! calculating the genotype score
@@ -56,6 +56,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   !------------------------------------------------------------------------------
   ! tranfering effect to theeffect in case the input character variable had more
   ! than 3 characters
+
   theeffect = effect  
   ieffect = 0
   genscore(0) = ZERO
@@ -83,34 +84,31 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   if (verbose) write(STDOUT, *) " scaled  ", iscaled
 
   !------------------------------------------------------------------------------
-  ! setting to zero the IBS status for a pair where at least one has missing genotype
-  ! genscore for a missing genotype is the pop mean (or zero after centering).
-  ! hence since IBD is the crosproduct of genscore, the IBS of this type of pair is 0
-  !------------------------------------------------------------------------------
-  IBSstatus(0,0) = ZERO
-  do i = 1, 3
-     IBSstatus(0,i) = ZERO
-     IBSstatus(i,0) = ZERO
-  end do
-
-  !------------------------------------------------------------------------------
   ! calculating the IBS matrix
   !------------------------------------------------------------------------------
 
-  k = nSNP / 20
-  if (k == 0) k = 1
   ifail = 0
-  ipos = nanim * (nanim + 1) / 2
-  amat(1:ipos) = ZERO
 
-  sumvar = ZERO
   usedSNP = 0
+  sumvar = ZERO
+  amat(1:nobs) = ZERO
 
+  !$OMP PARALLEL DEFAULT(NONE)&
+  !$OMP PRIVATE(val4, k, temp)&
+  !$OMP SHARED(nobs, nSNP, ieffect, genscore, ivar, iscaled, nanim, genotypes)&
+  !$OMP SHARED(sumvar, usedSNP, AMAT)
+  val4 = ZERO
+  k = 0
+  temp(1:nobs) = ZERO
+
+  !$OMP DO LASTPRIVATE(i, IBSstatus, ngen, n, mean, vari, val1, j, igen)&
+  !$OMP LASTPRIVATE(ipos, id1, id2)
   do isnp = 1, nSNP
      !   counting number of individuals in each genotype class
      do i = 0, 3
         ngen(i) = count(genotypes(1:nanim, isnp) == i)
      end do
+
      n = ngen(1) + ngen(2) + ngen(3)
      if(n == 0) then
         cycle      !SNP has all genotypes missing (SNP not used in IBS calc)
@@ -136,9 +134,6 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
 
      !------------------------------------------------------------------------------
      !   if reaching here means that the SNP can be used
-     !------------------------------------------------------------------------------
-
-     !------------------------------------------------------------------------------
      !  calculating mean and variance of genotype score  for SNP isnp
      !  and ibsstatus
      !------------------------------------------------------------------------------
@@ -152,11 +147,13 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
         ! variance of additive  effect assuming HWE = 2pq
         vari = (TWO * ((mean - ONE) / TWO) * (ONE - (mean - ONE) / TWO))
         ! variance of dominance effect assuming HWE = (2pq)*(2pq)
-        if (ieffect == 2) vari = vari * vari 
+        if (ieffect == 2) then
+           vari = vari * vari 
+        end if
      end if
-
-     sumvar = sumvar + vari
-     usedSNP = usedSNP + 1    ! SNP to be used in calculation
+     
+     val4 = val4 + vari
+     k = k + 1    ! SNP to be used in calculation
 
      !------------------------------------------------------------------------------
      ! calculating IBS status for pairs with all possible genotype score of ind in
@@ -166,36 +163,36 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
      !------------------------------------------------------------------------------
      val1 = ONE
      if(iscaled == 1) val1 = vari   !genotype score to be scaled so variance is 1
+     IBSstatus(0,0) = ZERO
      do i = 1, 3
+        IBSstatus(0,i) = ZERO
+        IBSstatus(i,0) = ZERO
         do j = 1, 3
            IBSstatus(i,j) = (genscore(i) - mean) * (genscore(j) - mean) / val1
         end do
      end do
-
      !------------------------------------------------------------------------------
      ! now do the ibs calculation for all ind with genotype
-     ! calculation is just sum of all IBSstatus given genotype score acroos all valid
+     ! calculation is sum of all IBSstatus given genotype score acroos all valid
      ! SNP
-     !
-     ! matrix is symmetric so only half store (lower diag row)
      !------------------------------------------------------------------------------
      do id1 = 1, nanim
-        idused(id1) = genotypes(id1, isnp)  ! genotypes copied to a different array
-     end do
-     ipos = 0
-     do id1 = 1, nanim
-        igen = idused(id1)
+        igen = genotypes(id1, isnp)
         if(igen == 0) cycle ! genotype missing,  not need to estimate IBS
         do id2 = 1, id1
-           ipos = ipos + 1
            ipos = (id1 - 1) * id1 / 2 + id2
-           amat(ipos) = amat(ipos) + IBSstatus(igen, idused(id2))
+           temp(ipos) = temp(ipos) + IBSstatus(igen, genotypes(id2,isnp))
         end do
      end do
      !------------------------------------------------------------------------------
-
   end do
-
+  !$OMP END DO
+  !$OMP CRITICAL
+  usedSNP = usedSNP + k
+  sumvar = sumvar + val4
+  amat(1:nobs) = amat(1:nobs) + temp(1:nobs)
+  !$OMP END CRITICAL
+  !$OMP END PARALLEL
   !------------------------------------------------------------------------------
   ! now divide the matrix by a denominator
   ! denominator is sum(genscore var)

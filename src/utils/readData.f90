@@ -2,7 +2,7 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
      chrL, mu, nQTL, nSNP, randomQTL, MAF, baseNameFreq, ncomp, vars, nanim,&
      n_m, n_fpm, n_opf, interval, nlox, nFarm, farmRange, allocation, means,&
      nobs, selectionType, weight, ngen, VarEst, reactionNorm, analysisType,&
-     nfix, nvar, nran, output)
+     chalvl, nfix, nvar, nran, output, logfile)
   use constants
   implicit none
   character(len=*), intent(in) :: inputfile ! list of all inputs
@@ -42,11 +42,13 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
   integer, intent(out) :: VarEst !how vars are est.(1=reml,2=gen0,3=true)
   logical, intent(out) :: reactionNorm ! whether to estimate farm effects
   integer, intent(out) :: analysisType !
+  real(KINDR), dimension(2), intent(out) :: chalvl !min and max challenge
   integer, intent(out) :: nfix ! number of fixed effects
   integer, intent(out) :: nvar ! number of variance components
   integer, intent(out) :: nran ! number of random effects
   !!!!!!!!!!!!!!!!!!!! output !!!!!!!!!!!!!!!!!!!!
   character(len=100), intent(out) :: output
+  character(len=100), intent(out) :: logfile
   !!!!!!!!!!!!!!!!!!!! dummy variables !!!!!!!!!!!!!!!!!!!!
   character(len = 200) :: line, formato
   integer :: iinput, stat, iun, lno, j, i
@@ -396,6 +398,25 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
      write(STDOUT, 33) "estimating farm effects (RN)?", reactionNorm
   end if
 
+  ! boundaries of challenge
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) rinput
+  call assert(stat.eq.0, "failed to read min challenge level", lno)
+  chalvl(1) = rinput
+  call nextInput(iun, line, lno)
+  read(line, *, iostat = stat) rinput
+  call assert(stat.eq.0, "failed to read max challenge level", lno)
+  chalvl(2) = rinput
+!  call assert(chalvl(2)>chalvl(1), "min is larger than max chal. lvl", lno)
+  write(formato, '(a)') "lowest chal. lvl"
+  if (.not.reactionNorm) &
+       write(formato,'(a,a)') trim(formato), "(ignored)"
+  write(STDOUT, 35) trim(formato), chalvl(1)
+  write(formato, '(a)') "highest chal. lvl"
+  if (.not.reactionNorm) &
+       write(formato,'(a,a)') trim(formato), "(ignored)"
+  write(STDOUT, 35) trim(formato), chalvl(2)
+
   ! analysis type
   if ((selectionType.eq.1) .or. (selectionType.eq.2)) then
      analysisType = 2 ! single trait
@@ -433,7 +454,11 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
   ! outputfile
   call nextInput(iun, line, lno)
   output = trim(line)
-  write(STDOUT, 36) "output file", trim(output)
+  write(STDOUT, 36) "output filename", trim(output)
+
+  call nextInput(iun, line, lno)
+  logfile = trim(line)
+  write(STDOUT, 36) "log filename", trim(logfile)
 
   !!!!!!!!!!!!!!!!!!!! FINISHED !!!!!!!!!!!!!!!!!!!!
   write(STDOUT, '(a,i4,a)') "all inputs read in", lno, " lines"

@@ -86,11 +86,12 @@ subroutine allocateInd(nAnim, nlox, nobs, nfarm, allocation, farmBounds,&
   integer, optional, intent(in) :: male(:)
 
   integer, dimension(:), allocatable :: temp1, temp2
-  integer, parameter :: spf  = 2 ! each farm has spf sires
+  integer :: spf! each farm has spf sires
   integer :: isire
   integer :: i, j, k
   real(KINDR) :: val
   real(KINDR), dimension(nlox) :: temp
+
   select case (allocation)
   case(1) ! random
      ! each individual is assigned to (only) one random farm
@@ -109,7 +110,10 @@ subroutine allocateInd(nAnim, nlox, nobs, nfarm, allocation, farmBounds,&
         ! random_number is in [0,1] so no need to shift by 0 and divide by 1
      end do
   case(2) ! some sort of clustering:
-     !one farm/sire & two sires/farm & farms and sires random
+     !one farm/sire & spf sires/farm & farms and sires random
+     ! i.e., nf farms (as indices 1...nf) are randomised and each farm in this
+     ! index array (temp2) will contain spf sires. The mating (pedigree) is 
+     ! already decided.
      ! requires pedigree
      if (.not.present(pedigree)) then
         write(STDERR, '(a)') "Error:"
@@ -128,6 +132,14 @@ subroutine allocateInd(nAnim, nlox, nobs, nfarm, allocation, farmBounds,&
         write(STDERR, *) " number of farms is more than number of sires"
         stop 2
      end if
+     spf = int(nm / nfarm)
+     if (spf * nfarm .ne. nm) then
+        write(STDERR,'(a)') "Error:"
+        write(STDERR, *) "This is something that should not happen"
+        write(STDERR, *) "The number of sires is not divisible to nfarms"
+        stop 2
+     end if
+
      allocate(temp1(nm), temp2(nm))
      do i = 1, spf
         j = (i-1)*nfarm + 1

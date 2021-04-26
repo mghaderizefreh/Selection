@@ -20,9 +20,9 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   real(KINDR), dimension(1:nobs,1:nfix), intent(inout) :: temp
 
   real(KINDR), dimension(nfix), intent(out) :: fixEffects
-  type(doublePre_Array), dimension(1:nran), intent(inout) :: ranEffects
+  type(Jarr), dimension(1:nran), intent(inout) :: ranEffects
 
-  type(doublePre_Array), dimension(1:nvar) :: theZGZ
+  type(Jarr), dimension(1:nvar) :: theZGZ
   real(KINDR), dimension(:), allocatable :: work
   ! nelements = nobs * (nobs + 1) / 2
   integer :: ifail, i, j
@@ -45,21 +45,20 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   i = nobs * (nobs + 1) / 2
   do j = 1, nvar
      if (j .eq. 3) then
-        allocate(theZGZ(j)%level(nobs))
+        allocate(theZGZ(j)%array(nobs))
      else
-        allocate(theZGZ(j)%level(i))
+        allocate(theZGZ(j)%array(i))
      end if
   end do
 
   if (nvar .eq. 3) then
      call getMatricesUncorrelated(verbose, nobs, nfix, maxid, X, Gmatrix, id, &
-          theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level)
+          theZGZ(1)%array, theZGZ(2)%array, theZGZ(3)%array)
   elseif (nvar .eq. 4) then
      call getMatricesCorrelated(verbose, nobs, nfix, maxid, X, Gmatrix, id, &
-          theZGZ(1)%level, theZGZ(2)%level, theZGZ(3)%level, &
-          theZGZ(4)%level)
+          theZGZ(1)%array, theZGZ(2)%array, theZGZ(3)%array, theZGZ(4)%array)
   else
-     call getMatrices(verbose, nobs, nfix, maxid, X, Gmatrix, id, theZGZ(1)%level)
+     call getMatrices(verbose, nobs, nfix, maxid, X, Gmatrix, id, theZGZ(1)%array)
   end if
   if (verbose) write(STDOUT, *) " ZGZ created"
 
