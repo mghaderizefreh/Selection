@@ -39,7 +39,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   real(KINDR) :: val1, val4
   integer :: k
 
-  real(KINDR), dimension(1:nobs) :: temp
+  real(KINDR), dimension(:), allocatable :: temparray
   character(len=3) :: theeffect
   integer :: n, usedSNP, igen, ieffect
   !isHomozygote(0:3)
@@ -57,7 +57,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   ! tranfering effect to theeffect in case the input character variable had more
   ! than 3 characters
 
-  theeffect = effect  
+  theeffect = effect
   ieffect = 0
   genscore(0) = ZERO
   select case (theeffect)
@@ -82,7 +82,6 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   end select
   if (verbose) write(STDOUT, *) " calculating ", theeffect, ieffect
   if (verbose) write(STDOUT, *) " scaled  ", iscaled
-
   !------------------------------------------------------------------------------
   ! calculating the IBS matrix
   !------------------------------------------------------------------------------
@@ -94,12 +93,13 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   amat(1:nobs) = ZERO
 
   !$OMP PARALLEL DEFAULT(NONE)&
-  !$OMP PRIVATE(val4, k, temp)&
+  !$OMP PRIVATE(val4, k, temparray)&
   !$OMP SHARED(nobs, nSNP, ieffect, genscore, ivar, iscaled, nanim, genotypes)&
   !$OMP SHARED(sumvar, usedSNP, AMAT)
+  allocate(temparray(1:nobs))
   val4 = ZERO
   k = 0
-  temp(1:nobs) = ZERO
+  temparray(1:nobs) = ZERO
 
   !$OMP DO LASTPRIVATE(i, IBSstatus, ngen, n, mean, vari, val1, j, igen)&
   !$OMP LASTPRIVATE(ipos, id1, id2)
@@ -113,6 +113,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
      if(n == 0) then
         cycle      !SNP has all genotypes missing (SNP not used in IBS calc)
      end if
+
      !now checking if SNP can be used in IBS calculation
      i = 0
      if( ngen(2) > 0) i = i + 1
@@ -176,12 +177,13 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
      ! calculation is sum of all IBSstatus given genotype score acroos all valid
      ! SNP
      !------------------------------------------------------------------------------
+
      do id1 = 1, nanim
         igen = genotypes(id1, isnp)
         if(igen == 0) cycle ! genotype missing,  not need to estimate IBS
         do id2 = 1, id1
            ipos = (id1 - 1) * id1 / 2 + id2
-           temp(ipos) = temp(ipos) + IBSstatus(igen, genotypes(id2,isnp))
+           temparray(ipos) = temparray(ipos) + IBSstatus(igen, genotypes(id2,isnp))
         end do
      end do
      !------------------------------------------------------------------------------
@@ -190,7 +192,8 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   !$OMP CRITICAL
   usedSNP = usedSNP + k
   sumvar = sumvar + val4
-  amat(1:nobs) = amat(1:nobs) + temp(1:nobs)
+  amat(1:nobs) = amat(1:nobs) + temparray(1:nobs)
+  deallocate(temparray)
   !$OMP END CRITICAL
   !$OMP END PARALLEL
   !------------------------------------------------------------------------------
@@ -211,8 +214,6 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   else
      ifail = 2   !no SNP was segregating to get a matrix calculated
   end if
-
-  return
 
 end subroutine BSRibsCalc1
 
