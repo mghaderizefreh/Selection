@@ -29,7 +29,7 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
   if (verbose) write(STDOUT, *) "  Fixed effects estimated"
   
   if (nran == 1) then
-     allocate(theZPy(1)%array(maxid))
+     call alloc1D(theZPy(1)%array, maxid, "theZPy(1)%array", "getEffects")
      theZPy(1)%array(1:maxid) = ZERO
      raneff(1)%array(1:maxid) = ZERO
      do i = 1, nobs
@@ -49,9 +49,9 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
      return
   end if
   ! allocation
-  allocate(theZPy(1)%array(maxid)) ! slope effect (genetic)
-  allocate(theZPy(2)%array(maxid)) ! intercept effect (genetic)
-  allocate(theZPy(3)%array(nobs))   ! environment slope effect (diagonal)
+  call alloc1D(theZPy(1)%array,maxid, "theZPy(1)%array", "getEffects")!slope effect (genetic)
+  call alloc1D(theZPy(2)%array,maxid, "theZPy(2)%array", "getEffects")!int effect (genetic)
+  call alloc1D(theZPy(3)%array,nobs, "theZPy(3)%array", "getEffects") !env slope eff (diag.)
 
   ! initialisation
   do i = 1, 3
@@ -60,7 +60,7 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
   end do
 
   if (verbose) write(STDOUT, *) "  initialisation done for random effects"
-  allocate(temp(maxid))
+  call alloc1D(temp, maxid, "temp", "getEffects")
 
   ! random effects
   do i = 1, nobs

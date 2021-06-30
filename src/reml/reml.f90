@@ -8,7 +8,7 @@
 !   7     ZsZi+ZiZs   perm. env. effect slope-intercept covariance
 ! (last)  Identity    env. intercept (NOT COUNTED IN theZGZ and it is LAST one)
 subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
-     theta, verbose, ipiv, Py, P, V, Vhat, temp, EmIterations, maxIters)
+     theta, verbose, ipiv, Py, P, V, Vhat, temp, ifail, EmIterations, maxIters)
 
   use constants
   use global_module
@@ -29,6 +29,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   real(KINDR), dimension(1:nelement), intent(inout) :: V
   real(KINDR), dimension(1:nfix,1:nobs), intent(inout) :: Vhat
   real(KINDR), dimension(1:nobs,1:nfix), intent(inout) :: temp
+  integer, intent(inout) :: ifail
   integer, intent(in), optional :: EmIterations, maxIters
 
   type(Jarr), dimension(nvar) :: theZGZ
@@ -37,19 +38,20 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   real(KINDR), dimension(((nvar+1)*(nvar+2)/2)) :: AI
   real(KINDR), dimension((nvar+1)) :: rhs
   real(KINDR), dimension(:), allocatable :: work
-  real(KINDR) :: logl, epsilon = 1.d-6
-  real(KINDR) :: val1, val2
+  real(KINDR) :: logl, oldlogl, epsilon = 1.d-6
+  real(KINDR) :: val1, val2, val3
   real(KINDR) :: detV, det_xt_vinv_x, yPy
   integer :: i, j, emIteration
-  integer :: ifail, iter, maxIter
+  integer :: iter, maxIter
   real(KINDR), external :: dnrm2, ddot, dasum
   !! ================ No defintion after this line ================ !!
   I = nobs * nobs
-  allocate(work(I))
-  
+  call alloc1D(work, I, "work","reml")
+
+  ifail = 0
   ! f is going to contain P*ZGZ_i
   do i = 1, nvar + 1
-     allocate(f(i)%array(nobs))
+     call alloc1D(f(i)%array, nobs, "f(i)%array", "reml")
   end do
 
   if (.not.present(EmIterations)) then
@@ -86,9 +88,9 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   i = nobs * (nobs + 1) / 2
   do j = 1, nvar 
      if (j .eq. 3) then
-        allocate(theZGZ(j)%array(nobs))
+        call alloc1D(theZGZ(j)%array, nobs, "theZGZ(3)%array", "reml")
      else        
-        allocate(theZGZ(j)%array(i))
+        call alloc1D(theZGZ(j)%array, i, "theZGZ(j)%array", "reml")
      end if
   end do
   if (nvar .eq. 3) then
@@ -105,7 +107,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
 69 format(a12, i3)
 70 format(1x, a9)
 71 format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
-
+72 format("  warning: error in reml")
   write(STDOUT, 69) "iteration: " ,0
   write(STDOUT, 70) " theta_0:"
   if (nvar .eq. 1) then
@@ -121,18 +123,29 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   end if
 
   iter = 0
-  do 
+  do
+     if (iter > 0) oldlogl = logl
+
      iter = iter + 1
      write(STDOUT, *)
      write(STDOUT, 69) "iteration: ", iter
 
-     call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
+     call calculateV(nobs, nvar, theta, theZGZ, V, verbose)
      if (verbose) write(STDOUT, *) " V is calculated"
 
-     call detInv(nobs, V, detV, ipiv, Py, verbose) !Py is work array here
+     call detInv(nobs, V, detV, ipiv, Py, verbose, ifail) !Py is work array here
+     if (ifail /= 0) then
+        write(STDOUT, 72) 
+        return
+     end if
      if (verbose) write(STDOUT, *) " V is replaced by its inverse"
 
-     call calculateP(nobs, nfix, V, X, P, det_xt_vinv_x, Vhat, work, temp, verbose)
+     call calculateP(nobs, nfix, V, X, P, det_xt_vinv_x, Vhat, work, temp,&
+         verbose, ifail)
+     if (ifail /= 0) then
+        write(STDOUT, 72)
+        return
+     end if
      if (verbose) write(STDOUT, *) " P is calcuated"
 
      call calculateLogL(nobs, detV,det_xt_vinv_x,P, y, LogL,Py, yPy, verbose)
@@ -152,7 +165,11 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
         call calculateAImatrix(nobs, nvar, P, AI, f, verbose)
         if (verbose) write(STDOUT, *) " AI matrix is calcuated"
 
-        call updatetheta(nvar, AI, rhs, theta, verbose)
+        call updatetheta(nvar, AI, rhs, theta, verbose, ifail)
+        if (ifail /= 0) then
+           write(STDOUT, 72)
+           return
+        end if
         if (verbose) write(STDOUT, *) " theta is updated"
      end if
      write(STDOUT, *) " variance vector:"
@@ -174,19 +191,43 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
      oldtheta(1:(nvar + 1)) = oldtheta(1:(nvar + 1)) - theta(1:(nvar + 1))
      val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
      val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
+     val3 = dabs((LogL - oldLogL)/oldLogL)
      write(STDOUT, *) "Errors (iter): ",iter
      write(STDOUT, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
-
      write(STDOUT, *) 
+     if (iter > 1) write(STDOUT, '(a,f15.7)') "  LogL error:", val3
 
-     if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon)) then
+
+     if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon) .and. (val3 < epsilon)) then
         write(STDOUT, '(a10)') "converged!"
         exit
      elseif (iter > maxiter) then
-        write(STDERR, '(a)') "reml did not converge"
-        stop 1
+        if ((val1 < sqrt(epsilon)).or.(val2 < epsilon) .and. (val3 > epsilon)) then
+           write(STDOUT, '(a)') " warning: variance vector converged but not LogL"
+        elseif ((val1 > sqrt(epsilon)).and.(val2 > epsilon)) then
+           write(STDOUT, '(a)') " warning: variance vector did not converge"
+           ifail = 1
+           return
+        end if
      end if
      oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
   end do
   deallocate(work)
+
+  ! reml may fail however
+  if (any(theta(1:2) < ZERO)) then
+     write(STDOUT, '(a)') "Invalid variance component in Reml&
+          &. Continuing with BLUP"
+     ifail = 1
+     return
+  elseif (nran==3) then
+     if  ( (theta(3) < ZERO) .or. (theta(nvar + 1) < ZERO) ) then
+        write(STDOUT, '(a)') "Invalid variance component in Reml&
+             &. Continuing with BLUP"
+        ifail = 1
+        return
+     end if
+  end if
+  ifail = 0
+
 end subroutine reml

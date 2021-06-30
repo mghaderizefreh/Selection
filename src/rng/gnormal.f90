@@ -50,7 +50,7 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
      if (mod(dim, 2) .eq. 1) dim2 = dim2 + 1
 
      ! making uniform distribution
-     allocate(uniform(N, dim2))
+     call alloc2D(uniform, N, dim2, "uniform", "gnormal")
      call random_number(uniform)
 
      ! making independent pairs of normally distributed data
@@ -65,7 +65,7 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
 
      if (dim .ne. dim2)then
         deallocate(uniform)
-        allocate(uniform(N,dim))
+        call alloc2D(uniform, N,dim, "uniform", "gnormal")
      end if
      uniform = output
 

@@ -19,8 +19,8 @@ program selection
   type(chromosome), dimension(:), pointer :: Parentgenome, Offgenome, thisGenome
   integer, dimension(:), allocatable :: seed
   real(KINDR) :: chrL, mutationRate
-  integer, dimension(:), pointer :: indiv, male, female
-  logical, dimension(:), pointer :: sex !true = male, false = female
+  integer, dimension(:), allocatable :: indiv, male, female
+  logical, dimension(:), allocatable :: sex !true = male, false = female
   integer, dimension(:,:,:), pointer :: parentGen, offGen!, this
 
   logical :: randomQTL, reactionNorm
@@ -41,15 +41,13 @@ program selection
   integer, allocatable, dimension(:) :: chr_nlocibefore, ipiv
   real(KINDR), allocatable, dimension(:) :: Py
 
-  real(KINDR), allocatable, dimension(:,:) :: TBV, CTE
-  real(KINDR), allocatable, dimension(:) :: Amat, means, phenotypes, theta, fixeff
+  real(KINDR), allocatable, dimension(:,:) :: tbv, CTE
+  real(KINDR), allocatable, dimension(:) :: Amat, means, phenotypes,&
+       theta, fixeff, old_theta, farmIndReal, farmEffects, weight
   real(KINDR), allocatable, dimension(:) :: chiasmaCumP, mutationCumP
-  real(KINDR), allocatable, dimension(:) :: farmIndReal, farmEffects
   real(KINDR) :: mutationCumP0, chiasmaCumP0
-  real(KINDR), allocatable, dimension(:) :: weight
   type(Jarr), dimension(:), allocatable :: raneff
-  integer, allocatable, dimension(:) :: ids
-  integer, allocatable, dimension(:) :: totalChiasma, totalMutation
+  integer, allocatable, dimension(:) :: totalChiasma, totalMutation, ids
   integer, allocatable, dimension(:,:) :: pedigree
   integer :: ivar, iscaled, nobs, maxid, nfix, nvar, nran
   type(variances) :: vars
@@ -84,54 +82,64 @@ program selection
        logfile)
 
   ! the rest of allocations
-  allocate(farmBounds(nfarm, 2))
+  call alloc2D(farmBounds, nfarm, 2, "farmBounds", "main")
   farmBounds(1:nfarm, 2) = ZERO
-  allocate(locations(nanim, nlox))
+  call alloc2D(locations, nanim, nlox, "locations", "main")
   locations(1:nanim, 1:nlox) = ZERO
-  allocate(X(nobs, nfix))
+  call alloc2D(X, nobs, nfix, "X", "main")
   X(1:nobs, 1:nfix) = ZERO
-  allocate(farmInd(nobs))
+  call alloc1I(farmInd, nobs, "farmInd", "main")
   farmInd(1:nobs) = 0
-  allocate(indiv(nanim), sex(nanim), CTE(nComp, 2))
+  call alloc1I(indiv, nanim, "indiv", "main")
+  call alloc1L(sex, nanim, "sex", "main")
+  call alloc2D(CTE, nComp, 2, "CTE", "main")
   indiv= (/( i, i = 1, nanim )/)
   ! the array sex corresponds to the new generation (before selection)
   sex(1:nanim) = .false. ! all female
   sex(1:nanim:n_opf) = .true. ! for each female one offspring is male
-  allocate(pedigree(nanim, 3))
+  call alloc2I(pedigree, nanim, 3, "pedigree", "main")
   pedigree(1:nanim, 1:3) = 0
   i = n_m * n_fpm
-  allocate(male(n_m), female(i))
-  allocate(ids(nobs), phenotypes(nobs))
+  call alloc1I(male, n_m, "male", "main")
+  call alloc1I(female, i, "female", "main")
+  call alloc1I(ids, nobs, "ids", "main")
+  call alloc1D(phenotypes, nobs, "phenotypes", "main")
   allocate(genome1(nChr))
   allocate(genome2(nChr))
-  allocate(SNPlist(nChr, nSNP))
-  allocate(QTLlist%indices(nChr, nQTL), QTLlist%values(nChr, nQTL, nComp))
-  allocate(TBV(nanim, ncomp))
+  call alloc2I(SNPlist, nChr, nSNP, "SNPlist", "main")
+  call alloc2I(QTLlist%indices, nChr, nQTL, "QTLlist%indices", "main")
+  call alloc3D(QTLlist%values, nChr, nQTL, nComp, "QTLlist%values", "main")
+  call alloc2D(tbv, nanim, ncomp, "tbv", "main")
   i = nAnim * (nAnim + 1) / 2 
-  allocate(AMat(i))
-  allocate(fixeff(nfix))
-  allocate(raneff(nran))
-  allocate(values(nanim))
+  call alloc1D(AMat, i, "AMat", "main")
+  call alloc1D(fixeff, nfix, "fixEff", "main")
+  allocate(ranEff(nRan))
+  call alloc1D(values, nanim, "values", "main")
   maxid = nanim ! maxval(indiv)
-  allocate(raneff(1)%array(maxid)) ! slope effect (genetic)
+  call alloc1D(ranEff(1)%array, maxid, "ranEff(1)%array", "main") ! slope effect (genetic)
   if (nran == 3) then
-     allocate(raneff(2)%array(maxid)) ! intercept effect (genetic)
-     allocate(raneff(3)%array(nobs))   ! environment slope effect (diagonal)
+     call alloc1D(raneff(2)%array,maxid,"ranEff(2)%array","main")! intercept effect (genetic)
+     call alloc1D(raneff(3)%array,nobs,"ranEff(3)%array","main")! env slope effect (diagonal)
   elseif (nran == 1) then
   else
      write(STDERR, *) " ERROR"
      write(STDERR, *) " not implemented for nran != 1 or 3"
      stop 2
   end if
-  allocate(chr_nlocibefore(nchr))
-  allocate(ipiv(nobs),Py(nobs))
+  call alloc1I(chr_nlocibefore, nchr, "chr_nlociBefore", "main")
+  call alloc1I(ipiv, nobs, "ipiv", "main")
+  call alloc1D(Py, nobs, "Py", "main")
   nelement = nObs * (nObs + 1) / 2 ! size V matrix, P, etc.
-  allocate(P(nelement), V(nelement))
-  allocate(Vhat(nfix, nobs))
-  allocate(temp(nobs, nfix))
+  call alloc1D(p, nelement, "p", "main")
+  call alloc1D(V, nelement, "v", "main")
+  call alloc2D(Vhat, nfix, nobs, "Vhat", "main")
+  call alloc2D(temp, nobs, nfix, "temp", "main")
   ! for covariate analysis, 2 step RN is required
-  allocate(FarmIndReal(nobs), farmEffects(nfarm))
-  allocate(theta(nvar+1))
+  call alloc1D(FarmIndReal, nobs, "farmIndReal", "main")
+  call alloc1D(farmEffects, nfarm, "farmEffects", "main")
+  i = nvar + 1
+  call alloc1D(theta, i, "theta", "main")
+  call alloc1D(old_theta, i, "old_theta", "main")
      
   call defineFarms(interval, nfarm, farmRange, farmBounds)
   open(1, file = 'farms.txt')
@@ -251,6 +259,7 @@ program selection
   ! a very simple guestimate for theta
   call getGen0Variance(nvar, nran, nanim, nobs, interval, &
        vars, phenotypes, theta)
+  old_theta(:) = theta(:)
   
   ParentGenome => genome1
   Offgenome    => genome2
@@ -260,22 +269,23 @@ program selection
   val2 = sum(tbv(1:nanim, 2)) / nanim
   write(STDOUT, 68) val1, val2
   write(iunoutput, 200) "gen", "mean(TBVs)", "mean(TBVi)", "var(TBVs)", &
-       "var(TBVi)", "Est(mu_s)", "Est(mu_i)", "acc(EBVs)", "acc(EBVi)"
+       "var(TBVi)", "Est(mu_s)", "Est(mu_i)", "acc(EBVs)", "acc(EBVi)",&
+       "acc(sl_score)", "acc(int_score)"
 68 format("slope: ", g25.14, "; intercept: ", g25.14)
 100 format(a)
 101 format(2a)
-200 format(a3,8(1x,a15))
+200 format(a3,10(1x,a15))
 201 format(i3,4(1x,f15.7))
 202 format(i3,3i5,i3,4(f15.7,1x),f15.7,i3)
 203 format(2(f15.7,1x))
 204 format(11(a,1x))
 205 format(2(a,i2.2,1x))
 206 format(a, i2)
-207 format(2(1x,a15),2(1x,f15.7))
+207 format(2(1x,a15),4(1x,f15.7))
 208 format(2(1x,f15.7))
 209 format(a15,1x,f15.7)
 210 format(1x,f15.7)
-211 format(4(1x,a15))
+211 format(6(1x,a15))
   write(iunoutput, 201, advance = 'no') 0, val1, val2, &
        variance(tbv(1:nanim, 1), nanim), variance(tbv(1:nanim, 2), nanim)
   ! initialising first generation individuals
@@ -290,9 +300,8 @@ program selection
      case (1) ! random
         call random_number(values)
         ! selectByIntercept needs raneff of size 1 (or size 2 but then effects must be on the second)
-        write(iunoutput, 207) "NaN", "NaN", &
-             correlation(values, TBV(:,1), nanim),&
-             correlation(values, TBV(:,2), nanim)
+        val1 = correlation(values, TBV(:,1), nanim)
+        write(iunoutput, 207) "NaN", "NaN", val1, val2, val1, val2
      case (2,3) ! requires analysis
         RN: if (reactionNorm) then
            if (selectionType.eq.3) then
@@ -300,7 +309,11 @@ program selection
               farmIndReal(1:nobs) = dble(farmInd(1:nobs))
               ! step 1: farm effects
               call leastSquare(verbose, nobs, nfarm, ids, farmIndReal,&
-                   phenotypes, farmEffects, ipiv, Py)
+                   phenotypes, farmEffects, ipiv, Py, ifail)
+              if (ifail /= 0) then
+                 write(STDERR, *) "stopping"
+                 stop 2
+              end if
               ! scaling farmeffects to [xmin, xmax]
               val1 = minval(farmEffects)
               val2 = maxval(farmEffects)
@@ -375,18 +388,14 @@ program selection
            i = 0 ! number of em iterations
            j = 20 ! number of ai iterations
            call reml(ids, X, phenotypes, nfix, nobs, maxid, nelement, Amat,&
-                nvar, nran, theta, verbose, ipiv, Py, P, V, Vhat, temp, i, j)
-           ! reml may fail however
-           if (any(theta(1:2)<0)) then
-              write(STDERR, 100) "Error:"
-              write(STDERR, *) "REML failed to obtain variance components"
-              stop 2
-           elseif (nran==3) then
-              if  ( (theta(3)<0) .or. (theta(nvar + 1)<0) ) then
-                 write(STDERR, 100) "Error:"
-                 write(STDERR, *) "REML failed to obtain variance components"
-                 stop 2
-              end if
+                nvar, nran, theta, verbose, ipiv, Py, P, V, Vhat, temp, &
+                ifail, i, j)
+           ! if ifail /= 0 then reml failed for some reasons
+           ! hence, use the previous variances
+           if (ifail /= 0) then
+              theta(:) = old_theta(:)
+           else
+              i = 999 ! code for reml success
            end if
         case(2) ! use from generation 0
            call getGen0Variance(nvar, nran, nanim, nobs, interval, vars, &
@@ -399,7 +408,27 @@ program selection
         ! now calculating effects
         call blup(ids, X, phenotypes, nfix, nobs, maxid, nelement, Amat,&
              nvar, nran, theta, fixeff, raneff, verbose, ipiv, Py, P, V, &
-             temp, Vhat)
+             Vhat, temp, ifail)
+
+        ! failure may be due to invalid variance components from reml.
+        ! so apart from failure, check whether reml ran succesfully
+        if (ifail /= 0) then
+           if ((varEst == 1) .and. (i == 999)) then
+              write(STDOUT, '(a,/,a)') " warning: blup failed.",&
+                 "Trying with previous variances"
+              theta(:) = old_theta(:)
+              call blup(ids, X, phenotypes, nfix, nobs, maxid, nelement,&
+                 Amat, nvar, nran, theta, fixeff, raneff, verbose, ipiv,&
+                 Py, p, v, vhat, temp, ifail)
+              if (ifail /= 0) then
+                 write(STDERR, *) "blup failed several times. stopping"
+                 stop 2
+              end if
+           end if
+        end if
+
+        ! finally record what was used by keeping it in old_theta
+        old_theta(:) = theta(:)
 
         !! write ebvs
         !write(formato, '(a3,i2.2)') 'ebv', igen
@@ -412,6 +441,16 @@ program selection
         !close(1)
         if (verbose) write(STDOUT, 100) "Genomic evaluation done"
         
+        !====================================
+        ! selection
+        !====================================
+        if (selectionType.eq.2) then
+           values(1:nanim) = raneff(1)%array(1:nanim)
+        elseif (selectionType.eq.3) then
+           values(1:nanim) = weight(1) * ranEff(1)%array(1:nanim) +&
+                weight(2) * ranEff(2)%array(1:nanim)
+        end if
+
         ! -----------------------------------
         ! getting ebv accuracy
         ! ----------------------------------
@@ -427,17 +466,11 @@ program selection
            write(6, *) 'accuracy', i, val1
            write(iunoutput, 210, advance = 'no') val1
         end do
+        do i = 1, 2
+           val1 = correlation(values, tbv(:,i), nanim)
+           write(iunoutput, 210, advance = 'no') val1
+        end do
         write(iunoutput, *)
-
-        !====================================
-        ! selection
-        !====================================
-        if (selectionType.eq.2) then
-           values(1:nanim) = raneff(1)%array(1:nanim)
-        elseif (selectionType.eq.3) then
-           values(1:nanim) = weight(1) * ranEff(1)%array(1:nanim) +&
-                weight(2) * ranEff(2)%array(1:nanim)
-        end if
         !====================================
         ! recording logs
         !====================================
@@ -556,7 +589,7 @@ program selection
      write(iunoutput, 201, advance = 'no') igen, val1, val2, val3, val4
 
   end do gen
-  write(iunoutput, 211) "NaN",  "NaN",  "NaN",  "NaN"
+  write(iunoutput, 211) "NaN",  "NaN",  "NaN",  "NaN", "NaN", "NaN"
   close(iunoutput)
   close(iunlog)
   call ifinal(seed, startfile)

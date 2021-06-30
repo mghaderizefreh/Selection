@@ -19,7 +19,7 @@ subroutine covariate(nComp, nObs, nAnim, nLox, TBV, E, phen, locations, means)
   end if
 
   if (.not.allocated(cte)) then
-     allocate(cte(nComp))
+     call alloc1D(cte, nComp, "cte", "covariate")
      cte(1:nComp) = ZERO
      do i = 1, nComp
         cte(i) = means(i) - sum(TBV(1:nAnim, i))/nAnim&

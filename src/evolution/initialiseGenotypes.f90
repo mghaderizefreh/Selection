@@ -59,7 +59,8 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
         genome(ichr)%nloci  = nloci
         genome(ichr)%nblock = nblock
         genome(ichr)%chrL = chrL
-        allocate(genome(ichr)%genotypes(nanim, 2, nblock))
+        call alloc3Ip(genome(ichr)%genotypes,nanim, 2, nblock, "genome(ichr)%genotypes",&
+             "initialiseGenotypes")
      end do
   end if
   ifail = 0
@@ -155,7 +156,8 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
 
         genome(ichr)%nloci  = nloci
         genome(ichr)%nblock = nblock
-        allocate (genome(ichr)%genotypes(nanim, 2, nblock))
+        call alloc3Ip (genome(ichr)%genotypes, nanim, 2, nblock, &
+             "genome(ichr)%genotypes", "initialiseGenotypes")
 
         if (k .eq. 0) then
            do id = 1, nanim
@@ -194,9 +196,9 @@ subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
      genome2(iChr)%nblock = genome(iChr)%nblock
      genome2(iChr)%chrL = genome(iChr)%ChrL
      genome2(iChr)%positions => genome(iChr)%positions
-     allocate(genome2(iChr)%genotypes(nanim, 2, genome(iChr)%nblock))
+     call alloc3Ip(genome2(iChr)%genotypes, nanim, 2, genome(iChr)%nblock, &
+          "genome2(iChr)%genotypes", "initialiseGenotypes")
   end do
-
 
   if (verbose) write(STDOUT,'(a)') " end initialising genotypes"
 

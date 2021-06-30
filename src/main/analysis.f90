@@ -242,12 +242,12 @@ program analysis
   end if
 
   if (doreml == 1) then
-     call Reml(id, X, y, nfix, nobs, maxid, nelement, temAmat, nvar, nran,&
-          theta, verbose, ipiv, Py, P, V, Vhat, temp, &
+     call Reml(id, X, y, nfix, nobs, maxid, nelement, temAmat, nvar,&
+          nran,theta, verbose, ipiv, Py, P, V, Vhat, temp, ifail, &
           emIterations = emIteration, maxIters = maxIter)
   end if
   call Blup(id, X, y, nfix, nobs, maxid, nelement, temAmat, nvar, nran,&
-       theta, fixEff, ranEff, verbose, ipiv, Py, P, V, Vhat, temp)
+       theta, fixEff, ranEff, verbose, ipiv, Py, P, V, Vhat, temp, ifail)
 
 
   if (verbose) write(STDOUT, *) 'fixed effects: ' , fixeff(1 : nfix)

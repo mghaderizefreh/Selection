@@ -19,8 +19,14 @@ subroutine selectParents(nanim, indiv, sex, n_m, n_fpm, male, female,&
 
   nmale = count(sex)
   nfemale = nAnim - nmale
-  if (.not.allocated(mI)) allocate(mI(nmale), fI(nfemale), &
-       mR(nmale), fR(nfemale), tempMI(nmale), tempFI(nfemale))
+  if (.not.allocated(mI)) then
+     call alloc1I(mI, nmale, "mI", "select")
+     call alloc1I(fI, nfemale, "fI", "select")
+     call alloc1D(mR, nmale, "mR", "select")
+     call alloc1D(fR, nfemale, "fR", "select")
+     call alloc1I(tempMI, nmale, "tempMI", "select")
+     call alloc1I(tempFI, nfemale, "tempFI", "select")
+  end if
   
   mI(1:nmale) = pack(indiv, sex) ! true is male, mI holds index of males
   mR(1:nmale) = effects(mI(1:nmale))! mR holds the bv of males

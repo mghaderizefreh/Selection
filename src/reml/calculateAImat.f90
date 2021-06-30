@@ -14,7 +14,7 @@ subroutine calculateAImatrix(nobs, nvar, P, AI, f, verbose)
   external :: dspmv
 
   if (verbose) write(STDOUT, *) "  In the subroutine calculateAImatrix"
-  allocate(temp(nobs))
+  call alloc1D(temp, nobs, "temp", "calculateAImat")
   k = 1
   do i = 1, (nvar + 1)
      call dspmv('u', nobs, 1.d0, P, f(i)%array, 1, 0.d0, temp, 1)
