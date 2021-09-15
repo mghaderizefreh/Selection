@@ -13,7 +13,7 @@ program selection
   integer :: nanim, nloci, nblock, maxloci, maxblock, ifail, nChr, nelement
   character(len=100) :: startFile, filename1, filename2, inputfile
   character(len=100) :: baseNameFreq, outputfile, logfile
-  integer :: iunoutput, iunlog
+  integer :: iunoutput, iunlog, iunFarm, iuniter
   character(len=60) :: formato
   type(chromosome), dimension(:), allocatable, target :: genome1, genome2
   type(chromosome), dimension(:), pointer :: Parentgenome, Offgenome, thisGenome
@@ -29,7 +29,7 @@ program selection
   real(KINDR), allocatable, dimension(:,:) :: Vhat, temp
   real(KINDR), dimension(2) :: interval, chalvl
   real(KINDR) :: farmRange, maf
-  real(KINDR), dimension(:,:), allocatable :: locations, farmBounds, X !incidence matrix
+  real(KINDR), dimension(:,:), allocatable :: locations, farmBounds, X !incid. mat.
   integer, dimension(:), allocatable :: farmInd
   integer :: nlox, nfarm, allocation
 
@@ -142,20 +142,22 @@ program selection
   call alloc1D(old_theta, i, "old_theta", "main")
      
   call defineFarms(interval, nfarm, farmRange, farmBounds)
-  open(1, file = 'farms.txt')
+  open(newUnit = iunFarm, file = 'farms.txt')
   do i = 1, nfarm
-     write(1, *) farmBounds(i, 1), farmBounds(i, 2)
+     write(iunFarm, *) farmBounds(i, 1), farmBounds(i, 2)
   end do
-  close(1)
+  close(iunFarm)
 
   open(newUnit = iunoutput, file = outputfile)
   open(newUnit = iunlog, file = logfile)
+  open(newUnit = iunIter, file = "iteration.var")
   write(iunlog, 204, advance = 'no') "g", "anim", "sire", "dam",&
-       "nlox", "tbv_s", "tbv_i", "ebv_s", "ebv_i", "value","farmInd"
+       "nlox", "tbv_s", "tbv_i", "ebv_s", "ebv_i", "value"
   do i = 1, nlox 
-     write(iunlog, 205, advance = 'no') "env",i,"phen",i
+     write(iunlog, 205, advance = 'no') i, i, i, i
   end do
   write(iunlog, *) 
+  write(iunIter, '(a)') "iteration estimation"
   ! ==============================================
   ! simulating first individuals from genepool
   ! ==============================================
@@ -251,13 +253,13 @@ program selection
   !write(formato, '(a,i2.2)') "phen", 0
   !open(1, file = trim(formato))
   !do i = 1, nobs
-  !   write(1, *) ids(i), X(i, 1), farmind(i), phenotypes(i)
+  !   write(1, *) ids(i), X(i, 1), farmInd(i), phenotypes(i)
   !end do
   !close(1)
 
   ! only for the first generation
   ! a very simple guestimate for theta
-  call getGen0Variance(nvar, nran, nanim, nobs, interval, &
+  call getGen0Variance(nvar, nran, nanim, nobs, interval, chalvl,&
        vars, phenotypes, theta)
   old_theta(:) = theta(:)
   
@@ -267,25 +269,26 @@ program selection
   if (verbose) write(STDOUT, 206) "generation ", 0 ! must be zero
   val1 = sum(tbv(1:nanim, 1)) / nanim
   val2 = sum(tbv(1:nanim, 2)) / nanim
-  write(STDOUT, 68) val1, val2
-  write(iunoutput, 200) "gen", "mean(TBVs)", "mean(TBVi)", "var(TBVs)", &
-       "var(TBVi)", "Est(mu_s)", "Est(mu_i)", "acc(EBVs)", "acc(EBVi)",&
-       "acc(sl_score)", "acc(int_score)"
-68 format("slope: ", g25.14, "; intercept: ", g25.14)
+  write(iunoutput, 200) "gen", "mean_TBVs", "mean_TBVi", "var_TBVs", &
+       "var_TBVi", "mu_s", "mu_i", "acc_EBVs", "acc_EBVi",&
+       "acc_scoreS", "acc_scoreI", "A_s", "A_i","rho", "E_s", "E_i"
 100 format(a)
 101 format(2a)
-200 format(a3,10(1x,a15))
-201 format(i3,4(1x,f15.7))
-202 format(i3,3i5,i3,4(f15.7,1x),f15.7,i3)
-203 format(2(f15.7,1x))
+200 format(a3,15(1x,a15))
+201 format(i0,4(1x,f15.7))
+202 format(i0,1x,3i5,i3,4(f15.7,1x),f15.7)
+203 format(1x,i0,3(1x,f15.7))
 204 format(11(a,1x))
-205 format(2(a,i2.2,1x))
+205 format(" farmInd",i2.2," farmEffectSc",i2.2," env",i2.2, " phen", i2.2)
 206 format(a, i2)
 207 format(2(1x,a15),4(1x,f15.7))
 208 format(2(1x,f15.7))
-209 format(a15,1x,f15.7)
+209 format(1x,a15,1x,f15.7)
 210 format(1x,f15.7)
 211 format(6(1x,a15))
+212 format(5(1x,f15.7))
+213 format(2(1x,a15))
+214 format(5(1x,a15))
   write(iunoutput, 201, advance = 'no') 0, val1, val2, &
        variance(tbv(1:nanim, 1), nanim), variance(tbv(1:nanim, 2), nanim)
   ! initialising first generation individuals
@@ -301,7 +304,12 @@ program selection
         call random_number(values)
         ! selectByIntercept needs raneff of size 1 (or size 2 but then effects must be on the second)
         val1 = correlation(values, TBV(:,1), nanim)
+        val2 = correlation(values, TBV(:,2), nanim)
+        val3 = variance(values, nanim)
+        val4 = variance(values, nanim)
         write(iunoutput, 207) "NaN", "NaN", val1, val2, val1, val2
+        write(iunoutput, 214) "NaN", "NaN", "NaN", "NaN", "NaN" 
+        write(iunIter, '(i4,a)') igen, "NA"
      case (2,3) ! requires analysis
         RN: if (reactionNorm) then
            if (selectionType.eq.3) then
@@ -326,6 +334,8 @@ program selection
                  if (farmInd(i) .eq. 1) cycle
                  X(i, farmInd(i) - 1) = ONE
               end do
+              ! and then including a column of ones in x
+              X(1:nobs, nFix) = ONE
               !!!!!!!!!!
               !! writing the incidence matrix
               !write(formato, '(a,i2.2)') "incidence", igen - 1
@@ -391,18 +401,35 @@ program selection
                 nvar, nran, theta, verbose, ipiv, Py, P, V, Vhat, temp, &
                 ifail, i, j)
            ! if ifail /= 0 then reml failed for some reasons
-           ! hence, use the previous variances
+           ! then try again with em iterations first
            if (ifail /= 0) then
+              write(STDOUT, '(A)') " REML failed to find variance components."
+              write(STDOUT, '(A)') "   trying again with 8 em iterations first"
               theta(:) = old_theta(:)
+              i = 8 ! number of em iterations
+              j = 25 ! number of ai iterations
+              call reml(ids, X, phenotypes, nfix, nobs, maxid, nelement, Amat,&
+                   nvar, nran, theta, verbose, ipiv, Py, P, V, Vhat, temp, &
+                   ifail, i, j)
+              if (ifail /= 0) then
+                 write(STDOUT, '(A)') " REML failed again"
+                 write(STDOUT, '(A)') "   doing a blup with previous (or 1st) var comps"
+                 theta(:) = old_theta(:)
+                 i = 900! code for reml failure
+              else
+                 i = 998! code for reml success at second attempt
+              end if
            else
-              i = 999 ! code for reml success
+              i = 999 ! code for reml success at first attempt
            end if
         case(2) ! use from generation 0
-           call getGen0Variance(nvar, nran, nanim, nobs, interval, vars, &
+           call getGen0Variance(nvar, nran, nanim, nobs, interval, chalvl, vars, &
                 phenotypes, theta)
+           i = 997 ! code for gen0
         case(3) ! use true values
            call getTrueVariance(nvar, nran, nanim, ncomp, nobs, interval, &
                 vars, tbv, phenotypes, theta)
+           i = 996 ! code for true vars
         end select varianceEstimation
         
         ! now calculating effects
@@ -412,20 +439,37 @@ program selection
 
         ! failure may be due to invalid variance components from reml.
         ! so apart from failure, check whether reml ran succesfully
-        if (ifail /= 0) then
-           if ((varEst == 1) .and. (i == 999)) then
+        blupfail: if (ifail /= 0) then
+           if ((varEst == 1) .and. (i >= 998)) then
               write(STDOUT, '(a,/,a)') " warning: blup failed.",&
                  "Trying with previous variances"
               theta(:) = old_theta(:)
               call blup(ids, X, phenotypes, nfix, nobs, maxid, nelement,&
                  Amat, nvar, nran, theta, fixeff, raneff, verbose, ipiv,&
                  Py, p, v, vhat, temp, ifail)
+              i = 900
               if (ifail /= 0) then
                  write(STDERR, *) "blup failed several times. stopping"
                  stop 2
               end if
+           else
+              write(STDERR, *) "blup should not have failed. stopping"
+              stop 2
            end if
-        end if
+        end if blupfail
+
+        recordingVarEstScen: select case(i)
+        case(999)
+           write(iunIter,'(i4,1x,a)') igen, "AI20EM00"
+        case(998) 
+           write(iunIter,'(i4,1x,a)') igen, "AI25EM08"
+        case(997)
+           write(iunIter,'(i4,1x,a)') igen, "Gen_Zero"
+        case(996)
+           write(iunIter,'(i4,1x,a)') igen, "True_Val"
+        case(900)
+           write(iunIter,'(i4,1x,a)') igen, "Previous"
+        end select recordingVarEstScen
 
         ! finally record what was used by keeping it in old_theta
         old_theta(:) = theta(:)
@@ -470,23 +514,34 @@ program selection
            val1 = correlation(values, tbv(:,i), nanim)
            write(iunoutput, 210, advance = 'no') val1
         end do
-        write(iunoutput, *)
+        ! -----------------------------------
+        ! getting variance of ebv
+        ! -----------------------------------
+        if (selectionType.eq.2) then
+           write(iunoutput, 210, advance = 'no') theta(1)
+           write(iunoutput, 213, advance = 'no') "NaN", "NaN"
+           write(iunoutput, 210, advance = 'no') theta(2)
+           write(iunoutput, '(1x,a15)') "NaN"
+        elseif (selectionType .eq. 3) then
+           write(iunoutput, 212) theta(1), theta(2), theta(4), &
+              theta(3), theta(5)
+        end if
         !====================================
         ! recording logs
         !====================================
         k = merge(2, 1, selectionType.eq.3)
 
-        do i = 1, nanim
+        do id = 1, nanim
            write(iunlog, 202, advance = 'no') &
-                igen, i, (pedigree(j,2), j=2,3), nlox, tbv(i,1), tbv(i,2), &
-                raneff(1)%array(i), raneff(k)%array(i), values(i), farmind(i)
-           do j = 1, nlox
+                igen, id, (pedigree(j,2), j=2,3), nlox, tbv(id,1), tbv(id,2), &
+                raneff(1)%array(id), raneff(k)%array(id), values(id)
+           i = (id - 1) * nlox
+           do j = ((id -1)*nlox+1), (id*nlox)
               write(iunlog, 203, advance = 'no') &
-                   locations(i,j), phenotypes((i-1)*nlox+j)
+                   farmInd(j), X(j,1), locations(id,j-i), phenotypes(j)
            end do
            write(iunlog, *) 
         end do
-
      end select genSel
 
      call selectParents(nanim, indiv, sex, n_m, n_fpm, male, female, values)
@@ -576,7 +631,7 @@ program selection
      !write(filename1, '(a,i2.2)') "phen", igen
      !open(1, file = trim(filename1))
      !do i = 1, nobs
-     !   write(1, *) ids(i), X(i, 1), farmind(i), phenotypes(i)
+     !   write(1, *) ids(i), X(i, 1), farmInd(i), phenotypes(i)
      !end do
      !close(1)
 
@@ -584,13 +639,14 @@ program selection
      val2 = sum(tbv(1:nanim,2))/nanim
      val3 = variance(tbv(1:nanim,1), nanim)
      val4 = variance(tbv(1:nanim,2), nanim)
-     !write(6, 68) val1, val2
 
      write(iunoutput, 201, advance = 'no') igen, val1, val2, val3, val4
 
   end do gen
-  write(iunoutput, 211) "NaN",  "NaN",  "NaN",  "NaN", "NaN", "NaN"
+  write(iunoutput, 211, advance = 'no') "NaN",  "NaN",  "NaN",  "NaN", "NaN", "NaN"
+  write(iunoutput, 211) "NaN",  "NaN",  "NaN",  "NaN", "NaN"
   close(iunoutput)
   close(iunlog)
+  close(iunIter)
   call ifinal(seed, startfile)
 end program selection

@@ -4,7 +4,8 @@ FC=ifort
 export TMPDIR=/exports/eddie/scratch/mghaderi/tmp
 ####flags="-g -C -warn all -check all -mkl"
 ####flags="-fast -static -mkl"   #some eddie nodes do not support xHost (it is embded in fast). Use next one
-flags="-mkl -ipo -O3 -static -fp-model fast=2 -xAVX -axCORE-AVX2 -qopenmp"
+####flags="-mkl -ipo -O3 -static -fp-model fast=2 -xAVX -axCORE-AVX2 -qopenmp"
+flags="-mkl -static -qopenmp"
 ## all function, subroutines and modules
 UTL="src/utils/constants.f90 src/utils/askFilename.f90 src/utils/countNumberLines.f90 src/utils/detInv.f90 src/utils/dunpack.f90 src/utils/readData.f90 src/utils/trace.f90 src/utils/global_module.f90"
 MATH="src/math/stats.f90 src/math/math.f90"

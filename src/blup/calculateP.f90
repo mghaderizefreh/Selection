@@ -80,7 +80,7 @@ subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, Vinvfull,&
   I = nobs * (nobs + 1) / 2
   val1 = ONE
   info = 1 ! info is the increment (not success state)
-  call daxpy(I, val1, vinv, info, P, info)
+  call daxpy(I, val1, Vinv, info, P, info)
   if (verbose) write(STDOUT, *) "  DAXPY finished calculating P (=vinv + P_old)"
   info = 0 ! because it was set to 1 to reuse a variable
   if (verbose) write(STDOUT,*) "  calculateP returned successfully"
