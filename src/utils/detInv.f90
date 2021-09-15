@@ -47,6 +47,7 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
   logDet = ZERO
   signDet = -1
   info = -1
+101 format("  warning: error in dspdrf_Ldet, info: ", i5)
   if (BLASuplo(1:1) == 'U' .or. BLASuplo(1:1) == 'u') then
 
      logDet = ZERO
@@ -59,6 +60,7 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
               info = i
               logDet = ZERO
               signDet = - 1
+              write(STDOUT, 101) info
               return
            else
               if (AP(ipos) < 0) k = k + 1
@@ -71,6 +73,7 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
                  info = i
                  logDet = ZERO
                  signDet = - 1
+                 write(STDOUT, 101) info
                  return
               else
                  if (val1 < 0) k = k + 1
@@ -93,31 +96,44 @@ subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
 end subroutine dspdrf_Ldet
 
 
-subroutine detInv(nobs, V, detV, ipiv, work, verbose)
+subroutine detInv(nobs, V, detV, ipiv, work, verbose, info)
   use constants
   implicit none
   logical, intent(in) :: verbose
   integer, intent(in) :: nobs
+  integer, intent(inout) :: info
   integer, dimension(1:nobs), intent(inout) :: ipiv
   real(KINDR), dimension(1:nobs), intent(inout) :: work
   real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(inout) :: V
   real(KINDR), intent(out) :: detV
 
-  integer :: ifail, ineg, info
+  integer :: ineg
   external :: dsptri, dsptrf, dspdrf_Ldet
 
   if (verbose) write(STDOUT, *) "  In the subroutine detinv"
   call dsptrf('u', nobs, V, ipiv, info)
   if (verbose) write (STDOUT, *) "  info after DSPTRF", info
-  if ( info == 0 ) then
-     call dspdrf_Ldet ( 'u', nobs, V, ipiv, detV, ineg, ifail )
-     if (verbose) write(STDOUT, *) "  log detV ineg", detV, ineg
-     call dsptri('u', nobs, V, ipiv, work, info)
-     if (verbose) write(STDOUT, *) "  info after DSPTRI", info
-  else if ( info < 0 ) then
-     write(STDERR, *) "  error with input variables (inside detinv)", info
-     stop 1
+  if ( info /= 0 ) then
+     write(STDOUT, 100) "dsptrf", info
+     return
   end if
+
+  call dspdrf_Ldet ( 'u', nobs, V, ipiv, detV, ineg, info)
+  if (verbose) write(STDOUT, *) "  log detV ineg", detV, ineg
+  if ( info /= 0) then
+     write(STDOUT, 99) 
+     return
+  end if
+
+  call dsptri('u', nobs, V, ipiv, work, info)
+  if (verbose) write(STDOUT, *) "  info after DSPTRI", info
+  if ( info /= 0 ) then
+     write(STDOUT, 100) "dsptri", info
+     return
+  end if
+
+99 format("  warning: error in detinv ")
+100 format("  warning: error in ",a ," info:",i5,/,"  warning: error in detinv")
   if (verbose) write(STDOUT, *) "  detinv return successfully"
 end subroutine detInv
 

@@ -1,4 +1,4 @@
-subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp)
+subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp, info)
   use constants
   use quickSort
   implicit none
@@ -11,7 +11,7 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp)
   integer, dimension(1:nobs), intent(inout) :: tempInd
   real(KINDR), dimension(1:nobs), intent(inout) :: temp
   character :: uplo, trans
-  integer :: info
+  integer, intent(inout) :: info
   integer :: i, j
 
   real(KINDR) :: val1, val2
@@ -26,7 +26,7 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp)
   if (id(1) > 0) then
   end if
   
-  allocate(X(nobs, nfix))
+  call alloc2D(X,nobs, nfix, "x", "leastSquare")
   ! counting distinct values in the environment (nfix)
   call sortrx(nobs, env, tempInd)
   i = 1
@@ -39,7 +39,7 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp)
      end if
   end do
   if (nfix .ne. j) then 
-     write(STDERR, '(a)') "Error:"
+     write(STDERR, '(a)') "Error in leastSquare:"
      write(STDERR, *) " more/less levels than number of fixed effects"
      write(STDERR, *) " nfix:", nfix, "; counted:", j
      stop 2
@@ -87,16 +87,20 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp)
   ! to get proper value for lwork first it is passed as -1
   lwork = -1
   call dsysv(uplo, nfix, i, XtX, nfix, ipiv, effects, nfix, junk, lwork, info)
-  ! todo: a control is needed here to make sure info=0
+  if (info /= 0) then
+     write(STDERR, '(A)') "Error in leastSquare:"
+     write(STDERR, *) "Could not get optimum lwork size. Exiting"
+     stop 2
+  end if
   lwork = int(junk(1))
-  allocate(work(lwork))
+  call alloc1D(work, lwork, "work", "leastSquare")
   call dsysv(uplo, nfix, i, XtX, nfix, ipiv, effects, nfix, work, lwork, info)
   if (info .ne. 0) then
-     write(STDERR, '(a)') "Error:"
+     write(STDERR, '(a)') "Error in leastSquare:"
      if (info .lt. 0) then
         write(STDERR, *) " illegal value at ", -info
      else
-        write(STDERR, *) " matrix is not positive definite"
+        write(STDERR, *) " matrix is not positive definite. Exiting"
      end if
      stop 2
   else

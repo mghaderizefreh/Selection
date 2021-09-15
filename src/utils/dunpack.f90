@@ -15,6 +15,7 @@ subroutine dunpack(uplo, n, ap, a, lda, info)
 
   if (n .ne. lda) then
      info = 2
+     write(STDOUT, '(a,i3)') "  warning: error in dunpack. info:", info
      return
   end if
   info = 1

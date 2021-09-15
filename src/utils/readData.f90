@@ -179,7 +179,7 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
   write(STDOUT, 34) "number of components", nComp
 
   ! variance (A)
-  allocate(vars%A(ncomp))
+  call alloc1D(vars%A, ncomp, "vars%A", "readInput")
   do i = 1, nComp
      call nextInput(iun, line, lno)
      read(line, *, iostat = stat) rinput
@@ -191,7 +191,7 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
   end do
 
   ! variance (E)
-  allocate(vars%E(ncomp))
+  call alloc1D(vars%E, ncomp, "vars%E", "readInput")
   do i = 1, nComp
      call nextInput(iun, line, lno)
      read(line, *, iostat = stat) rinput
@@ -202,11 +202,12 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
      write(STDOUT, 35) trim(formato), vars%E(i)
   end do
 
-  allocate(vars%PE(ncomp))
+  call alloc1D(vars%PE, ncomp, "vars%PE", "readInput")
   vars%PE = ZERO
 
   ! correlations
-  allocate(vars%corr(ncomp,ncomp), vars%cov(ncomp,ncomp))
+  call alloc2D(vars%corr, ncomp, ncomp, "vars%corr", "readInput")
+  call alloc2D(vars%cov, ncomp, ncomp, "vars%cov", "readInput")
   do i = 1, ncomp
      do j = 1, i
         call nextInput(iun, line, lno)
@@ -317,7 +318,7 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
   end select
 
   ! means
-  allocate(means(ncomp))
+  call alloc1D(means, ncomp, "means", "readInput")
   do i = 1, nComp
      call nextInput(iun, line, lno)
      read(line, *, iostat = stat) rinput
@@ -351,7 +352,7 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
      write(STDOUT, *) "(UNSPECIFIED!!)"
   end select
      ! weight
-  allocate(weight(ncomp))
+  call alloc1D(weight, ncomp, "weight", "readInput")
   do i = 1, ncomp
      call nextInput(iun, line, lno) ! for slope
      read(line, *, iostat = stat) rinput

@@ -12,7 +12,8 @@ subroutine istart(seed, startfile, returnVal)
   character(len=7) :: fmto
   call random_seed(size = n)
   write(fmto, "(a1,i2,a4)") "(", n, "i12)"
-  allocate(initial(n), seed(n))
+  call alloc1I(initial, n, 'seed', 'istart')
+  call alloc1I(seed, n, 'seed', 'istart')
   inquire (file=startfile,exist=iex)
   if (iex) then
      open(newUnit = iun, file=startfile, form='formatted',status='old')
@@ -62,7 +63,7 @@ subroutine ifinal(seed,startfile)
   call random_seed(size = n)
   HUGEN = huge(n)
   write(fmto, "(a1,i2,a4)") "(", n, "i12)"
-  allocate(values(n))
+  call alloc1D(values, n, "values", "ifinal")
   call random_number(values)
   forall (i = 1:n)
      seed(i) = int( (2*values(i) - 1) * HUGEN)

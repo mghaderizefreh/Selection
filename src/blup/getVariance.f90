@@ -1,11 +1,12 @@
-subroutine getGen0Variance(nvar, nran, nanim, nobs, interval, vars, y, theta)
+subroutine getGen0Variance(nvar, nran, nanim, nobs, interval, chalvl, vars, y,&
+     theta)
   use constants
   use global_module
   use math
   implicit none
   !! ================ variable definitions  ================ !!
   integer, intent(in) :: nvar, nran, nanim, nobs
-  real(KINDR), dimension(1:2), intent(in) :: interval
+  real(KINDR), dimension(1:2), intent(in) :: interval, chalvl
   type(variances), intent(in) :: vars
   real(KINDR), dimension(1:nobs) :: y
   real(KINDR), dimension(1:(nvar+1)) :: theta
@@ -35,8 +36,10 @@ subroutine getGen0Variance(nvar, nran, nanim, nobs, interval, vars, y, theta)
      theta(1) = variance(y, nobs) * val1
      theta(2) = variance(y, nobs) * (ONE - val1)
   elseif (nran == 3) then
-     theta(1:2) = vars%A(1:2)
-     theta(3) = vars%E(1)
+     val1 = (interval(2) - interval(1)) / (chalvl(2) - chalvl(1))
+     theta(1) = vars%A(1) * (val1 ** 2)
+     theta(2) = vars%A(2)
+     theta(3) = vars%E(1) * (val1 ** 2)
      theta(nvar+1) = vars%E(2)
      if (nvar == 3) then
      elseif (nvar == 4) then

@@ -15,10 +15,17 @@ subroutine GetMutRecArray(verbose, maxVal, chrL, mutationRate, nLoci, &
   integer, intent(out) :: maxchiasma, maxmutations
 
   real(KINDR) :: v1, v2, v3
+  integer :: i, j
 
-
-  allocate(chiasmacumP(maxval), mutationcumP(maxval))
-  allocate(totalchiasma(0:maxval), totalmutation(0:maxval))
+  call alloc1D(chiasmacumP, maxval, "chiasmaCumP", "GetMutRecArray")
+  call alloc1D(mutationcumP, maxval, "mutationCumP", "GetMutRecArray")
+  allocate(totalchiasma(0:maxval), stat = i)
+  allocate(totalmutation(0:maxval), stat = j)
+  if ((i*j).ne.0) then
+     write(STDERR, '(A)') "Error:"
+     write(STDERR, *) "could not allocate totalChiasma or totalMutation"
+     stop 2
+  end if
 
   totalmutation(0:maxval) = 0
   totalchiasma(0:maxval) = 0

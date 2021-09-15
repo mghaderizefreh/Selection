@@ -55,7 +55,7 @@ program analysis
   elseif (nran .eq. 1) then
      call askInteger(nfix, "Number of fix effects (excluding mean)")
      if (nfix > 0) then
-        allocate(levels(nfix))
+        call alloc1I(levels, nfix, "levels", "analysis")
         j = 0
         do i = 1, nfix
            write(msg, '(a,1x,i2)') "Number of levels for effect", i
@@ -64,7 +64,7 @@ program analysis
            j = j + k
         end do
      end if
-     nfix = nfix + 1
+     nfix = nfix + 1 ! there is also the mean (so +1)
   else
      write(STDERR, '(a)') "Error"
      write(STDERR, *) "not implemented for nran = ", nran
@@ -84,13 +84,16 @@ program analysis
   nobs = lines - empties
 
   ! allocating y (phenotypes) and id (real(KINDR) id of animals) and incidience matrix
-  allocate(y(nobs), id(nobs), Xtemp(nobs, (nfix-1)))
+  call alloc1D(y, nobs, "y", "analysis")
+  call alloc1I(id, nobs, "id", "analysis")
+  j = nfix - 1 ! xtemp(used only in nran=1) should have one column less
+  call alloc2I(Xtemp, nobs, j, "Xtemp", "analysis")
 
   ! reading the data
   open(newUnit = phenFileID, file = phenFile, status = 'old')
   maxid = 0
   if ((nran == 1).and.(nfix == 1)) then
-     allocate(X(nobs,nfix))
+     call alloc2D(X, nobs,nfix, "X", "analysis")
      do i = 1, nobs
         read(phenFileID, *) id(i), y(i)
         if (maxid < id(i)) maxid = id(i)
@@ -98,21 +101,21 @@ program analysis
      X(1:nobs, 1) = ONE
   elseif ((nran == 1).and.(nfix > 1)) then
      j = sum(levels)
-     allocate(X(nobs, j))
+     call alloc2D(X, nobs, j, "X", "analysis")
      do i = 1, nobs
         read(phenFileID, *) id(i), Xtemp(i, 1:(nfix-1)), y(i)
         k = 0
         do j = 1, (nfix-1)
            if (xtemp(i,j) .eq. 1) cycle
            X(i, Xtemp(i, j) + k - 1) = ONE
-           k = k + levels(j)
+           k = k + levels(j)! todo: -1 here for more tahn 1 fix effect
         end do
         if (maxid < id(i)) maxid = id(i)
      end do
      nfix = sum(levels)
      X(1:nobs, nfix) = ONE
   elseif (nran == 3) then
-     allocate(X(nobs,nfix))
+     call alloc2D(X, nobs, nfix, "X", "analysis")
      do i = 1, nobs
         read(phenFileID,*) id(i), X(i,1), y(i)
         X(i, nfix) = ONE
@@ -125,12 +128,12 @@ program analysis
   end if
   close(phenFileID)
 
-  allocate(fixeff(nfix))
+  call alloc1D(fixeff, nfix, "fixeff", "analysis")
   allocate(raneff(nran))
-  allocate(raneff(1)%array(maxid)) ! slope effect (genetic)
+  call alloc1D(raneff(1)%array, maxid, "raneff(1)%array", "analysis") ! slope effect (genetic)
   if (nran == 3) then
-     allocate(raneff(2)%array(maxid)) ! intercept effect (genetic)
-     allocate(raneff(3)%array(nobs))   ! environment slope effect (diagonal)
+     call alloc1D(raneff(2)%array, maxid, "raneff(2)%array", "analysis") ! intercept effect (genetic)
+     call alloc1D(raneff(3)%array, nobs, "raneff(3)%array", "analysis") ! environment slope effect (diagonal)
   elseif (nran == 1) then
   else
      write(STDERR, *) " ERROR"
@@ -159,10 +162,11 @@ program analysis
   close(AmatFileID)
 
   i = (maxid + 1) * maxid / 2
-  allocate(temAmat(i))
+  call alloc1D(temAmat, i, "temAmat", "analysis")
 
   nelement = (nobs + 1) * nobs / 2
-  allocate(P(nelement), V(nelement))
+  call alloc1D(P, nelement, "P", "analysis")
+  call alloc1D(V, nelement, "V", "analysis")
 
   j = 0 ! file is not binary
   k = 0 ! number of lines to skip
@@ -170,7 +174,7 @@ program analysis
   if (verbose) write(STDOUT, *) " end reading files"
 
   THETACOND: if (nran .eq. 3) then
-     allocate(oldtheta(5))
+     call alloc1D(oldtheta, 5, "oldTheta", "analysis")
      write(STDOUT, '(a27)') "initial guess for variances"
      write(STDOUT, '(3x, a23)', advance = 'no') "genetic part of slope: "
      read(STDIN, *) oldtheta(1)
@@ -197,15 +201,17 @@ program analysis
      ! using the amount of memory
      if (oldtheta(4) == 0.d0) then 
         nvar = 3
-        allocate(theta(nvar + 1))
+        i = nvar + 1
+        call alloc1D(theta, i, "theta", "analysis")
         theta(1 : nvar) = oldtheta(1 : nvar)
         theta(nvar + 1) = oldtheta(nvar + 2)
         deallocate(oldtheta)
-        allocate(oldtheta(nvar + 1))
+        call alloc1D(oldtheta, i, "oldetheta", "analysis")
         write(STDOUT, '(2x,a22)') "no correlation assumed"
      else
         nvar = 4
-        allocate(theta(nvar + 1))
+        i = nvar + 1
+        call alloc1D(theta, i, "theta", "analysis")
         theta(1 : (nvar + 1)) = oldtheta(1 : (nvar + 1))
         write(STDOUT, '(2x,a30)') "correlation taken into account"
      end if
@@ -213,8 +219,8 @@ program analysis
      allocate(oldtheta(2), theta(2))
      val1 = sum(y) / size(y)
      val2 = sum((y - val1) ** 2) / (size(y) - 1)
-     write(STDOUT, '(a27)') "initial guess for variances"
-     write(STDOUT, '(3x, a20)', advance = 'no') "heritability"
+     write(STDOUT, '(a27)') "initial guess for"
+     write(STDOUT, '(1x, a20)', advance = 'no') "heritability: "
      read(STDIN, *) val1
      oldtheta(1) = val2 * val1
      oldtheta(2) = (1-val1) * val2
@@ -230,10 +236,10 @@ program analysis
 
   call askYesNoInteger(doreml, " is a reml required (1:Yes, 0:No)?", 1)
 
-  allocate(Vhat(nfix, nobs))
-  allocate(temp(nobs, nfix))
-  allocate(ipiv(nobs))
-  allocate(py(nobs))
+  call alloc2D(Vhat, nfix, nobs, "Vhat", "analysis")
+  call alloc2D(temp, nobs, nfix, "temp", "analysis")
+  call alloc1I(ipiv, nobs, "ipiv", "analysis")
+  call alloc1D(py, nobs, "Py", "analysis")
 
   if (doreml == 1) then
      call askInteger(emiteration, " number of EM iterations (in case reml): ")
@@ -242,13 +248,22 @@ program analysis
   end if
 
   if (doreml == 1) then
-     call Reml(id, X, y, nfix, nobs, maxid, nelement, temAmat, nvar, nran,&
-          theta, verbose, ipiv, Py, P, V, Vhat, temp, &
+     call Reml(id, X, y, nfix, nobs, maxid, nelement, temAmat, nvar,&
+          nran,theta, verbose, ipiv, Py, P, V, Vhat, temp, ifail, &
           emIterations = emIteration, maxIters = maxIter)
   end if
+  if (ifail /= 0) then
+     write(STDOUT, '(A)') "Error:"
+     write(STDOUT, *) "REML failed to obtain valid variance components."
+     stop 2
+  end if
   call Blup(id, X, y, nfix, nobs, maxid, nelement, temAmat, nvar, nran,&
-       theta, fixEff, ranEff, verbose, ipiv, Py, P, V, Vhat, temp)
-
+       theta, fixEff, ranEff, verbose, ipiv, Py, P, V, Vhat, temp, ifail)
+  if (ifail /= 0) then
+     write(STDOUT, '(A)') "Error:"
+     write(STDOUT, *) "BLUP failed to estimate BVs."
+     stop 2
+  end if
 
   if (verbose) write(STDOUT, *) 'fixed effects: ' , fixeff(1 : nfix)
 
@@ -264,20 +279,18 @@ program analysis
   close(iunfix)
 
   write(formato, 271) "(", (nvar+1), "a24)"
-  if (nfix == 2) then
-     if (nvar .eq. 4) then
-        write(iunvar, formato) "var_A_slope","var_A_intercept", &
-             "corr(A_int,A_slope)", "var_E_slope", "var_E_intercept"
-        write(formato, 270) "(", nvar, "(f24.15, 1x), f24.15)"
-        write(iunvar, formato)  theta(1:2), theta(4) / sqrt(theta(1) &
-             * theta(2)) , theta(3), theta(5)
-     elseif (nvar .eq. 3) then
-        write(iunvar, formato) "var_A_slope","var_A_intercept", &
-             "var_E_slope", "var_E_intercept"
-        write(formato, 270) "(", nvar, "(f24.15, 1x), f24.15)"
-        write(iunvar, formato)  theta(1:4)
-     end if
-  elseif (nfix == 1) then
+  if (nvar .eq. 4) then
+     write(iunvar, formato) "var_A_slope","var_A_intercept", &
+          "corr(A_int,A_slope)", "var_E_slope", "var_E_intercept"
+     write(formato, 270) "(", nvar, "(f24.15, 1x), f24.15)"
+     write(iunvar, formato)  theta(1:2), theta(4) / sqrt(theta(1) &
+          * theta(2)) , theta(3), theta(5)
+  elseif (nvar .eq. 3) then
+     write(iunvar, formato) "var_A_slope","var_A_intercept", &
+          "var_E_slope", "var_E_intercept"
+     write(formato, 270) "(", nvar, "(f24.15, 1x), f24.15)"
+     write(iunvar, formato)  theta(1:4)
+  elseif (nran == 1) then
      write(iunvar, formato) "genetic","residual"
      write(formato, 270) "(", nvar, "(g24.15, 1x), g24.15)"
      write(iunvar, formato)  theta(1:2)

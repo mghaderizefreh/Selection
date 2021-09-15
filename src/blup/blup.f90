@@ -1,5 +1,5 @@
 subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
-     theta, fixEffects, ranEffects, verbose, ipiv, Py, P, V, Vhat, temp)
+     theta, fixEffects, ranEffects, verbose, ipiv, Py, P, V, Vhat, temp, info)
 
   use constants
   use global_module
@@ -18,6 +18,7 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   real(KINDR), dimension(1:nelement), intent(inout) :: V
   real(KINDR), dimension(1:nfix,1:nobs), intent(inout) :: Vhat
   real(KINDR), dimension(1:nobs,1:nfix), intent(inout) :: temp
+  integer, intent(inout) :: info
 
   real(KINDR), dimension(nfix), intent(out) :: fixEffects
   type(Jarr), dimension(1:nran), intent(inout) :: ranEffects
@@ -25,12 +26,12 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   type(Jarr), dimension(1:nvar) :: theZGZ
   real(KINDR), dimension(:), allocatable :: work
   ! nelements = nobs * (nobs + 1) / 2
-  integer :: ifail, i, j
+  integer :: i, j
   real(KINDR) :: val1, val2
   external :: dspmv
   !! ================ No defintion after this line ================ !!
   i = nobs * nobs
-  allocate(work(I))
+  call alloc1D(work, I, "work", "blup")
 
   if (nvar == 3) then
      if (any ( theta < 0 )) then
@@ -45,9 +46,9 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   i = nobs * (nobs + 1) / 2
   do j = 1, nvar
      if (j .eq. 3) then
-        allocate(theZGZ(j)%array(nobs))
+        call alloc1D(theZGZ(j)%array, nobs, "theZGZ(3)%array", "blup")
      else
-        allocate(theZGZ(j)%array(i))
+        call alloc1D(theZGZ(j)%array, i, "theZGZ(j)%array", "blup")
      end if
   end do
 
@@ -62,14 +63,22 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   end if
   if (verbose) write(STDOUT, *) " ZGZ created"
 
-  call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
+  call calculateV(nobs, nvar, theta, theZGZ, V, verbose)
   if (verbose) write(STDOUT, *) " V is calculated"
 
-  call detInv(nobs, V, val1, ipiv, work, verbose)
+  call detInv(nobs, V, val1, ipiv, work, verbose, info)
+  if (info /= 0) then
+     write(STDOUT, 211)
+     return
+  end if
   if (verbose) write(STDOUT, *) " V is replaced by its inverse"
 
   ! val = det(x'*vinv*x)
-  call calculateP(nobs, nfix, V, X, P, val2, Vhat, work, temp, verbose)
+  call calculateP(nobs, nfix, V, X, P, val2, Vhat, work, temp, verbose, info)
+  if (info /= 0) then
+     write(STDOUT, 211)
+     return
+  end if
   if (verbose) write(STDOUT, *) " P is calcuated"
 
   call dspmv('u', nobs, 1.d0, P, y, 1, 0.d0, Py, 1)
@@ -79,5 +88,8 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
        Py, y, X, id, fixEffects, ranEffects, verbose)
   if (verbose) write(STDOUT, *) " Effects are estimated"
 
+211 format("   warning: error in blup")
+
+  info = 0 ! successful completion
   deallocate(work)
 end subroutine blup

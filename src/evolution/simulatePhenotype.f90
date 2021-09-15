@@ -47,7 +47,7 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, nran,&
   end do
   X(1:nobs, nFix) = ONE ! for mu_int
 
-  allocate(E(nobs,nComp))
+  call alloc2D(E, nobs,nComp, "e", "simulatePhenotype")
   call gnormal(tempr, temp2, nComp, nobs, E)
    ! todo: implementation for PE if really it is required
 
@@ -140,7 +140,8 @@ subroutine allocateInd(nAnim, nlox, nobs, nfarm, allocation, farmBounds,&
         stop 2
      end if
 
-     allocate(temp1(nm), temp2(nm))
+     call alloc1I(temp1, nm, "temp1", "allocateInd")
+     call alloc1I(temp2, nm, "temp2", "allocateInd")
      do i = 1, spf
         j = (i-1)*nfarm + 1
         k = i * nfarm

@@ -21,7 +21,7 @@ subroutine Choice(source, sourceDim, sourceSize, number, output, outputDim, seed
   if (present(seed)) then
      call random_seed(put = seed)
   end if
-  allocate(sourceCopy(sourceSize))
+  call alloc1I(sourceCopy, sourceSize, "sourceCopy", "choice")
   ! First take a copy of source because arrays are passed by reference (are they?)
   forall (i = 1:sourceSize)
      sourceCopy(i) = source(i)

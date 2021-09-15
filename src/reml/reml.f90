@@ -8,7 +8,7 @@
 !   7     ZsZi+ZiZs   perm. env. effect slope-intercept covariance
 ! (last)  Identity    env. intercept (NOT COUNTED IN theZGZ and it is LAST one)
 subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
-     theta, verbose, ipiv, Py, P, V, Vhat, temp, EmIterations, maxIters)
+     theta, verbose, ipiv, Py, P, V, Vhat, temp, ifail, EmIterations, maxIters)
 
   use constants
   use global_module
@@ -29,6 +29,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   real(KINDR), dimension(1:nelement), intent(inout) :: V
   real(KINDR), dimension(1:nfix,1:nobs), intent(inout) :: Vhat
   real(KINDR), dimension(1:nobs,1:nfix), intent(inout) :: temp
+  integer, intent(inout) :: ifail
   integer, intent(in), optional :: EmIterations, maxIters
 
   type(Jarr), dimension(nvar) :: theZGZ
@@ -37,19 +38,22 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   real(KINDR), dimension(((nvar+1)*(nvar+2)/2)) :: AI
   real(KINDR), dimension((nvar+1)) :: rhs
   real(KINDR), dimension(:), allocatable :: work
-  real(KINDR) :: logl, epsilon = 1.d-6
-  real(KINDR) :: val1, val2
+  real(KINDR) :: logl, oldlogl, epsilon = 1.d-6
+  real(KINDR) :: val1, val2, val3
   real(KINDR) :: detV, det_xt_vinv_x, yPy
   integer :: i, j, emIteration
-  integer :: ifail, iter, maxIter
+  integer :: iter, maxIter
+  logical :: checkForLogL, exceptionPass
   real(KINDR), external :: dnrm2, ddot, dasum
   !! ================ No defintion after this line ================ !!
   I = nobs * nobs
-  allocate(work(I))
-  
+  call alloc1D(work, I, "work","reml")
+  checkForLogL = .true. ! default is true
+  exceptionPass = .false. ! default is false (because exceptionPass /= checkForLogL)
+  ifail = 0
   ! f is going to contain P*ZGZ_i
   do i = 1, nvar + 1
-     allocate(f(i)%array(nobs))
+     call alloc1D(f(i)%array, nobs, "f(i)%array", "reml")
   end do
 
   if (.not.present(EmIterations)) then
@@ -86,9 +90,9 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   i = nobs * (nobs + 1) / 2
   do j = 1, nvar 
      if (j .eq. 3) then
-        allocate(theZGZ(j)%array(nobs))
+        call alloc1D(theZGZ(j)%array, nobs, "theZGZ(3)%array", "reml")
      else        
-        allocate(theZGZ(j)%array(i))
+        call alloc1D(theZGZ(j)%array, i, "theZGZ(j)%array", "reml")
      end if
   end do
   if (nvar .eq. 3) then
@@ -104,40 +108,51 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
 
 69 format(a12, i3)
 70 format(1x, a9)
-71 format(1x, a10, 1x, f24.15, a10, 1x, f24.15)
-
+71 format(3x, "-", a, ":", 1x, g24.15)
+72 format("  warning: error in reml")
   write(STDOUT, 69) "iteration: " ,0
   write(STDOUT, 70) " theta_0:"
   if (nvar .eq. 1) then
-     write(STDOUT, '(a11,2x,a11)') "A", "E"
+     write(STDOUT, '(a24,1x,a24)') "A", "E"
      write(STDOUT, *) theta(1:2)
   else
-     write(STDOUT, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
-     if (nvar == 4) write(STDOUT, '(2x,a11)', advance = 'no') "covariance"
-     write(STDOUT, '(2(2x,a11))') "E_slope", "E_intercept"
-     write(STDOUT, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
-     if (nvar == 4) write(STDOUT, '(2x,f11.7)', advance = 'no') theta(4)
-     write(STDOUT, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+     write(STDOUT, '(a24,1x,a24)',advance = 'no') "A_slope", "A_intercept"
+     if (nvar == 4) write(STDOUT, '(1x,a24)', advance = 'no') "covariance"
+     write(STDOUT, '(2(1x,a24))') "E_slope", "E_intercept"
+     write(STDOUT, '(g24.15,1x,g24.15)', advance = 'no') theta(1:2)
+     if (nvar == 4) write(STDOUT, '(1x,g24.15)', advance = 'no') theta(4)
+     write(STDOUT, '(2(1x,g24.15))') theta(3), theta(nvar + 1)
   end if
 
   iter = 0
-  do 
+  do
+     if (iter > 0) oldlogl = logl
+
      iter = iter + 1
      write(STDOUT, *)
      write(STDOUT, 69) "iteration: ", iter
 
-     call calculateV(nobs, nvar, theta, theZGZ, ifail, V, verbose)
+     call calculateV(nobs, nvar, theta, theZGZ, V, verbose)
      if (verbose) write(STDOUT, *) " V is calculated"
 
-     call detInv(nobs, V, detV, ipiv, Py, verbose) !Py is work array here
+     call detInv(nobs, V, detV, ipiv, Py, verbose, ifail) !Py is work array here
+     if (ifail /= 0) then
+        write(STDOUT, 72) 
+        return
+     end if
      if (verbose) write(STDOUT, *) " V is replaced by its inverse"
 
-     call calculateP(nobs, nfix, V, X, P, det_xt_vinv_x, Vhat, work, temp, verbose)
+     call calculateP(nobs, nfix, V, X, P, det_xt_vinv_x, Vhat, work, temp,&
+         verbose, ifail)
+     if (ifail /= 0) then
+        write(STDOUT, 72)
+        return
+     end if
      if (verbose) write(STDOUT, *) " P is calcuated"
 
      call calculateLogL(nobs, detV,det_xt_vinv_x,P, y, LogL,Py, yPy, verbose)
      if (verbose) write(STDOUT, *) " LogL, Py and yPy are calculated"
-     write(STDOUT, '(1x,a8,g25.16)') " LogL = ", logl
+     write(STDOUT, '(1x,a8,g24.15)') " LogL = ", logl
 
      call calculaterhs(nobs, nvar, theZGZ, P, Py, rhs, f, verbose)
      if (verbose) write(STDOUT, *) " Right hand side is calculated"
@@ -152,41 +167,96 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
         call calculateAImatrix(nobs, nvar, P, AI, f, verbose)
         if (verbose) write(STDOUT, *) " AI matrix is calcuated"
 
-        call updatetheta(nvar, AI, rhs, theta, verbose)
+        call updatetheta(nvar, AI, rhs, theta, verbose, ifail)
+        if (ifail /= 0) then
+           write(STDOUT, 72)
+           return
+        end if
         if (verbose) write(STDOUT, *) " theta is updated"
      end if
+
      write(STDOUT, *) " variance vector:"
-     if (nvar .eq. 1) then
-        write(STDOUT, '(a11,2x,a11)') "A", "E"
-        write(STDOUT, *) theta(1:2)
+     if (nran .eq. 1) then
+        write(STDOUT, '(a24,1x,a24)') "A", "E"
+        if ((theta(1) * theta(2) < 0).and.(theta(1) < 0)) then
+           ! fixing negative genetic variance component (only for nran = 1)
+           theta(1) = 0.001 * theta(2)
+           exceptionPass = .true. ! switch for not checking LogL in next iteration (on)
+           write(STDOUT, '(g24.15,a)', advance = 'no') theta(1), "* "
+           write(STDOUT, '(g24.15)') theta(2)
+        else
+           exceptionPass = .false.! switch for not checking LogL in next iter (off => check)
+           write(STDOUT, '(g24.15,1x,g24.15)') theta(1:2)
+        end if
      else
-        write(STDOUT, '(a11,2x,a11)',advance = 'no') "A_slope", "A_intercept"
-        if (nvar == 4) write(STDOUT, '(2x,a11)', advance = 'no') "covariance"
-        write(STDOUT, '(2(2x,a11))') "E_slope", "E_intercept"
-        write(STDOUT, '(f11.7,2x,f11.7)', advance = 'no') theta(1:2)
-        if (nvar == 4) write(STDOUT, '(2x,f11.7)', advance = 'no') theta(4)
-        write(STDOUT, '(2(2x,f11.7))') theta(3), theta(nvar + 1)
+        write(STDOUT, '(a24,1x,a24)',advance = 'no') "A_slope", "A_intercept"
+        if (nvar == 4) write(STDOUT, '(1x,a24)', advance = 'no') "covariance"
+        write(STDOUT, '(2(1x,a24))') "E_slope", "E_intercept"
+        write(STDOUT, '(g24.15,1x,g24.15)', advance = 'no') theta(1:2)
+        if (nvar == 4) write(STDOUT, '(1x,g24.15)', advance = 'no') theta(4)
+        write(STDOUT, '(2(1x,g24.15))') theta(3), theta(nvar + 1)
      end if
 
+     ! finally, if the plan is to logl check 
+     if (.not. exceptionPass) then
+        ! but this is the first ai iteration after em
+        if ( (emiteration > 0) .and. (iter  == (emiteration+1)) ) then
+           exceptionPass = .true. ! logl check should be ignored for next iteration
+        end if
+        !otherwise leave the switch off
+     end if
+     
 !!!! Iteration completed !!!!
 
-     val1 = dnrm2(nvar + 1, oldtheta, 1)
+     val1 = dnrm2(nvar + 1, oldtheta, 1) ! l2 norm of oldtheta
      oldtheta(1:(nvar + 1)) = oldtheta(1:(nvar + 1)) - theta(1:(nvar + 1))
-     val2 = dnrm2(nvar + 1, oldtheta, 1) / val1
-     val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1)
-     write(STDOUT, *) "Errors (iter): ",iter
-     write(STDOUT, 71, advance='no') " l1 error:", val1 ,"; l2 error:", val2
+     val2 = dnrm2(nvar + 1, oldtheta, 1) / val1 ! l2 norm of delta_theta / l2 norm of oldtheta
+     val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1) ! l1 norm of delta_theta
+     val3 = dabs((LogL - oldLogL)/oldLogL) ! l1 norm of delta_logl
+     write(STDOUT, '(a, i0)') "Errors for iteration ",iter
+     write(STDOUT, 71, advance='no') " variance (l1)", val1 
+     write(STDOUT, 71) " variance (l2)", val2
+     if (iter > 1) write(STDOUT, 71) " LogL (relative)", val3
+     if (iter > 1) then
+        if (checkForLogL .and. (logL < oldLogL)) then
+           write(STDOUT, '(A)') " Invalid variance comp. because LogL decreased"
+           ifail = 1
+           return
+        end if
+     end if
+     ! next iteration checkForLogL is determined here
+     checkForLogL = .not. exceptionPass 
 
-     write(STDOUT, *) 
-
-     if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon)) then
+     if ((val1 < sqrt(epsilon)) .or. (val2 < epsilon) .and. (val3 < epsilon)) then
         write(STDOUT, '(a10)') "converged!"
         exit
      elseif (iter > maxiter) then
-        write(STDERR, '(a)') "reml did not converge"
-        stop 1
+        if ((val1 < sqrt(epsilon)).or.(val2 < epsilon) .and. (val3 > epsilon)) then
+           write(STDOUT, '(a)') " warning: variance vector converged but not LogL"
+        elseif ((val1 > sqrt(epsilon)).and.(val2 > epsilon)) then
+           write(STDOUT, '(a)') " warning: variance vector did not converge"
+           ifail = 1
+           return
+        end if
      end if
      oldtheta(1 : (nvar + 1)) = theta(1 : (nvar + 1))
   end do
   deallocate(work)
+
+  ! reml may fail however (for nran = 3, because for nran = 1 it is modified)
+  if (nran==1) then
+     if (theta(2) < ZERO) then
+        write(STDOUT, '(a)') "Invalid variance component in Reml"
+        ifail = 1
+        return
+     end if
+  elseif (nran==3) then
+     if (any(theta(1:3) < ZERO) .or. (theta(nvar + 1) < ZERO) ) then
+        write(STDOUT, '(a)') "Invalid variance component in Reml"
+        ifail = 1
+        return
+     end if
+  end if
+  ifail = 0
+
 end subroutine reml

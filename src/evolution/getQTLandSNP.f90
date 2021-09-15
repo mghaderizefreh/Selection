@@ -47,24 +47,25 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
 
   means(1:ncomp) = ZERO
   k = nQTL * nChr
-  allocate(values_1D(k, nComp))
+  call alloc2D(values_1D, k, nComp, "values_1D", "getQTLandSNP")
   QTLlist%nComp = nComp
   QTLList%nQTL = nQTL
   nReq = nQTL + nSNP
-  allocate(iReq(nReq))
+  call alloc1I(iReq, nReq, "iReq", "getQTLandSNP")
   call gnormal(means, covMat, nComp, k, values_1D)
   if (verbose) write(STDOUT, *) " random values for tbv created"
   maxLoci = 0
   do iChr = 1, nChr
      if (genome(iChr)%nLoci > maxLoci) maxLoci = genome(iChr)%nLoci
   end do
-  allocate(temp(maxLoci))
+  call alloc1I(temp, maxLoci, "temp", "getQTLandSNP")
   temp = (/(i, i = 1, maxLoci)/)
 
   if (.not.randomMAF) then
      allocate(MAFArray(nChr))
      ICHRLOOP: do iChr = 1, nChr
-        allocate(MAFArray(iChr)%array(genome(iChr)%nloci))
+        call alloc1D(MAFArray(iChr)%array, genome(iChr)%nloci, &
+             "MAFArray(iChr)%array", "getQTLandSNP")
         write(fileName,'(a,i3.3)') trim(baseNameFreq), ichr
         open(newUnit = iun, file = fileName, status = 'old')
         read(iun, *)

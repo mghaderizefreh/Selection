@@ -96,7 +96,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   !$OMP PRIVATE(val4, k, temparray)&
   !$OMP SHARED(nobs, nSNP, ieffect, genscore, ivar, iscaled, nanim, genotypes)&
   !$OMP SHARED(sumvar, usedSNP, AMAT)
-  allocate(temparray(1:nobs))
+  call alloc1D(temparray, nobs, "tempArray", "BSRibsCalc1")
   val4 = ZERO
   k = 0
   temparray(1:nobs) = ZERO
