@@ -70,7 +70,7 @@ contains
  
 !      INTEGER   N,INDEX(N)
 !      REAL(KINDR)      DATA(:)
-use constants
+use constants, only : KINDR
 implicit none
       INTEGER   N
       INTEGER ,dimension(:) :: INDEX
@@ -809,7 +809,7 @@ if(maxback < maxback1)maxback=maxback1
  
 !      INTEGER   N,INDEX(N)
 !      REAL      DATA(:)
-use constants
+use constants, only : KINDR
       INTEGER   N
       INTEGER ,dimension(:) :: INDEX
       REAL(KINDR) ,dimension(:) :: DATA

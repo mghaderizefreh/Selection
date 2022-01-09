@@ -1,6 +1,6 @@
 subroutine sampleMutation(id, igam, genotypes, nloci, nmut, mutCum0,&
      mutCumP, istore)
-  use constants
+  use constants, only : KINDR, NBITS
   implicit none
 
   integer, intent(in) :: istore  ! how SNP are stored

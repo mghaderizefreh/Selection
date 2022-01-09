@@ -4,8 +4,8 @@ subroutine SimulatePhenotype(verbose, nAnim, nComp, nFix, nLox, nran,&
 ! in simulation: for intercept and slope ncomp = 2. However, nfix depends on the
 ! type of analysis: if a single trait is desired nfix = 1, if random regression
 ! is to be conducted nfix = 2
-  use constants
-  use rng_module
+  use constants, only: KINDR, variances, alloc2D, ZERO, ONE, STDERR, STDOUT
+  use rng_module, only: gnormal
   implicit none
 
   logical, intent(in) :: verbose
@@ -72,8 +72,8 @@ end subroutine SimulatePhenotype
 !!!! ============================================================ !!!!
 subroutine allocateInd(nAnim, nlox, nobs, nfarm, allocation, farmBounds,&
      farmRange, farmInd, locations, pedigree, nm, male)
-  use constants
-  use rng_module
+  use constants, only: KINDR, ONE, alloc1I, STDERR
+  use rng_module, only: choice
   implicit none
   integer, intent(in) :: nAnim, nLox, nobs, nFarm
   integer, intent(in) :: allocation
@@ -194,8 +194,8 @@ end subroutine allocateInd
 
 !!!! ============================================================ !!!!
 subroutine defineFarms(interval, nfarm, diameter, farms)
-  use constants
-  use quickSort
+  use constants, only: KINDR
+  use quickSort, only: sortrx
   implicit none
   integer, intent(in) :: nfarm
   real(KINDR), dimension(2), intent(in) :: interval

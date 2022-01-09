@@ -1,7 +1,7 @@
 subroutine istart(seed, startfile, returnVal)
   !subroutine to read seed from startfile, if it doesnot exist, 
   ! be created and written on.
-  use constants
+  use constants, only : alloc1I, STDOUT, STDERR
   implicit none
   integer, intent(inout), dimension(:), allocatable :: seed
   character(len = 11), intent(in) :: startfile
@@ -52,7 +52,7 @@ end subroutine istart
 
 subroutine ifinal(seed,startfile)
   !	storing new initializing value in file
-  use constants
+  use constants, only : STDOUT, alloc1D, KINDR
   implicit none
   integer, dimension(:), intent(inout) :: seed
   character(len = 11), intent(in) :: startfile

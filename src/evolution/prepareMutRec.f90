@@ -2,8 +2,8 @@ subroutine GetMutRecArray(verbose, maxVal, chrL, mutationRate, nLoci, &
      chiasmaCumP, chiasmacumP0, totalChiasma, maxchiasma,&
      mutationCumP, mutationCumP0, totalMutation, maxmutations)
 
-  use constants
-  use rng_module
+  use constants, only: KINDR, alloc1D, STDERR, STDOUT, ONE
+  use rng_module, only: PoissonProb
   implicit none
 
   logical, intent(in) :: verbose

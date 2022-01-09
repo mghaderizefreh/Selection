@@ -30,7 +30,7 @@
 !====================================================
 
 subroutine dspdrf_Ldet ( BLASuplo, N, AP, IPIV, logDet, signDet, INFO )
-  use constants
+  use constants, only : STDERR, STDOUT, KINDR, ZERO
   implicit none
   character (len = *), intent(in) :: BLASuplo
   integer, intent(in) :: N
@@ -97,7 +97,7 @@ end subroutine dspdrf_Ldet
 
 
 subroutine detInv(nobs, V, detV, ipiv, work, verbose, info)
-  use constants
+  use constants, only : STDOUT, ZERO, KINDR
   implicit none
   logical, intent(in) :: verbose
   integer, intent(in) :: nobs

@@ -1,6 +1,5 @@
 module evolution_module
-  use constants
-!  use global_module
+  private :: getPosition
 contains
   include "initialiseGenotypes.f90"
   include "prepareMutRec.f90"

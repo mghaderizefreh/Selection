@@ -1,5 +1,5 @@
 subroutine covariate(nComp, nObs, nAnim, nLox, TBV, E, phen, locations, means)
-  use constants
+  use constants, only: KINDR, STDERR, alloc1D, ZERO
   implicit none
 
   integer, intent(in) :: nComp, nObs, nAnim, nLox
@@ -21,10 +21,7 @@ subroutine covariate(nComp, nObs, nAnim, nLox, TBV, E, phen, locations, means)
   if (.not.allocated(cte)) then
      call alloc1D(cte, nComp, "cte", "covariate")
      cte(1:nComp) = ZERO
-     do i = 1, nComp
-        cte(i) = means(i) - sum(TBV(1:nAnim, i))/nAnim&
-             - sum(E(1:nObs, i))/nObs
-     end do
+     cte = means - sum(TBV, 1)/nAnim - sum(E, 1)/nObs
   end if
 
   ! all individuals have phenotype at a few locations

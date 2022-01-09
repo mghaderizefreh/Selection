@@ -1,8 +1,8 @@
 subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
      theta, fixEffects, ranEffects, verbose, ipiv, Py, P, V, Vhat, temp, info)
 
-  use constants
-  use global_module
+  use constants, only: KINDR, Jarr, STDERR, STDOUT, alloc1D
+  use global_module, only : detInv
   implicit none
   !! ================ variable definitions  ================ !!
   logical, intent(in) :: verbose

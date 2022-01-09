@@ -1,6 +1,6 @@
 subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp, info)
-  use constants
-  use quickSort
+  use constants, only : KINDR, alloc1D, alloc2D, STDOUT, STDERR, ONE, ZERO
+  use quickSort, only : sortrx
   implicit none
   !! ================ variable definitions  ================ !!
   logical, intent(in) :: verbose
@@ -21,6 +21,8 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp, 
   real(KINDR), dimension(1) :: junk
   real(KINDR), dimension(:), allocatable :: work
   integer :: lwork
+
+  external :: DSYRK, DGEMV, DSYSV
 
   ! may need id later
   if (id(1) > 0) then
@@ -48,8 +50,8 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp, 
 
   X(1:nobs, 1:nfix) = ZERO
   ! todo: use sparse matrices: x is very sparse
-  do i = 1, nobs
-     do j = 1, nfix
+  do j = 1, nfix
+     do i = 1, nobs
         if (temp(j) == env(i)) then
            X(i, j) = ONE
            exit

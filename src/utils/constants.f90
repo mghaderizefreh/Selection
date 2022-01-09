@@ -1,8 +1,6 @@
 module constants
+  use iso_fortran_env, only: KINDR => real64
   implicit none
-
-  ! Precision
-  integer,        parameter :: KINDR = KIND(0d0)
 
   ! integer representation of alleles
   integer, parameter :: NBITS = 32

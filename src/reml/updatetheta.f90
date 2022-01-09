@@ -1,5 +1,5 @@
 subroutine updatetheta(nvar, AI, rhs, theta, verbose, info)
-  use constants
+  use constants, only: KINDR, STDOUT
   implicit none
   integer, intent(in) :: nvar
   logical, intent(in) :: verbose

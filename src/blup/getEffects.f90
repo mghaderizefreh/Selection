@@ -3,8 +3,7 @@
 !written by Masoud Ghaderi
 subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
      Py, y, X, id, fixeff, raneff, verbose)
-  use constants
-  use global_module
+  use constants, only : KINDR, Jarr, STDOUT, alloc1D, ONE, ZERO
   implicit none
   logical :: verbose
   integer, intent(in) :: nobs, nfix, nvar, maxid, nran

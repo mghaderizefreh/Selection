@@ -1,8 +1,9 @@
 subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
      QTLlist, SNPlist, covMat, baseNameFreq, MAF)
-  use constants
-  use rng_module
-  use quickSort
+  use constants, only: KINDR, chromosome, JArr, STDERR, STDOUT, &
+    ZERO, alloc1I, alloc1D, alloc2D, QTL_Array
+  use rng_module, only : choice, gnormal
+  use quickSort, only : sortrx
   implicit none
 
   logical, intent(in) :: verbose
@@ -54,12 +55,9 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
   call alloc1I(iReq, nReq, "iReq", "getQTLandSNP")
   call gnormal(means, covMat, nComp, k, values_1D)
   if (verbose) write(STDOUT, *) " random values for tbv created"
-  maxLoci = 0
-  do iChr = 1, nChr
-     if (genome(iChr)%nLoci > maxLoci) maxLoci = genome(iChr)%nLoci
-  end do
+  maxLoci = maxVal(genome%nLoci)
   call alloc1I(temp, maxLoci, "temp", "getQTLandSNP")
-  temp = (/(i, i = 1, maxLoci)/)
+  temp = [ (i, i = 1, maxLoci) ]
 
   if (.not.randomMAF) then
      allocate(MAFArray(nChr))
@@ -101,9 +99,9 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
            stop 2
         end if
 
-        temp(1:nAvail) = (/(i, i = 1, nAvail)/)
+        temp(1:nAvail) = [ (i, i = 1, nAvail) ]
         call choice(temp, maxloci, nAvail, nReq, iReq, nReq)
-
+        ! TODO: reshaping would be more useful here
         QTLlist%indices(iChr, 1:nQTL) = iReq(1:nQTL)
         do i = 1, nComp
            k = (iChr - 1) * nQTL
@@ -124,6 +122,7 @@ subroutine getQTLandSNP(verbose, nChr, nQTL, nSNP, nComp, randomMAF, genome, &
         call choice(temp, maxLoci, genome(iChr)%nLoci, nReq, iReq, nReq)
         QTLlist%indices(iChr, 1:nQTL) = iReq(1:nQTL)
         SNPlist(iChr, 1:nSNP) = iReq((nQTL+1):nReq)
+        ! TODO: again, reshape here instead
         do i = 1, nComp
            j = (iChr - 1) * nQTL
            QTLlist%values(iChr, 1:nQTL, i) = values_1D((j+1):(j+nQTL), i)

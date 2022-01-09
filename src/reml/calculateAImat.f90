@@ -1,6 +1,5 @@
 subroutine calculateAImatrix(nobs, nvar, P, AI, f, verbose)
-  use constants
-  use global_module
+  use constants, only : KINDR, Jarr, alloc1D, ZERO, HALF, ONE, STDOUT
   implicit none
   logical, intent(in) :: verbose
   integer, intent(in) :: nobs, nvar

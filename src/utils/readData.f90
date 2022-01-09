@@ -3,7 +3,8 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
      n_m, n_fpm, n_opf, interval, nlox, nFarm, farmRange, allocation, means,&
      nobs, selectionType, weight, ngen, VarEst, reactionNorm, analysisType,&
      chalvl, nfix, nvar, nran, output, logfile)
-  use constants
+  use constants, only : KINDR, variances, STDOUT, alloc1D, alloc2D, &
+     ZERO, HALF, ONE
   implicit none
   character(len=*), intent(in) :: inputfile ! list of all inputs
   logical, intent(out) :: verbose
@@ -54,6 +55,7 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
   integer :: iinput, stat, iun, lno, j, i
   real(KINDR) :: rinput
   logical :: bool
+  external :: nextInput, assert
 
   lno = 0
   open(newUnit = iun, file = trim(inputfile))
@@ -466,7 +468,7 @@ subroutine readInput(inputfile, verbose, nchr, genepoolfile, geneposfile,&
   close(iun)
 end subroutine readInput
 subroutine nextInput(iun, output, lno)
-  use constants
+  use constants, only : STDERR
   implicit none
   character(len = 200), intent(out) :: output
   integer, intent(in) :: iun
@@ -485,7 +487,7 @@ subroutine nextInput(iun, output, lno)
   end do
 end subroutine nextInput
 subroutine assert(iostat, msg, no)
-  use constants
+  use constants, only : STDERR
   implicit none
   character(len = *), intent(in) :: msg
   logical, intent(in) :: iostat

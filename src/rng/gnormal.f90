@@ -13,9 +13,9 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
   ! array of shape `dim` x `output`.
   !
   ! written by Masoud Ghaderi Zefreh
-  ! first revision : 1 December 2020
+  ! last revision : 8 Jan 2022
   
-  use constants
+  use constants, only : KINDR, STDERR, alloc2D, TWO, PI, ZERO, ONE
 
   implicit none
   integer, intent(in) :: dim, N
@@ -25,11 +25,11 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
   integer, intent(in), dimension(:), optional :: seed
 
   integer :: dim2, i, j
-  real(KINDR) :: sd, val
+  real(KINDR) :: sd
   real(KINDR), dimension(dim, dim) :: covcopy
   real(KINDR), dimension(:,:), allocatable :: uniform
 
-  external :: dpotrf, dgemm, normdev
+  external :: dpotrf, dgemm
 
   covcopy = cov
 
@@ -39,10 +39,10 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
 
   if (dim == 1) then
      sd = sqrt(cov(1,1))
-     do i = 1, N
-        call normdev(val)
-        output(i,1) = mean(1) + sd * val
-     end do
+     call alloc2D(uniform, N, 2, "uniform", "gnormal")
+     call random_number(uniform)
+     output(1:N, 1) = mean(1) + sd * sqrt(-TWO * log(uniform(1:N,1))) * &
+         cos(uniform(1:N,2) * TWO * PI)
      return
   else
 
@@ -72,19 +72,25 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
      ! cholesky factorisation
      call dpotrf('L',dim,covcopy,dim,i)
      if (i.gt.0) then
+        open(1, file ="error.log")
+        do i = 1, dim
+           write(1, '(*(g25.16,1x))') cov(i,1:dim)
+        end do
+
         write(STDERR, *) ' Cholesky factorisation failed!'
         write(STDERR, *) ' Covariance matrix is not positive definite'
+        write(STDERR, *) ' see error.log matrix '
         write(STDERR, *) ' Exiting...'
         stop 2
      elseif (i.lt.0) then
-        write(STDERR, *) "some other shit happened"
+        write(STDERR, *) "unhandled exception"
         stop 2
      end if
 
      ! the cholesky factorisation routine ?potrf(with 'L') returns the lower
      ! part of the cholesky. The upper part must be zero.
-     do i = 1, dim - 1
-        do j = i + 1, dim
+     do j = 2, dim
+        do i = 1, j - 1
            covcopy(i,j) = ZERO
         end do
      end do
@@ -99,32 +105,3 @@ subroutine gnormal(mean, cov, dim, N, output, seed)
   end if
   deallocate(uniform)
 end subroutine gnormal
-
-subroutine normdev(val)
-! making a random varaible form standard normal
-! copy of ricardo's code (goto replaced by while)
-! Routine 'gasdev' ,Numerical Recipes, page 203
-  use constants
-  implicit none
-  save
-  real(KINDR)    ::val,v1,v2,fac, r = 2.
-  real(KINDR)    ::gset =0.0
-  integer ::iset =0
-
-  if (iset .eq. 0) then
-     do while(r.ge.1..or.r.eq.0.)
-        call random_number(v1)
-        call random_number(v2)
-        v1 = 2. * v1 - 1.
-        v2 = 2. * v2 - 1.
-        r = v1 ** 2 + v2 ** 2
-     end do
-     fac = sqrt(-2. * log(r) / r)
-     gset= v1 * fac
-     val = v2 * fac
-     iset= 1
-  else
-     val = gset
-     iset = 0
-  end if
-end subroutine normdev

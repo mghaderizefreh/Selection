@@ -1,5 +1,5 @@
 subroutine askFilename(filename, question, theStatus, expectStatus)
-  use constants
+  use constants, only : STDOUT, STDERR, STDIN
   implicit none
 
   character ( len = * ) :: filename  !need to be sure that it will not go out side
@@ -17,57 +17,56 @@ subroutine askFilename(filename, question, theStatus, expectStatus)
   do while ( doloop )
      theStatus = ''
      if(len_trim(question) < 1) then
-        write(stdout, * ) ' filename'
+        write(STDOUT, * ) ' filename'
      else
-        write (stdout, * ) trim(question)
+        write (STDOUT, * ) trim(question)
      endif
 
-     read  (stdin, * ) filename
-     write (stdout, * ) trim(filename)
-     INQUIRE (file=filename, EXIST=L_EXISTS)
+     read  (STDIN, * ) filename
+     write (STDOUT, * ) trim(filename)
+     inquire (file=filename, exist=l_exists)
 
-     if ( L_EXISTS ) then
+     if ( l_exists ) then
         theStatus = 'o'
-        if(expectStatus(1:1) .ne. 's' .and. expectStatus(1:1) .ne. 'o') write(stdout,*)' file exists'
+        if(expectStatus(1:1) .ne. 's' .and. expectStatus(1:1) .ne. 'o') &
+            write(STDOUT,*)' file exists'
         if(expectStatus(1:1) .ne. 'n') doloop=.false.
      else
         theStatus = 'n'
-        if(expectStatus(1:1) .ne. 's' .and. expectStatus(1:1) .ne. 'n') write(stdout,*)' file does NOT exists'
+        if(expectStatus(1:1) .ne. 's' .and. expectStatus(1:1) .ne. 'n') &
+            write(STDERR,*)' file does NOT exists'
         if(expectStatus(1:1) .ne. 'o') doloop=.false.
      endif
      if(doloop) then
         icount=icount+1
         if(icount > maxtime) then  ! it will allow only maxtime mistake. If continue then it will go out with empty value
-           write ( stdout, * )
-           write ( stdout, * ) '============================================'
-           write ( stdout, * )
-           write ( stdout, * ) ' no valid file given after several attempts', icount
-           write ( stdout, * ) ' check if input variable is too long '
-           write ( stdout, * ) ' if it is the case then the read variable will be truncated'
-           write ( stdout, * ) ' in this is the case the file need to be renamed with a shorter name'
-           write ( stdout, * ) ' also filename MUST not have a space characters (as they will be triuncated)'  
-           write ( stdout, * )
-           write ( stdout, * ) ' last input was |', trim( filename ), '|'
-           write ( stdout, * )
-           write ( stdout, * ) '============================================'
-           write ( stdout, * )
+           write (STDERR, * )
+           write (STDERR, * ) '============================================'
+           write (STDERR, * )
+           write (STDERR, * ) ' no valid file given after several attempts', icount
+           write (STDERR, * ) ' check if input variable is too long '
+           write (STDERR, * ) ' if it is the case then the read variable will be truncated'
+           write (STDERR, * ) ' in this is the case the file need to be renamed with a shorter name'
+           write (STDERR, * ) ' also filename MUST not have a space characters (as they will be triuncated)'  
+           write (STDERR, * )
+           write (STDERR, * ) ' last input was |', trim( filename ), '|'
+           write (STDERR, * )
+           write (STDERR, * ) '============================================'
+           write (STDERR, * )
            filename = ''
            theStatus = 'x'
            doloop=.false.
-        endif
+        end if
 
-     endif
-  enddo
-  write(stdout,*)
+     end if
+  end do
+  write(STDOUT,*)
 
-  return
 end subroutine askFilename
-
-
 
 !===============================================================================
 subroutine askInteger ( intVal, question )
-  use constants
+  use constants, only : STDOUT, STDIN
   implicit none
 
   integer :: intVal
@@ -80,32 +79,30 @@ subroutine askInteger ( intVal, question )
 
   do
      if(len_trim(question) < 1) then
-        write ( stdout, * ) ' input integer'
+        write ( STDOUT, * ) ' input integer'
      else
-        write ( stdout, * ) trim(question)
+        write ( STDOUT, * ) trim(question)
      endif
 
-     read  ( stdin, *, iostat = ierr  ) intVal
+     read  ( STDIN, *, iostat = ierr  ) intVal
      if(ierr == 0) exit
-     write(stdout,*)' enter a valid integer', ierr
+     write(STDOUT,*)' enter a valid integer', ierr
      ntimes=ntimes+1
      if(ntimes > maxtime) then
-        write(stdout,*)' wrong input several times', ntimes
-        write(stdout,*)' it will be given as default a -1'
+        write(STDOUT,*)' wrong input several times', ntimes
+        write(STDOUT,*)' it will be given as default a -1'
         intVal=-1
         exit
      endif
   enddo
 
-  write ( stdout, * ) intVal
+  write ( STDOUT, * ) intVal
 
-
-  return
 end subroutine askInteger
 
 !===============================================================================
 subroutine askYesNoInteger ( intVal, question, default )
-  use constants
+  use constants, only : STDOUT, STDIN
   implicit none
 
   integer :: intVal
@@ -118,21 +115,21 @@ subroutine askYesNoInteger ( intVal, question, default )
 
   do 
      if(len_trim(question) < 1) then
-        write ( stdout, * ) ' yes or not? (Y=1, N=0)'
+        write ( STDOUT, * ) ' yes or not? (Y=1, N=0)'
      else
-        write ( stdout, * ) trim(question), ' (Y=1, N=0)'
+        write ( STDOUT, * ) trim(question), ' (Y=1, N=0)'
      endif
 
-     read  ( stdin, *, iostat = ierr  ) intVal
+     read  ( STDIN, *, iostat = ierr  ) intVal
      if(ierr /= 0) then
         ntimes=ntimes+1
         if( ntimes> maxtime) then
-           write(stdout,*)' wrong input several times', ntimes
-           write(stdout,*)' need it a 0/1 iput and non integer was given'
-           write(stdout,*)' it will be set the default'
+           write(STDOUT,*)' wrong input several times', ntimes
+           write(STDOUT,*)' need it a 0/1 iput and non integer was given'
+           write(STDOUT,*)' it will be set the default'
            intVal=default
         else
-           write(stdout,*)' enter a valid integer'
+           write(STDOUT,*)' enter a valid integer'
            cycle
         endif
      endif
@@ -146,11 +143,11 @@ subroutine askYesNoInteger ( intVal, question, default )
         exit
      else
         if(intVal .ne.0 .and. intVal .ne. 1)then
-           write(stdout,*)' input must be 0 (no) or 1 (yes)'
-           write(stdout,*)
+           write(STDOUT,*)' input must be 0 (no) or 1 (yes)'
+           write(STDOUT,*)
            ntimes=ntimes+1
            if(ntimes> maxtime) then
-              write(stdout,*)' st to be the default'
+              write(STDOUT,*)' set to be the default'
               intVal=default
               exit
            endif
@@ -160,7 +157,6 @@ subroutine askYesNoInteger ( intVal, question, default )
      endif
   enddo
 
-  write ( stdout, * ) intVal
+  write ( STDOUT, * ) intVal
 
-  return
 end subroutine askYesNoInteger
