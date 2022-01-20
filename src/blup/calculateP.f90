@@ -1,12 +1,12 @@
 subroutine calculateP(nobs, nfix, Vinv, X, P, det_xt_vinv_x, Vhat, Vinvfull,&
      temp, verbose, info)
-  use constants
-  use global_module
+  use constants, only: KINDR, STDOUT, ONE, ZERO
+  use global_module, only: dunpack, detinv
   implicit none
   logical, intent(in) :: verbose
+  integer, intent(in) :: nobs, nfix
   real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(in) :: Vinv
   real(KINDR), dimension(1:nobs,1:nfix), intent(in) :: X
-  integer, intent(in) :: nobs, nfix
   real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: P
   real(KINDR), intent(out) :: det_xt_vinv_x
   real(KINDR), dimension(1:nfix,1:nobs), intent(inout) :: Vhat

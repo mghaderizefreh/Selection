@@ -1,6 +1,4 @@
 module reml_module
-  use constants
-  use global_module
 contains
   include "calculateAImat.f90"
   include "calculateLogL.f90"

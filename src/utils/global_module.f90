@@ -1,7 +1,9 @@
 module global_module
-  use constants
   implicit none
-
+  private
+  public :: askFilename, detInv, traceA, traceAxB, traceAxBdiag
+  public :: readInput, askInteger, askYesNoInteger
+  public :: countNumberLines, dunpack  
 contains
   include "askFilename.f90"
   include "countNumberLines.f90"

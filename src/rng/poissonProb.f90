@@ -13,7 +13,7 @@
 
 subroutine poissonProb(mu,k,prob)
 
-  use constants
+  use constants, only : KINDR, ZERO, ONE
   implicit none
   real(KINDR), intent(in):: mu
   integer, intent(in):: k

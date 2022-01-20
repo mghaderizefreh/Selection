@@ -19,7 +19,7 @@ subroutine BSRibsCalc1(genotypes, amat, nanim, nobs, nSNP, effect, iscaled, ivar
   !             additive effect needs two genotypes
   !             dominance       needs the heterozygote and at least one homozygote
   !========================================================================
-  use constants
+  use constants, only: KINDR, ZERO, ONE, TWO, STDERR, STDOUT, alloc1D
   use omp_lib
   implicit none
 
@@ -238,7 +238,7 @@ subroutine BSRibsCalc1a(genotypes,amat, nanim, nobs, nSNP,effect,iscaled, ivar,&
   !             additive effect needs two genotypes
   !             dominance       needs the heterozygote and at least one homozygote
   !========================================================================
-  use constants
+  use constants, only : KINDR, ZERO, ONE, TWO, STDOUT, STDERR
   implicit none
 
   character(len=*), intent(in) :: effect

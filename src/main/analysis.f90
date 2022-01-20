@@ -91,12 +91,10 @@ program analysis
 
   ! reading the data
   open(newUnit = phenFileID, file = phenFile, status = 'old')
-  maxid = 0
   if ((nran == 1).and.(nfix == 1)) then
      call alloc2D(X, nobs,nfix, "X", "analysis")
      do i = 1, nobs
         read(phenFileID, *) id(i), y(i)
-        if (maxid < id(i)) maxid = id(i)
      end do
      X(1:nobs, 1) = ONE
   elseif ((nran == 1).and.(nfix > 1)) then
@@ -110,7 +108,6 @@ program analysis
            X(i, Xtemp(i, j) + k - 1) = ONE
            k = k + levels(j)! todo: -1 here for more tahn 1 fix effect
         end do
-        if (maxid < id(i)) maxid = id(i)
      end do
      nfix = sum(levels)
      X(1:nobs, nfix) = ONE
@@ -119,7 +116,6 @@ program analysis
      do i = 1, nobs
         read(phenFileID,*) id(i), X(i,1), y(i)
         X(i, nfix) = ONE
-        if (maxid < id(i)) maxid = id(i)
      end do
   else
      write(STDERR, '(a)') 'Error:'
@@ -127,6 +123,27 @@ program analysis
      stop 2
   end if
   close(phenFileID)
+
+  write(msg, '(a28)') "file for relationship matrix"
+  eStatus = "old"
+  call askFileName(AmatFile, trim(msg), status, eStatus)
+  if (status(1:1) .eq. "x") then
+     write(STDERR, *) "error in openning file ", AmatFile
+     stop 2
+  end if
+
+  maxid = 0
+  ! counting number of lines
+  open(newunit=AmatFileID, file=AmatFile, err=73, status='old')
+  do 
+     read(AmatFileID,*,end=74) i, j, val1
+     if (i > maxid) maxid = i
+     if (j > maxid) maxid = j
+  end do
+73 write(STDERR, *) "error in reading file ", AmatFile
+  stop 1
+74 continue
+  close(AmatFileID)
 
   call alloc1D(fixeff, nfix, "fixeff", "analysis")
   allocate(raneff(nran))
@@ -140,26 +157,6 @@ program analysis
      write(STDERR, *) " not implemented for nran != 1 or 3"
      stop 2
   end if
-
-  write(msg, '(a28)') "file for relationship matrix"
-  eStatus = "old"
-  call askFileName(AmatFile, trim(msg), status, eStatus)
-  if (status(1:1) .eq. "x") then
-     write(STDERR, *) "error in openning file ", AmatFile
-     stop 2
-  end if
-
-  ! counting number of lines
-  open(newunit=AmatFileID, file=AmatFile, err=73, status='old')
-  do 
-     read(AmatFileID,*,end=74) i, j, val1
-     if (i > maxid) maxid = i
-     if (j > maxid) maxid = j
-  end do
-73 write(STDERR, *) "error in reading file ", AmatFile
-  stop 1
-74 continue
-  close(AmatFileID)
 
   i = (maxid + 1) * maxid / 2
   call alloc1D(temAmat, i, "temAmat", "analysis")

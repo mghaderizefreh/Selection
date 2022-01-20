@@ -12,9 +12,9 @@
 ! genes the number of individuals must be greater than number 
 ! of animals the format should be <basename><xxx> with xxx
 ! starting from 001
-original.ch
+../../tselection/tests/original.ch
 ! [*] base-name for gene positions same format as above
-SNPpositions.t
+../../tselection/tests/SNPpositions.t
 ! [real] length of chromosome (assuming all equal length)
 1.0
 ! [real] mutation rate (scientic notations are accepted)
@@ -57,9 +57,9 @@ freq.txt
 1.0
 !!!!!!!!!!!!!!!!!!!! population information !!!!!!!!!!!!!!!!!!!
 ! [int] number of animals in each generation
-3600
+900
 ! number of males
-120
+30
 ! number of females per male
 10
 ! number of offspring per female
@@ -86,11 +86,11 @@ freq.txt
 ! selection type
 ! 1 = random, 2 = local performance, 3 = index (real weights
 ! required [ncomp])
-3
+1
 0.6
 0.4
 ! number of generations
-5
+3
 !!!!!!!!!!!!!!!!!!!!! analysis information !!!!!!!!!!!!!!!!!!!!
 ! variance estimation
 ! 1 = reml, 2 = from first generation, 3 = used as simulated

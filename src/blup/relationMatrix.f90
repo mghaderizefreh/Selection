@@ -1,6 +1,7 @@
 subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, &
      chr_nlocibefore, iscaled, ivar, imiss, addDom, Amat, verbose)
-  use constants
+  use constants, only : KINDR, alloc1D, alloc1I, alloc2I, STDERR, STDOUT,&
+      chromosome, NBITS
   implicit none
 
   logical, intent(in) :: verbose
@@ -31,11 +32,7 @@ subroutine getGmatrix(nanim, nChr, nSNP, ident, genome, SNPlist, &
 
   external :: bsribscalc1, bsribscalc1a
 
-  genocode = reshape((/ 1, 2, 2, 3 /), (/ 2, 2 /))
-  !genocode(1,1) = 1
-  !genocode(1,2) = 2
-  !genocode(2,1) = 2
-  !genocode(2,2) = 3
+  genocode = reshape([1, 2, 2, 3], [2, 2])
 
   if (ident(1) > 0) then
   end if

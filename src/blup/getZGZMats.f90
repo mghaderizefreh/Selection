@@ -9,7 +9,7 @@ subroutine getMatricesCorrelated(verbose, nobs, nfix, maxid, X, G, id, &
   ! Z2Z2   permanent environmental effect (??? it is block diagonal with ones [not sure]) (?=Zi*Zi')
   ! Z1Z2   correlation between permanent environmental effect slope and intercept (=Z1*Z2'+Z2*Z1')
   ! Written by M. Ghaderi Zefreh
-  use constants
+  use constants, only : KINDR, ZERO, STDOUT
   implicit none
   logical :: verbose
   integer, intent(in) :: nobs, nfix, maxid
@@ -85,7 +85,7 @@ subroutine getMatricesUncorrelated(verbose, nobs, nfix, maxid, X, G, id, &
   ! Z2Z2   permanent environmental effect (??? it is block diagonal with ones [not sure]) (?=Zi*Zi')
   ! Z1Z2   correlation between permanent environmental effect slope and intercept (=Z1*Z2'+Z2*Z1')
   ! Written by M. Ghaderi Zefreh
-  use constants
+  use constants, only : KINDR, ZERO, STDOUT
   implicit none
   logical :: verbose
   integer, intent(in) :: nobs, nfix, maxid
@@ -126,11 +126,11 @@ end subroutine getMatricesUncorrelated
 
 !================================================================================
 subroutine getMatrices(verbose, nobs, nfix, maxid, X, G, id, ZGZ)
-  use constants
+  use constants, only : KINDR, STDOUT, ZERO
   implicit none
   logical, intent(in) :: verbose
-  integer, dimension(1:nobs), intent(in) :: id
   integer, intent(in) :: nobs, nfix, maxid
+  integer, dimension(1:nobs), intent(in) :: id
   real(KINDR), dimension(1:(maxid*(maxid+1)/2)), intent(in) :: G
   real(KINDR), dimension(1:nobs,1:nfix), intent(in)  :: X
   real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: ZGZ
@@ -161,7 +161,7 @@ end subroutine getMatrices
 
 !================================================================================
 subroutine trsmReadMat(matfile,amat,nrank,skip,ifail,ibin)
-  use constants
+  use constants, only : KINDR, STDOUT, STDERR, ZERO
   implicit none
   ! written by R. Pong-Wong
   ! edited by M. Ghaderi Zefreh (minor edits for STDOUT/STDERR output)

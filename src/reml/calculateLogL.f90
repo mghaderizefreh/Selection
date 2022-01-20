@@ -1,5 +1,5 @@
 subroutine calculateLogL(nobs, detV, det_xt_vinv_x, P, y, LogL,Py, yPy, verbose)
-  use constants
+  use constants, only: KINDR, STDOUT, ONE, HALF, ZERO
   implicit none
   logical, intent(in) :: verbose
   integer, intent(in) :: nobs
@@ -14,13 +14,13 @@ subroutine calculateLogL(nobs, detV, det_xt_vinv_x, P, y, LogL,Py, yPy, verbose)
 
   if (verbose) write(STDOUT, *) "  In the subroutine calculateLogL"
 
-  call dspmv('u', nobs, 1.d0, P, y, 1, 0.d0, Py, 1)
+  call dspmv('u', nobs, ONE, P, y, 1, ZERO, Py, 1)
   if (verbose) write(STDOUT, *) "  DSPMV finished calculating Py (=P * y)"
 
   yPy = ddot(nobs, y, 1, Py, 1)
   if (verbose) write(STDOUT, *) "  DDOT finished calculating yPy"
 
-  LogL = -.5 * (detV + det_xt_vinv_x + yPy)
+  LogL = -HALF * (detV + det_xt_vinv_x + yPy)
   if (verbose) write(STDOUT, *) "  calculateLogL returned successfully"
 
 end subroutine calculateLogL

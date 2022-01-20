@@ -34,7 +34,7 @@
 !----------------------------------------------------------------------------
 
 subroutine countNumberLines(filename, skip, lines, empties, ifail)
-  use constants
+  use constants, only : STDERR
   implicit none
 
   character(len=*) :: filename
@@ -91,14 +91,11 @@ subroutine countNumberLines(filename, skip, lines, empties, ifail)
 
 
 100 continue
-  write ( stderr, * ) ' Error opening file'
-  write ( stderr, * ) ' lines cannot be counted'
+  write ( STDERR, * ) ' Error opening file'
+  write ( STDERR, * ) ' lines cannot be counted'
 
   ifail  = 1
   lines  =-1
   empties= 0
-  return
 
 end subroutine countNumberLines
-
-

@@ -1,7 +1,7 @@
 subroutine selectParents(nanim, indiv, sex, n_m, n_fpm, male, female,&
      effects)
-  use constants
-  use quickSort
+  use constants, only : KINDR, alloc1I, alloc1D
+  use quickSort, only : sortrx
   implicit none
 
   integer, intent(in) :: nanim
@@ -53,7 +53,6 @@ subroutine selectParents(nanim, indiv, sex, n_m, n_fpm, male, female,&
 end subroutine selectParents
 
 function makePedigree(n_m, n_fpm, n_opf, male, female, start) result(pedigree)
-  use constants
   implicit none
   integer, intent(in) :: n_m, n_fpm, n_opf, start
   integer, dimension(:), intent(in) :: male, female

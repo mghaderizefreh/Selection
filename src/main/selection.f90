@@ -1,11 +1,12 @@
 program selection
   use constants
   use math
-  use global_module
-  use rng_module
+  use global_module, only: readInput, askFilename
+  use rng_module, only: istart, ifinal
   use evolution_module
-  use blup_module
-  use reml_module
+  use blup_module, only: blup, GetGmatrix, GetGen0Variance, GetTrueVariance,&
+      leastSquare
+  use reml_module, only: reml
 
   implicit none
 

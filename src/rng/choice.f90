@@ -5,8 +5,9 @@ subroutine Choice(source, sourceDim, sourceSize, number, output, outputDim, seed
   ! sourceSize is the first number of elements in source that will be used
   ! 'number' elements will be returned in ouput
   ! output has outputDim number of elements
+  ! sourceDim >= sourceSize >= number and outputDim >= number
 
-  use constants
+  use constants, only : KINDR, alloc1I
   implicit none
 
   integer, intent(in) :: sourceSize, number, sourceDim, outputDim
@@ -22,10 +23,8 @@ subroutine Choice(source, sourceDim, sourceSize, number, output, outputDim, seed
      call random_seed(put = seed)
   end if
   call alloc1I(sourceCopy, sourceSize, "sourceCopy", "choice")
-  ! First take a copy of source because arrays are passed by reference (are they?)
-  forall (i = 1:sourceSize)
-     sourceCopy(i) = source(i)
-  end forall
+  ! First take a copy of source because source array is not changeable
+  sourceCopy(1:sourceSize)= source(1:sourceSize)
 
   ! Then shuffle sourceCopy
   do i = 1, sourceSize
@@ -41,8 +40,6 @@ subroutine Choice(source, sourceDim, sourceSize, number, output, outputDim, seed
   end do
 
   ! finally get the first "number" and store in "output"
-  forall (i= 1: number)
-     output(i) = sourceCopy(i)
-  end forall
+  output(1: number) = sourceCopy(1: number)
 end subroutine Choice
 

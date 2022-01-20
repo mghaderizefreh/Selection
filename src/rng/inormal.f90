@@ -15,7 +15,7 @@ subroutine inormal(mean, cov, dim, size, output, seed)
   ! written by Masoud Ghaderi Zefreh
   ! first revision : 1 November 2019
 
-  use constants
+  use constants, only : KINDR, STDERR
   use mkl_vsl_type
   use mkl_vsl
 

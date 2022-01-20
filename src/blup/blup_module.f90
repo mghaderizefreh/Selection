@@ -1,6 +1,5 @@
 module blup_module
-  use constants
-  use global_module
+
 contains
   include "getZGZMats.f90"
   include "calculateV.f90"

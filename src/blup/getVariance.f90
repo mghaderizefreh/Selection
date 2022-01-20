@@ -1,8 +1,7 @@
 subroutine getGen0Variance(nvar, nran, nanim, nobs, interval, chalvl, vars, y,&
      theta)
-  use constants
-  use global_module
-  use math
+  use constants, only : KINDR, variances, STDERR, ONE
+  use math, only : variance
   implicit none
   !! ================ variable definitions  ================ !!
   integer, intent(in) :: nvar, nran, nanim, nobs
@@ -13,6 +12,7 @@ subroutine getGen0Variance(nvar, nran, nanim, nobs, interval, chalvl, vars, y,&
 
   real(KINDR) :: val1, val2
 
+  if (nanim > 0) continue
   if (nran == 1) then
      if (nvar .ne. 1) then
         write(STDERR, '(a)') "Error:"
@@ -53,9 +53,8 @@ end subroutine getGen0Variance
 
 subroutine getTrueVariance(nvar, nran, nanim, ncomp, nobs, interval, vars,&
      tbv, y, theta)
-  use constants
-  use global_module
-  use math
+  use constants, only : KINDR, variances, ONE
+  use math, only : variance, covariance
   implicit none
   !! ================ variable definitions  ================ !!
   integer, intent(in) :: nvar, nran, nanim, ncomp, nobs

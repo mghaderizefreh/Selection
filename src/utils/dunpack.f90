@@ -1,5 +1,5 @@
 subroutine dunpack(uplo, n, ap, a, lda, info)
-  use constants
+  use constants, only : KINDR, STDOUT
   implicit none
   ! unpacks a real(KINDR) vector to a full matrix. The difference with the lapack method is
   ! that here I pack both upper and lower part of the matrix

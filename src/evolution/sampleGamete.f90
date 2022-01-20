@@ -12,7 +12,7 @@
 subroutine sampleGamete(parent, id, igam, parentGen, nloci, nblock, &
      nchiasma, chiasmaCum0, chiasmaCumP, istore, &
      offGenInp, positions, samepos)
-  use constants
+  use constants, only: KINDR, STDERR, ZERO, HALF, NBITS
   implicit none
 
   integer, intent(in)   :: istore  ! how SNP are stored (1=binary/0=integer)
@@ -373,7 +373,5 @@ subroutine sampleGamete(parent, id, igam, parentGen, nloci, nblock, &
   end if
 
   !============================================
-  return
-
 end subroutine sampleGamete
 

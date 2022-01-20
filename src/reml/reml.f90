@@ -10,12 +10,12 @@
 subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
      theta, verbose, ipiv, Py, P, V, Vhat, temp, ifail, EmIterations, maxIters)
 
-  use constants
-  use global_module
+  use constants, only: KINDR, JArr, alloc1D, STDOUT, STDERR, ZERO
+  use global_module, only: detInv
   use blup_module
   implicit none
   !! ================ variable definitions  ================ !!
-  logical, intent(in)                            :: verbose
+  logical, intent(in) :: verbose
   integer, intent(in) :: nobs, nvar, nfix, maxid, nran, nelement
   integer, dimension(:), intent(in) :: id ! real(KINDR) id of animals
   real(KINDR), dimension(:), intent(in) :: y ! phenotypes
@@ -45,6 +45,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   integer :: iter, maxIter
   logical :: checkForLogL, exceptionPass
   real(KINDR), external :: dnrm2, ddot, dasum
+  external :: updateTheta, calculateRHS, calculateLogL, calculateAIMatrix
   !! ================ No defintion after this line ================ !!
   I = nobs * nobs
   call alloc1D(work, I, "work","reml")

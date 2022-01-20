@@ -1,5 +1,5 @@
 function variance(X, n) result(out)
-  use constants
+  use constants, only : KINDR
   implicit none
   integer, intent(in) :: n
   real(KINDR), dimension(:), intent(in) :: X
@@ -10,7 +10,7 @@ function variance(X, n) result(out)
 end function variance
 
 function covariance(X, Y, n) result(out)
-  use constants
+  use constants, only : KINDR
   implicit none
   integer, intent(in) :: n
   real(KINDR), dimension(n), intent(in) :: X, Y
@@ -20,7 +20,7 @@ function covariance(X, Y, n) result(out)
 end function covariance
 
 function correlation(X, Y, n) result(out)
-  use constants
+  use constants, only : KINDR
   implicit none
   integer, intent(in) :: n
   real(KINDR), dimension(n), intent(in) :: X, Y
@@ -31,7 +31,4 @@ function correlation(X, Y, n) result(out)
   out = sum((X(1:n) - v1) * (Y(1:n) - v2)) /&
        sqrt(sum((X(1:n) - v1)**2) * sum((Y(1:n) - v2)**2))
 end function correlation
-
-
-
 

@@ -2,7 +2,8 @@
 subroutine SimulateTBV(nAnim, nChr, nComp, indiv, genome, chr_nlocibefore,&
      QTLlist, TBV, verbose)
 
-  use constants
+  use constants, only: KINDR, chromosome, alloc1I, alloc2D, ZERO, NBITS,&
+      QTL_Array
   implicit none
 
   integer, intent(in) :: nAnim, nChr, nComp

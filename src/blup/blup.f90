@@ -1,8 +1,8 @@
 subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
      theta, fixEffects, ranEffects, verbose, ipiv, Py, P, V, Vhat, temp, info)
 
-  use constants
-  use global_module
+  use constants, only: KINDR, Jarr, STDERR, STDOUT, alloc1D, ONE, ZERO
+  use global_module, only : detInv
   implicit none
   !! ================ variable definitions  ================ !!
   logical, intent(in) :: verbose
@@ -27,8 +27,10 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   real(KINDR), dimension(:), allocatable :: work
   ! nelements = nobs * (nobs + 1) / 2
   integer :: i, j
-  real(KINDR) :: val1, val2
+  real(KINDR) :: val1, val0
   external :: dspmv
+  external :: getMatrices, getMatricesUncorrelated, getMatricesCorrelated
+  external :: calculateP, calculateV, getEffects
   !! ================ No defintion after this line ================ !!
   i = nobs * nobs
   call alloc1D(work, I, "work", "blup")
@@ -73,15 +75,17 @@ subroutine blup(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   end if
   if (verbose) write(STDOUT, *) " V is replaced by its inverse"
 
-  ! val = det(x'*vinv*x)
-  call calculateP(nobs, nfix, V, X, P, val2, Vhat, work, temp, verbose, info)
+  call calculateP(nobs, nfix, V, X, P, val0, Vhat, work, temp, verbose, info)
   if (info /= 0) then
      write(STDOUT, 211)
      return
   end if
   if (verbose) write(STDOUT, *) " P is calcuated"
 
-  call dspmv('u', nobs, 1.d0, P, y, 1, 0.d0, Py, 1)
+  val0 = ZERO
+  val1 = ONE
+  i = 1
+  call dspmv('u', nobs, val1, P, y, i, val0, Py, i)
   if (verbose) write(STDOUT, *) "  DSPMV finished calculating Py (=P * y)"
 
   call getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&

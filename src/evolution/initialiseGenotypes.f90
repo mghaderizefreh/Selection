@@ -12,7 +12,7 @@
 subroutine initialiseGenotypes(verbose, nchr, nanim, genstart, nloci, nblock,&
      istore, genome, genome2, maxloci, maxblock, ifail, chrL, &
      prefixfilename1, prefixfilename2)
-  use constants
+  use constants, only: KINDR, chromosome, alloc3Ip, HALF, STDERR, STDOUT, ZERO
   implicit none
 
   logical, intent(in) :: verbose
