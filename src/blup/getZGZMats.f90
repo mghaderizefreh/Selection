@@ -129,8 +129,8 @@ subroutine getMatrices(verbose, nobs, nfix, maxid, X, G, id, ZGZ)
   use constants, only : KINDR, STDOUT, ZERO
   implicit none
   logical, intent(in) :: verbose
-  integer, dimension(1:nobs), intent(in) :: id
   integer, intent(in) :: nobs, nfix, maxid
+  integer, dimension(1:nobs), intent(in) :: id
   real(KINDR), dimension(1:(maxid*(maxid+1)/2)), intent(in) :: G
   real(KINDR), dimension(1:nobs,1:nfix), intent(in)  :: X
   real(KINDR), dimension(1:(nobs*(nobs+1)/2)), intent(out) :: ZGZ

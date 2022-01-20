@@ -18,15 +18,17 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
 
   real(KINDR), dimension(:), allocatable :: temp
   integer :: i, j
-  real(KINDR) :: val1, s1, s2
-  type (Jarr), dimension(1:nran) :: theZPy
+  real(KINDR) :: val1
+  type (Jarr), dimension(:), allocatable :: theZPy
 
   external :: dgemm
   if (verbose) write(STDOUT, *) " Inside getEffects"
+
   ! fixed effects
   call dgemm('n', 'n', nfix, 1, nobs, ONE, Vhat, nfix, y, nobs, ZERO, fixeff, nfix)
   if (verbose) write(STDOUT, *) "  Fixed effects estimated"
-  
+
+  allocate(theZPy(nran))
   if (nran == 1) then
      call alloc1D(theZPy(1)%array, maxid, "theZPy(1)%array", "getEffects")
      theZPy(1)%array(1:maxid) = ZERO
@@ -69,13 +71,13 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
      theZPy(2)%array(j) = theZPy(2)%array(j) + Py(i)
      raneff(3)%array(i) = X(i,1) * Py(i) * theta(3)
   end do
-  
+
   if (nvar == 4) then
-     s1 = theta(4) / theta(1)
-     s2 = theta(4) / theta(2)
      temp(1:maxid) = theZPy(1)%array(1:maxid)
-     theZPy(1)%array(1:maxid) = theZPy(1)%array(1:maxid) * theta(1) + theZPy(2)%array(1:maxid) * theta(4)
-     theZPy(2)%array(1:maxid) = theZPy(2)%array(1:maxid) * theta(2) + temp(1:maxid)            * theta(4)
+     theZPy(1)%array(1:maxid) = theZPy(1)%array(1:maxid) * theta(1) + &
+        theZPy(2)%array(1:maxid) * theta(4)
+     theZPy(2)%array(1:maxid) = theZPy(2)%array(1:maxid) * theta(2) + &
+        temp(1:maxid)            * theta(4)
   else
      theZPy(1)%array(1:maxid) = theZPy(1)%array(1:maxid) * theta(1)
      theZPy(2)%array(1:maxid) = theZPy(2)%array(1:maxid) * theta(2)
@@ -92,5 +94,4 @@ subroutine getEffects(nobs, maxid, nfix, nvar, nran, theta, Gmatrix, Vhat,&
         end if
      end do
   end do
-  
 end subroutine getEffects

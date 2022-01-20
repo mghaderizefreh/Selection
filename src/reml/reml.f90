@@ -45,6 +45,7 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
   integer :: iter, maxIter
   logical :: checkForLogL, exceptionPass
   real(KINDR), external :: dnrm2, ddot, dasum
+  external :: updateTheta, calculateRHS, calculateLogL, calculateAIMatrix
   !! ================ No defintion after this line ================ !!
   I = nobs * nobs
   call alloc1D(work, I, "work","reml")
