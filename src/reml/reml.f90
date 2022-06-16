@@ -207,23 +207,23 @@ subroutine reml(id, X, y, nfix, nobs, maxid, nelement, Gmatrix, nvar, nran,&
         !otherwise leave the switch off
      end if
      
-!!!! Iteration completed !!!!
+     !!!! Iteration completed !!!!
 
      val1 = dnrm2(nvar + 1, oldtheta, 1) ! l2 norm of oldtheta
      oldtheta(1:(nvar + 1)) = oldtheta(1:(nvar + 1)) - theta(1:(nvar + 1))
      val2 = dnrm2(nvar + 1, oldtheta, 1) / val1 ! l2 norm of delta_theta / l2 norm of oldtheta
      val1 = dasum(nvar + 1, oldtheta, 1) / (nvar + 1) ! l1 norm of delta_theta
-     val3 = dabs((LogL - oldLogL)/oldLogL) ! l1 norm of delta_logl
      write(STDOUT, '(a, i0)') "Errors for iteration ",iter
      write(STDOUT, 71, advance='no') " variance (l1)", val1 
      write(STDOUT, 71) " variance (l2)", val2
-     if (iter > 1) write(STDOUT, 71) " LogL (relative)", val3
      if (iter > 1) then
-        if (checkForLogL .and. (logL < oldLogL)) then
-           write(STDOUT, '(A)') " Invalid variance comp. because LogL decreased"
-           ifail = 1
-           return
-        end if
+      val3 = dabs((LogL - oldLogL)/oldLogL) ! l1 norm of delta_logl
+      write(STDOUT, 71) " LogL (relative)", val3
+      if (checkForLogL .and. (logL < oldLogL)) then
+         write(STDOUT, '(A)') " Invalid variance comp. because LogL decreased"
+         ifail = 1
+         return
+      end if
      end if
      ! next iteration checkForLogL is determined here
      checkForLogL = .not. exceptionPass 
