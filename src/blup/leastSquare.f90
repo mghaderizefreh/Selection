@@ -50,8 +50,8 @@ subroutine leastSquare(verbose, nobs, nfix, id, env, y, effects, tempInd, temp, 
 
   X(1:nobs, 1:nfix) = ZERO
   ! todo: use sparse matrices: x is very sparse
-  do j = 1, nfix
-     do i = 1, nobs
+  do i = 1, nobs
+     do j = 1, nfix
         if (temp(j) == env(i)) then
            X(i, j) = ONE
            exit
