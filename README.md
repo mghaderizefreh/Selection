@@ -2,7 +2,7 @@
 This program produces two executables. The first is `analysis.exe` and the second is `selection.exe`.
 
 ## analysis.exe
-`analysis.exe` is capable of analysing using either a random regeression model or a single trait.
+`analysis.exe` is capable of estimating breeding values using either a random regeression model or a single trait.
 
 ### Random regression
 The first type is a dataset of phenotyped individuals at different environments to estimate variance components and breeding values using an animal model. The model that is fitted is
@@ -21,16 +21,17 @@ In the second type, the locations are ignored and the aim is to estimate breedin
 where `y_j` is the phenotype of animal `j`, `A_j` is its breeding value and `E_j` is its residual.
 
 ## selection.exe
-This program does a random selection or selection based on a criteria on a base population and evolve.
+This program simulates selection for a population of animals based on a selection index from a reaction norm model or a single trait analysis. In the case of reaction norm model the environmentla challenge levels may be known or unknown. The inpus for this program must be passed as a text file. See `test` folder for an example.
 
 ## version number
-This is version 2.0 of the software released on 5 Feb 2021.
+V2.5.3
 
 ## Copyright
 * A copyright message and something about SMARTER project/ Roslin Institute/ University of Edinburgh/ us in general
 
 # Installation
 This software is written under FORTRAN90. A cmake project is accompanied that makes it possible to build and compile in any operating system with cmake, makefile and a Fortran compiler.
+* Cmake project currently has an error. Use `manual.sh` with appropriate changes for compiler and flag for building.
 
 ## Dependencies
 The main files are `analysis.f90` and `selection.f90` in `src/reml` folder. Other than the accompanied `f90` files with this release BLAS and LAPACK libraries are required for the compilation. If required, these libraries may be downloaded from [here](http://www.netlib.org/blas/blas.tgz) for BLAS and [here](http://www.netlib.org/lapack/lapack.tgz) for LAPACK and compiled based on the instructions from [here](https://gcc.gnu.org/wiki/GfortranBuild) (for Gfortran). For Intel Fortran these libraries are automatically installed.
@@ -71,6 +72,4 @@ Due to high number of inputs for program `selection.exe`, this program is not in
 
 `selection.exe` gives information on the genetic gain of breeding values. 
 
-# Future Developments
-A lot of things
 
