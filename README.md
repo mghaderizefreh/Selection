@@ -45,7 +45,7 @@ make
 ```
 CMake picks up a compiler and builds the executable. If you have multiple compilers, for example the GNU compiler and the Intel one, and wish to compile with Intel, then use
 ``` shell
-FC=ifort cmake ..
+FC=ifx cmake ..
 ```
 
 The installation can be verified by running the command

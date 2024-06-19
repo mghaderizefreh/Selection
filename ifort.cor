@@ -1,6 +1,6 @@
 #/bin/sh
 set -e
-FC=ifort
+FC=ifx
 export TMPDIR=/exports/eddie/scratch/mghaderi/tmp
 ####flags="-g -C -warn all -check all -mkl"
 ####flags="-fast -static -mkl"   #some eddie nodes do not support xHost (it is embded in fast). Use next one
